@@ -234,12 +234,12 @@ task :genbook do
   # git rm -rf book-content/
 
   Dir.chdir('translations') do
-    Dir.glob("*").each do |lang|
+    Dir.glob("*").sort.each do |lang|
       chapter_number = 0
       toc = []
       next if genlang && genlang != lang
       Dir.chdir(lang) do
-        Dir.glob("*").each do |chapter|
+        Dir.glob("*").sort.each do |chapter|
           puts 'generating : ' + lang + '/' + chapter
           content = ''
           Dir.chdir(chapter) do
@@ -261,9 +261,9 @@ end
 desc "Convert images"
 task :convert_images do
   Dir.chdir('figures') do
-    Dir.glob("*").each do |chapter|
+    Dir.glob("*").sort.each do |chapter|
       Dir.chdir(chapter) do
-        Dir.glob("*").each do |image|
+        Dir.glob("*").sort.each do |image|
           puts image
           (im, ending) = image.split('.')
           if ending == 'png' and im[-3, 3] != '-tn'
