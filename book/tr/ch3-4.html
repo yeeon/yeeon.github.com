@@ -1,0 +1,43 @@
+---
+layout: translation
+title: Pro Git 3.4 Git&#8217;te Dallanma Dallanma İş Akışları
+---
+<h2 id='dallanma__aklar'>Dallanma İş Akışları</h2>
+
+<p>Dallanma ve birleştirmenin temellerine hakim olduğunuza göre, şimdi bu bilgiyi kullanarak neler yapabileceğimize bakalım. Bu alt bölümde masrafsız dallanmanın olanaklı kıldığı bazı yaygın iş akışları üzerinde duracağız, böylece bunları kendi geliştirme döngünüzde kullanıp kullanmamaya karar verebilirsiniz.</p>
+
+<h3 id='uzun_sreli_dallar'>Uzun Süreli Dallar</h3>
+
+<p>Git, basit üç-taraflı birleştirme yaptığı için uzun bir zaman dilimi boyunca bir daldan diğerine çok sayıda birleştirme yapmak genellikle kolaydır. Yani, sürekli açık olan ve geliştirme döngünüzün değşik aşamalarında kullanabileceğiniz birkaç dal bulundurabilirsiniz; düzenli olarak bazılarından diğerlerine birleştirme yapabilirsiniz.</p>
+
+<p>Git&#8217;i kullanan pekçok yazılımcı bu yaklaşımı benimser, <code>master</code> dalında yalnızca kararlı (_stable_) durumdaki kod bulunur —yalnızca yayımlanmış olan ya da yayımlanacak kod. <code>develop</code> ya da <code>next</code> adında, kararlılık testlerinin yürütüldüğü bir paralel dalları daha vardır —bu dal o kada kararlı olmayabilir, fakat kararlı duruma getirildiğinde <code>master</code> dalına birleştirilir. Kısa ömürlü, belirli bir işlevin geliştirilmesine ayrılmış dalların (sizin <code>iss53</code> adlı dalınız gibi) hazır olduklarında birleştirilmeleri için —bütün testlerden geçtiklerinden ve yeni hatalara kapı aralamadıklarından emin olmak amacıyla— kullanılır.</p>
+
+<p>Gerçekte, yazılım tarihçesinde ileri doğru hareket eden imleçlerden söz ediyoruz. Kararlı dallar eski kayıtları, güncel dallar çok daha yenilerini gösterir (bkz. Figür 3-18).</p>
+
+<p><center><img src="/figures/ch3/18333fig0318-tn.png"></center><br/> Figür 3-18. Daha kararlı dallar genellikle kayıt tarihçesinde daha geride bulunurlar.</p>
+
+<p>Bu dalları, çalışma ambarları olarak hayal ediliriz, bir dizi kayıt bütünüyle test ediltikten sonra daha kararlı başka br ambara konulurlar (bkz. Figür 3-19).</p>
+
+<p><center><img src="/figures/ch3/18333fig0319-tn.png"></center><br/> Figure 3-19. Dalların ambarlar gibi olduğunu düşünebilirsiniz.</p>
+
+<p>Çeşitli kararlılık seviyeleri tanımlayıp bu işleyişi o şekilde kullanabilirsiniz. Büyük projelerde <code>proposed</code> (önerilen) ya da <code>pu</code> (proposed updates - önerilen güncellemeler) adında bir dal daha olabilir. Bu dala, <code>next</code> ya da <code>master</code> dalına birleştirilecek kadar kararlı aşamada bulunmayan dallar birleştirilir. Sonuçta, dallar farklı kararlılık seviyelerinde bulunurlar; daha kararlı bir seviyeye ulaştıklarında, bir üstlerindeki dala birleştirilirler. Tekrarlayalım: birden çok uzun ömürlü dal bulundurmak zorunlu değildir, ama, özellikle çok büyük ya da karmaşık projelerde çalışıyorsanız çoğunlukla yararlıdır.</p>
+
+<h3 id='lev_dallar'>İşlev Dalları</h3>
+
+<p>İşlev dalları, her ölçekte proje için yararlıdır. İşlev dalları, belirli bir özellikle ilgili değişikliklerin geliştirilmesi için kullanılan kısa ömürlü dallardır. Başka SKS&#8217;lerde bu çok masraflı olduğu için, muhtemelen bu yaklaşımı daha önce benimsemediniz. Ama Git&#8217;te dal yaratmak, o dal üzerinde çalışmak, dalı birleştirmek ve daha sonra silmek, günde birkaç kez yapılan yaygın bir yöntemdir.</p>
+
+<p>Bunu bir önceki alt bölümde <code>iss53</code> ve <code>hotfix</code> dalları üzerinde çalışırken gördünüz. Bu dallarda birkaç değişiklik yaptınız ve bu değişiklikleri <code>master</code> dalına birleştirdikten hemen sonra bu dalları sildiniz. Bu teknik sayesinde, bağlamlar arasında hızlı ve bütünlüklü geçişler yapabilirsiniz —çalışmalarınız belirli bir işlevin geliştirilmesine adanmış farklı ambarlara ayrılmış olduğundan, geçen süre zarfında, diyelim kod gözden geçirmesi sırasında neler olduğunu kolaylıkla görebilirsiniz. Değişikliklerinizi işlev dallarında dakikallarca, günlerce ya da aylarca tutabilir, hazır oldukları zaman, hangisinin dalın daha önce oluşturulduğuna aldırmadan birleştirebilirsiniz.</p>
+
+<p>Diyelim ki <code>master</code> dalında çalışıyorsunuz, sonra bir hatayı gidermek için yeni bir dal yaratıyorsunuz (<code>iss91</code>), derken aynı hatayı başka türlü gidermek için yeni bir dal yaratıyorsunuz (<code>iss91v2</code>), sonra <code>master</code>&#8216;a geri dönüp biraaz daha çalışıyorsunuz, sonra aklınıza gelen ama çok da gerekli olmadığını düşündüğünüz bir şeyle ilgili çalışmak için yeni bir dal yaratıyorsununuz (<code>dumbidea</code>)&#8230; Kayıt tarihçeniz Figür 3-20&#8217;deki gibi görünecektir.</p>
+
+<p><center><img src="/figures/ch3/18333fig0320-tn.png"></center><br/> Figür 3-20. Birden çok işlev dalının bulunduğu kayıt tarihçeniz.</p>
+
+<p>Şimdi diyelim ki, hatanın giderilmesinde ikinci çözümü (<code>iss91v2</code>) kullanmaya karar veriyorsunuz ve işarkadaşlarınız <code>dumbidea</code> dalında yaptıklarınızı dahice buluyor. <code>iss91</code> dalınızı çöpe atabilir (C5 ve C6 kayıtlarını kaybedeceksiniz) diğer iki dalı birleştirebilirsiniz. Bu durumda tarihçeniz Figür 3-21&#8217;deki gibi görünecektir.</p>
+
+<p><center><img src="/figures/ch3/18333fig0321-tn.png"></center><br/> Figür 3-21. dumbidea ve iss91v2&#8217;yi birleştirdikten sonra kayıt tarihçeniz.</p>
+
+<p>Unutmayın, bütün bunları yerel dallarda yapıyorsunuz. Dal yaratırken ve birleştirme yaparken her şey yalnızca yerel yazılım havuzunda gerçekleşiyor —hiçbir sunucu iletişimi olmuyor.</p>
+
+<div id='nav'>
+<a href='ch3-3.html'>prev</a> | <a href='ch3-5.html'>next</a>
+</div>

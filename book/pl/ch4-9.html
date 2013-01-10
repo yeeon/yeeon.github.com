@@ -1,0 +1,71 @@
+---
+layout: translation
+title: Pro Git 4.9 Git na serwerze Git Demon
+---
+<h2 id='git_demon'>Git Demon</h2>
+
+<p>Dla dostępu publicznego, nieautoryzowanego do Twojego projektu, możesz pominąć protokół HTTP i zacząć używać protokołu Git. Główną przyczyną użycia protokołu Git jest jego szybkość działania. Protokół Git jest znacznie bardziej wydajny i szybszy niż protokół HTTP, więc użycie go zaoszczędzi czas użytkowników.</p>
+
+<p>Idąc dalej, dla dostępu nieautoryzowanego i tylko do odczytu . Jeśli używasz projektu na serwerze poza zaporą, powinieneś stosować ten protokół jedynie do projektów, które są publicznie widoczne dla świata. Jeśli serwer, którego używasz znajduje się wewnątrz sieci z zaporą, możesz również użyć go do projektów używanych przez wiele ludzi i komputerów (ciągła integracja lub budowa serwera) mających dostęp tylko do odczytu, jeśli nie chcesz dodawać klucza SSH dla każdego.</p>
+
+<p>W każdym bądź razie, protokół Git jest stosunkowo prosty w konfiguracji. Po prostu, musisz uruchomić komendę poprzez demona:</p>
+
+<pre><code>  git daemon --reuseaddr --base-path=/opt/git/ /opt/git/</code></pre>
+
+<p><code>--reuseaddr</code> pozwala serwerowi na restart bez konieczności czekania na zakończenie starych połączeń, natomiast opcja <code>--base-path</code> pozwala ludziom na klonowanie bez konieczności podawania całej ścieżki, a ścieżka na końcu mówi Git demonowi, które repozytorium ma zostać eksportowane. Jeśli używasz zapory, będziesz musiał dodać regułę otwarcia portu 9418 w oknie ustawień swojej zapory.</p>
+
+<p>Możesz demonizować ten proces na wiele sposobów, w zależności od używanego systemu. Na maszynie z Ubuntu, używamy Upstart script. Wic, w podanym pliku</p>
+
+<pre><code>/etc/event.d/local-git-daemon</code></pre>
+
+<p>zamieszczasz ten skrypt:</p>
+
+<pre><code>start on startup
+stop on shutdown
+exec /usr/bin/git daemon \
+    --user=git --group=git \
+    --reuseaddr \
+    --base-path=/opt/git/ \
+    /opt/git/
+respawn</code></pre>
+
+<p>Z przyczyn bezpieczeństwa, zachęcam do korzystania z demona jako użytkownik z pozwoleniem &#8216;tylko do odczytu&#8217; dla repozytorium — możesz łatwo to zrobić tworząc nowego użytkownika &#8216;git-ro&#8217; i użycie go do demona. Dla uproszczenia będziemy używać tego samego konta &#8216;git&#8217;, na którym uruchomiony jest Gitosis.</p>
+
+<p>Kiedy zrestartujesz maszynę, Twój Git demon wystartuje automatycznie jeśli był wyłączony. Aby uruchomić go bez restartu, możesz użyć polecenia:</p>
+
+<pre><code>initctl start local-git-daemon</code></pre>
+
+<p>Na innych systemach, możesz użyć <code>xinetd</code>, skryptu w folderze systemowym <code>sysvinit</code>, lub inaczej — tak długo jak będziesz demonizował to polecenie i obserwował jakoś.</p>
+
+<p>Następnie, musisz powiedzieć swojemu serwerowi Gitosis które repozytorium Git pozwala na dostęp &#8216;tylko do odczytu&#8217;. Jeśli dodasz wpis dla każdego repozytorium, możesz określić, które ma być czytane przez Git demona. Jeśli chcesz aby protokół Git był dostępny dla Twojego projektu iphone, musisz dodać to na końcu pliku <code>gitosis.conf</code> :</p>
+
+<pre><code>[repo iphone_project]
+daemon = yes</code></pre>
+
+<p>Kiedy to zostanie zatwierdzone i wysłane na serwer, Twój uruchomiony demon powinien zacząć dawać odpowiedzi dla projektu każdemu kto ma dostęp do portu 9418 na Twoim serwerze.</p>
+
+<p>Jeśli zdecydujesz się nie używać Gitosis, ale chcesz ustawić Git demona, musisz uruchomić go dla każdego projektu, który chcesz aby demon obsługiwał:</p>
+
+<pre><code>$ cd /path/to/project.git
+$ touch git-daemon-export-ok</code></pre>
+
+<p>Obecność tego pliku mówi Git&#8217;owi, że można serwować ten projekt bez autoryzacji.</p>
+
+<p>Gitosis może także kontrolować, który projekt GitWeb ma pokazywać. Najpierw, musisz dodać coś takiego do pliku <code>/etc/gitweb.conf</code>:</p>
+
+<pre><code>$projects_list = &quot;/home/git/gitosis/projects.list&quot;;
+$projectroot = &quot;/home/git/repositories&quot;;
+$export_ok = &quot;git-daemon-export-ok&quot;;
+@git_base_url_list = (&#39;git://gitserver&#39;);</code></pre>
+
+<p>Możesz kontrolować, który projekt GitWeb pozwala użytkownikom wyszukiwać dodania lub usunięcia <code>gitweb</code> ustawień w pliku konfiguracyjnym Gitosis. Na przykład, jeśli chcesz pokazać projekt iphone w GitWeb, musisz zmienić ustawienia <code>repo</code> aby wyglądał jak to:</p>
+
+<pre><code>[repo iphone_project]
+daemon = yes
+gitweb = yes</code></pre>
+
+<p>Teraz, jeśli zatwierdzisz i wyślesz projekt, GitWeb automatycznie zacznie pokazywać iphone projekt.</p>
+
+<div id='nav'>
+<a href='ch4-8.html'>prev</a> | <a href='ch4-10.html'>next</a>
+</div>

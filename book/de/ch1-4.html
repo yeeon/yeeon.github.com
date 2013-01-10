@@ -1,0 +1,70 @@
+---
+layout: translation
+title: Pro Git 1.4 Los geht&#8217;s Git installieren
+---
+<h2 id='git_installieren'>Git installieren</h2>
+
+<p>Laß uns damit anfangen, Git tatsächlich zu verwenden. Der erste Schritt besteht natürlich darin, Git zu installieren und das kann, wie üblich, auf unterschiedliche Weisen geschehen. Die beiden wichtigsten bestehen darin, entweder den Quellcode herunterzuladen und selbst zu kompilieren oder ein fertiges Paket für dein Betriebssystem zu installieren.</p>
+
+<h3 id='vom_quellcode_aus_installieren'>Vom Quellcode aus installieren</h3>
+
+<p>Wenn es dir möglich ist, empfehlen wir, Git vom Quellcode aus zu installieren, weil Du die jeweils neueste Version erhältst. In der Regel bringt jede Version nützliche Verbesserungen (z.B. am Interface), so dass es sich lohnt die jeweils neueste Version zu verwenden - sofern Du natürlich damit klarkommst, Software aus dem Quellcode zu kompilieren. Viele Linux Distributionen umfassen sehr alte Git Versionen. Wenn Du also keine sehr aktuelle Distribution oder Backports (xxx) verwendest, empfehlen wir, diesen Weg in Erwägung ziehen.</p>
+
+<p>Um Git zu installieren, benötigst Du die folgenden Bibliotheken, die von Git verwendet werden: curl, zlib, openssl, expat und libiconv. Wenn Dir auf deinem System yum (z.B. auf Fedora) oder apt-get (z.B. auf Debian-basierten Systemen) zur Verfügung steht, kannst Du einen der folgenden Befehle verwenden, um diese Abhängigkeiten zu installieren:</p>
+
+<pre><code>$ yum install curl-devel expat-devel gettext-devel \
+  openssl-devel zlib-devel
+
+$ apt-get install curl-devel expat-devel gettext-devel \
+  openssl-devel zlib-devel</code></pre>
+
+<p>Nachdem Du die genannten Bibliotheken installiert hast, besorge dir die aktuelle Version des Git Quellcodes von der Git Webseite:</p>
+
+<pre><code>http://git-scm.com/download</code></pre>
+
+<p>Danach kannst Du dann Git kompilieren und installieren:</p>
+
+<pre><code>$ tar -zxf git-1.6.0.5.tar.gz
+$ cd git-1.6.0.5
+$ make prefix=/usr/local all
+$ sudo make prefix=/usr/local install</code></pre>
+
+<p>Von nun an kannst Du Git mit Hilfe von Git selbst aktualisieren:</p>
+
+<pre><code>$ git clone git://git.kernel.org/pub/scm/git/git.git</code></pre>
+
+<h3 id='installation_unter_linux'>Installation unter Linux</h3>
+
+<p>Wenn Du Git unter Linux mit einem Installationsprogramm installieren willst, kannst Du das normalerweise mit dem Paketmanager tun, der von deinem Betriebssystem verwendet wird. Unter Fedora zum Beispiel kannst Du yum verwenden:</p>
+
+<pre><code>$ yum install git-core</code></pre>
+
+<p>Auf einem Debian-basierten System wie Ubuntu steht dir apt-get zur Verfügung:</p>
+
+<pre><code>$ apt-get install git-core</code></pre>
+
+<h3 id='installation_unter_mac_os_x'>Installation unter Mac OS X</h3>
+
+<p>Auf einem Mac kann man Git auf zwei Arten installieren. Der einfachste ist, das grafische Git Installationsprogramm zu verwenden, den man von der Google Code Webseite herunterladen kann (siehe Bild 1-7)</p>
+
+<p>http://code.google.com/p/git-osx-installer</p>
+
+<p><center><img src="/figures/ch1/18333fig0107-tn.png"></center><br/> Bild 1-7. Git OS X Installationsprogramm</p>
+
+<p>Die andere Möglichkeit ist, Git via MacPorts (http://www.macports.org) zu installieren. Wenn Du MacPorts auf deinem System hast, installiert der folgende Befehl Git:</p>
+
+<pre><code>$ sudo port install git-core +svn +doc +bash_completion +gitweb</code></pre>
+
+<p>Du brauchst die optionalen Features natürlich nicht mit zu installieren, aber es macht Sinn <code>+svn</code> zu verwenden, falls Du jemals Git mit einem Subversion Repository verwenden willst.</p>
+
+<h3 id='installation_unter_windows'>Installation unter Windows</h3>
+
+<p>Das msysGit Projekt macht die Installation von Git unter Windows sehr einfach. Lade einfach das Installationsprogramm für Windows von der Google Code Webseite herunter und führe es aus:</p>
+
+<pre><code>http://code.google.com/p/msysgit</code></pre>
+
+<p>Danach hast Du sowohl eine Kommandozeilenversion (inklusive eines SSH Clients, der sich später noch als nützlich erweisen wird) als auch die Standard GUI installiert.</p>
+
+<div id='nav'>
+<a href='ch1-3.html'>prev</a> | <a href='ch1-5.html'>next</a>
+</div>

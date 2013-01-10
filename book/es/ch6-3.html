@@ -1,0 +1,111 @@
+---
+layout: translation
+title: Pro Git 6.3 Las herramientas de Git Guardado rápido provisional
+---
+<h2 id='guardado_rpido_provisional'>Guardado rápido provisional</h2>
+
+<p>Según se está trabajando en un apartado de un proyecto, normalmente el espacio de trabajo suele estar en un estado inconsistente. Pero puede que se necesite cambiar de rama durante un breve tiempo para ponerse a trabajar en algún otro tema urgente. Esto plantea el problema de confirmar cambios en un trabajo medio hecho, simplemente para poder volver a ese punto más tarde. Y su solución es el comando &#8216;git stash&#8217;.</p>
+
+<p>Este comando de guardado rápido (stashing) toma el estado del espacio de trabajo, con todas las modificaciones en los archivos bajo control de cambios, y lo guarda en una pila provisional. Desde allí, se podrán recuperar posteriormente y volverlas a aplicar de nuevo sobre el espacio de trabajo.</p>
+
+<h3 id='guardando_el_trabajo_temporalmente'>Guardando el trabajo temporalmente</h3>
+
+<p>Por ejemplo, si se está trabajando sobre un par de archivos e incluso uno de ellos está ya añadido al área de preparación para un futuro almacenamiento de sus cambios en el repositorio. Al lanzar el comando &#8216;git status&#8217;, se podría observar un estado inconsistente tal como:</p>
+
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#      modified:   index.html
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   lib/simplegit.rb
+#</code></pre>
+
+<p>Si justo en este momento se desea cambiar de rama, pero sin confirmar los cambios realizados hasta entonces; la solución es un guardado rápido provisional de los cambios. Utilizando el comando &#8216;git stash&#8217; y enviando un nuevo grupo de cambios a la pila de guardado rápido:</p>
+
+<pre><code>$ git stash
+Saved working directory and index state \
+  &quot;WIP on master: 049d078 added the index file&quot;
+HEAD is now at 049d078 added the index file
+(To restore them type &quot;git stash apply&quot;)</code></pre>
+
+<p>Con ello, se limpia el área de trabajo:</p>
+
+<pre><code>$ git status
+# On branch master
+nothing to commit (working directory clean)</code></pre>
+
+<p>Y se permite cambiar de rama para ponerse a trabajar en cualquier otra parte. Con la tranquilidad de que los cambios a medio completar están guardados a buen recaudo en la pila de guardado rápido. Para ver el contenido de dicha pila, se emplea el comando &#8216;git stash list&#8217;:</p>
+
+<pre><code>$ git stash list
+stash@{0}: WIP on master: 049d078 added the index file
+stash@{1}: WIP on master: c264051... Revert &quot;added file_size&quot;
+stash@{2}: WIP on master: 21d80a5... added number to log</code></pre>
+
+<p>En este ejemplo, se habian realizado dos guardados rápidos anteriores, por lo que se ven tres grupos de cambios guardados en la pila. Con el comando &#8216;git stash apply&#8217;, tal y como se indica en la salida del comando stash original, se pueden volver a aplicar los últimos cambios recien guardados. Si lo que se desea es reaplicar alguno de los grupos más antiguos de cambios, se ha de indicar expresamente: <code>git stash apply stash@{2}</code> Si no se indica ningún grupo concreto, Git asume que se desea reaplicar el grupo de cambios más reciente de entre los guardados en la pila.</p>
+
+<pre><code>$ git stash apply
+# On branch master
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   index.html
+#      modified:   lib/simplegit.rb
+#</code></pre>
+
+<p>Como se ve en la salida del comando, Git vueve a aplicar los correspondientes cambios en los archivos que estaban modificados. Pero no conserva la información de lo que estaba o no estaba añadido al área de preparación. En este ejemplo se han aplicado los cambios de vuelta sobre un espacio de trabajo limpio, en la misma rama. Pero no es esta la única situación en la que se pueden reaplicar cambios. Es perfectamente posible guardar rápidamente (stash) el estado de una rama. Cambiar posteriormente a otra rama. Y proceder a aplicar sobre esta otra rama los cambios guardados, en lugar de sobre la rama original. Es posible incluso aplicar de vuelta cambios sobre un espacio de trabajo inconsistente, donde haya otros cambios o algunos archivos añadidos al área de preparación. (Git notificará de los correspondientes conflictos de fusión si todo ello no se puede aplicar limpiamente.)</p>
+
+<p>Las modificaciones sobre los archivos serán aplicadas; pero no así el estado de preparación. Para conseguir esto último, es necesario emplear la opción <code>--index</code> del comando <code>git stash apply</code>. Con ella se le indica que debe intentar reaplicar también el estado de preparación de los archivos. Y asi se puede conseguir volver exactamente al punto original:</p>
+
+<pre><code>$ git stash apply --index
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#      modified:   index.html
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   lib/simplegit.rb
+#</code></pre>
+
+<p>Los comandos <code>git stash apply</code> tan solo recuperan cambios almacenados en la pila de guardado rápido, sin afectar al estado de la pila. Es decir, los cambios siguen estando guardados en la pila. Para quitarlos de ahí, es necesario lanzar expresamente el comando <code>git stash drop</code> e indicar el número de guardado a borrar de la pila:</p>
+
+<pre><code>$ git stash list
+stash@{0}: WIP on master: 049d078 added the index file
+stash@{1}: WIP on master: c264051... Revert &quot;added file_size&quot;
+stash@{2}: WIP on master: 21d80a5... added number to log
+$ git stash drop stash@{0}
+Dropped stash@{0} (364e91f3f268f0900bc3ee613f9f733e82aaed43)</code></pre>
+
+<p>También es posible utilizar el comando <code>git stash pop</code>, que aplica cambios de un guardado y lo retira inmediatamente de la pila.</p>
+
+<h3 id='creando_una_rama_desde_un_guardado_rpido_temporal'>Creando una rama desde un guardado rápido temporal</h3>
+
+<p>Si se almacena rápidamente (stash) un cierto trabajo, se deja en la pila durante bastante tiempo, y se continua mientras tanto con otros trabajos sobre la misma rama. Es muy posible que se presenten problemas al tratar de reaplicar los cambios guardados tiempo atrás. Si para recuperar esos cambios se ha de modificar un archivo que también haya sido modificado en los trabajos posteriores, se dará un conflicto de fusión (merge conflict) y será preciso resolverlo manualmente. Una forma más sencilla de reaplicar cambios es utilizando el comando <code>git stash branch</code>. Este comando crea una nueva rama, extrayendo (checkout) la confirmación de cambios original en la que se estaba cuando los cambios fueron guardados en la pila, reaplica estos sobre dicha rama y los borra de la pila si se consigue completar el proceso con éxito.</p>
+
+<pre><code>$ git stash branch testchanges
+Switched to a new branch &quot;testchanges&quot;
+# On branch testchanges
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#      modified:   index.html
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   lib/simplegit.rb
+#
+Dropped refs/stash@{0} (f0dfc4d5dc332d1cee34a634182e168c4efc3359)</code></pre>
+
+<p>Este es un buen atajo para recuperar con facilidad un cierto trabajo desde la pila y continuar con él en una nueva rama.</p>
+
+<div id='nav'>
+<a href='ch6-2.html'>prev</a> | <a href='ch6-4.html'>next</a>
+</div>

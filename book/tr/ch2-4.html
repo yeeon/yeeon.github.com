@@ -1,0 +1,89 @@
+---
+layout: translation
+title: Pro Git 2.4 Git&#8217;in Temelleri Değişiklikleri Geri Almak
+---
+<h2 id='deiiklikleri_geri_almak'>Değişiklikleri Geri Almak</h2>
+
+<p>Herhangi bir noktada yaptığınız bir değişikliği geri almak isteyebilirsiniz. Burada yapılan değişiklikleri geri almakta kullanılabilecek bazı araçları inceleyeceğiz. Dikkatli olun, zira geri alınan bu değişikliklerden bazılarını yeniden gerçekleştiremeyebilirsiniz. Bu, eğer bir hata yaparsanız, bunu Git&#8217;i kullanarak telafi edemeyeceğiniz, az sayıda alanından biridir.</p>
+
+<h3 id='son_kayt_lemini_deitirmek'>Son Kayıt İşlemini Değiştirmek</h3>
+
+<p>Eğer kaydı çok erken yapmışsanız, bazı dosyaları eklemeyi unutmuşsanız ya da kayıt mesajında hata yapmışsanız, sık rastlanan düzeltme işlemlerinden birini kullanabilirsiniz. Kaydı değiştirmek isterseniz, <code>commit</code> komutunu <code>--amend</code> seçeneğiyle çalıştırabilirsiniz:</p>
+
+<pre><code>$ git commit --amend</code></pre>
+
+<p>Bu komut, hazırlık alanındaki değişiklikleri alıp bunları kaydı değiştirmek için kullanır. Eğer son kaydınızdan beri hiçbir değişiklik yapmamışsanız (örneğin, bu komutu yeni bir kayıt yaptıktan hemen sonra çalıştırıyorsanız) o zaman kaydınızın bellek kopyası aynı kalacak ve değiştireceğiniz tek şey kayıt mesajı olacaktır.</p>
+
+<p>Aynı kayıt mesajı editörü açılır, fakat editörde bir önceki kaydın kayıt mesajı görünür. Mesajı her zamanki gibi değiştirebilirsiniz, ama bu yeni kayıt mesajı öncekinin yerine geçecektir.</p>
+
+<p>Söz gelimi, eğer bir kayıt sırasında belirli bir dosyada yaptığınız değişiklikleri kayda hazırlamayı unuttuğunuzu fark ederseniz, şöyle bir şey yapabilirsiniz:</p>
+
+<pre><code>$ git commit -m &#39;initial commit&#39;
+$ git add forgotten_file
+$ git commit --amend</code></pre>
+
+<p>Bu üç komuttan sonra, tarihçenize tek bir kayıt işlenmiştir —son kayıt öncekinin yerine geçer.</p>
+
+<h3 id='kayda_hazrlanm_bir_dosyay_hazrlk_alanndan_kaldrmak'>Kayda Hazırlanmış Bir Dosyayı Hazırlık Alanından Kaldırmak</h3>
+
+<p>Bu iki alt bölüm kayda hazırlık alanındaki ve çalışma klasörünüzdeki değişiklikleri nasıl idare edeceğinizi gösteriyor. İşin güzel yanı, bu iki alanın durumunu öğrenmek için kullanacağınız komut aynı zamanda bu alanlardaki değişiklikleri nasıl geri alabileceğinizi de hatırlatıyor. Diyelim ki iki dosyayı değiştirdiniz ve bu iki değişikliği ayrı birer kayıt olarak işlemek istiyorsunuz, ama yanlışlıkla <code>git add *</code> komutunu kullanarak ikisini birden hazırlık alanına aldınız. Bunlardan birini nasıl hazırlık alanından çıkarabilirsiniz? <code>git status</code> komutu size bunu da anımsatıyor:</p>
+
+<pre><code>$ git add .
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#       modified:   README.txt
+#       modified:   benchmarks.rb
+#</code></pre>
+
+<p>“Changes to be committed” yazısının hemen altında &#8220;use <code>git reset HEAD &lt;file&gt;...</code> to unstage&#8221; yazdığını görüyoruz. <code>benchmarks.rb</code> dosyasını bu öneriye uygun olarak hazırlık alanından kaldıralım:</p>
+
+<pre><code>$ git reset HEAD benchmarks.rb
+benchmarks.rb: locally modified
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#       modified:   README.txt
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#   (use &quot;git checkout -- &lt;file&gt;...&quot; to discard changes in working directory)
+#
+#       modified:   benchmarks.rb
+#</code></pre>
+
+<p>Komut biraz tuhaf, ama iş görüyor. <code>benchmarks.rb</code> dosyası hazırlık alanından kaldırıldı ama hâlâ değişmiş olarak görünüyor.</p>
+
+<h3 id='deimi_durumdaki_bir_dosyay_deimemi_duruma_geri_getirmek'>Değişmiş Durumdaki Bir Dosyayı Değişmemiş Duruma Geri Getirmek</h3>
+
+<p>Peki <code>benchmarks.rb</code> dosyasındaki değişiklikleri korumak istemiyorsanız? Yaptığınız değişiklikleri kolayca nasıl geri alacaksınız —son kayıtta nasıl görünüyorsa o haline (ya da ilk klonlandığı haline, yahut çalışma klasörünüze ilk aldığınız haline) nasıl geri getireceksiniz? Neyse ki <code>git status</code> komutu bunu nasıl yapacağınızı da söylüyor. Son örnek çıktıda hazırlık alanı dışındaki değişiklikler şöyle görünüyor:</p>
+
+<pre><code># Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#   (use &quot;git checkout -- &lt;file&gt;...&quot; to discard changes in working directory)
+#
+#       modified:   benchmarks.rb
+#</code></pre>
+
+<p>Yaptığınız değişiklikleri nasıl çöpe atabileceğinizi açıkça söylüyor (en azından Git&#8217;in 1.6.1&#8217;le başlayan yeni sürümleri bunu yapıyor —eğer daha eski bir sürümle çalışıyorsanız, kolaylık sağlayan bu özellikleri edinebilmek için programı güncellemenizi öneririz). Gelin, söyleneni yapalım:</p>
+
+<pre><code>$ git checkout -- benchmarks.rb
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#       modified:   README.txt
+#</code></pre>
+
+<p>Gördüğünüz gibi değişiklikler çöpe atıldı. Bunun tehlikeli bir komut olduğunu aklınızdan çıkarmayın: o dosyaya yaptığınız bütün değişiklikler şimdi yok oldu —dosyanın üstüne yeni bir dosya kopyaladınız. Eğer dosyadaki değişiklikleri isteemediğinizden yüzde yüz emin değilseniz asla bu komutu kullanmayın. Eğer sorun bu dosyada yaptığınız değişikliklerin başka işlemler yapmanıza engel olması ise bir sonraki bölümde ele alacağımız zulalama (_stash_) ve dallandırma (_branch_) işlemlerini kullanmanız daha iyi olacaktır.</p>
+
+<p>Unutmayın, Git&#8217;te kaydedilmiş her şey neredeyse her zaman kurtarılabilir. Silinmiş dallardaki kayıtlar ve hatta <code>--amend</code> seçeneğiyle üzerine yazılmış kayıtlar bile kurtarılabilirler (veri kurtarma konusunda bkz. <em>9. Bölüm</em>). Diğer taraftan, kaydedilmemiş bir değişikliği kaybederseniz büyük olasılıkla onu kurtarmanız mümkün olmaz.</p>
+
+<div id='nav'>
+<a href='ch2-3.html'>prev</a> | <a href='ch2-5.html'>next</a>
+</div>

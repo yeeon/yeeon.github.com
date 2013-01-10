@@ -1,0 +1,145 @@
+---
+layout: translation
+title: Pro Git 2.5 Git 基礎 與遠端協同工作
+---
+<h2 id='id508'>與遠端協同工作</h2>
+
+<p>欲在任何Git控管的專案協同作業，需要瞭解如何管理遠端的儲存庫。 遠端儲存庫讀者是置放在網際網路或網路其它地方的複本。 讀者可設定多個遠端儲存庫，唯讀或者可讀寫。 與他人協同作業時，需要管理這些遠端儲存庫，並在需要分享工作時上傳或下載資料。 管理遠端儲存庫包含瞭解如何新增遠端儲存庫、移除已失效的儲存庫、管理許多分支及定義是否要追蹤它們等等。 本節包含如何遠端管理的技巧。</p>
+
+<h3 id='id509'>顯示所有的遠端儲存庫</h3>
+
+<p>欲瞭解目前已加進來的遠端儲存庫，可執行 git remote 命令。 它會列出當初加入遠端儲存庫時指定的名稱。 若目前所在儲存庫是從其它儲存庫複製過來的，至少應該看到 origin，也就是 Git 複製儲存庫時預設取的名字：</p>
+
+<pre><code>$ git clone git://github.com/schacon/ticgit.git
+Initialized empty Git repository in /private/tmp/ticgit/.git/
+remote: Counting objects: 595, done.
+remote: Compressing objects: 100% (269/269), done.
+remote: Total 595 (delta 255), reused 589 (delta 253)
+Receiving objects: 100% (595/595), 73.31 KiB | 1 KiB/s, done.
+Resolving deltas: 100% (255/255), done.
+$ cd ticgit
+$ git remote 
+origin</code></pre>
+
+<p>也可以再加上 -v 參數，將會在名稱後方顯示其URL：</p>
+
+<pre><code>$ git remote -v
+origin	git://github.com/schacon/ticgit.git</code></pre>
+
+<p>若有一個以上遠端儲存庫，此命令會列出全部。 例如：我的 Grit 儲存庫包含以下遠端儲存庫。</p>
+
+<pre><code>$ cd grit
+$ git remote -v
+bakkdoor  git://github.com/bakkdoor/grit.git
+cho45     git://github.com/cho45/grit.git
+defunkt   git://github.com/defunkt/grit.git
+koke      git://github.com/koke/grit.git
+origin    git@github.com:mojombo/grit.git</code></pre>
+
+<p>這意謂著我們可很容易從這些伙伴的儲存庫取得最新的更新。 要留意的是只有 origin 遠端的 URL 是 SSH。 因此它是唯一我們能上傳的遠端的儲存庫。（關於這部份將在第四章介紹）</p>
+
+<h3 id='id510'>新增遠端儲存庫</h3>
+
+<p>在先前章節已提到並示範如何新增遠端儲存庫，這邊會很明確的說明如何做這項工作。 欲新增遠端儲存庫並取一個簡短的名字，執行 git remote add名字 URL：</p>
+
+<pre><code>$ git remote
+origin
+$ git remote add pb git://github.com/paulboone/ticgit.git
+$ git remote -v
+origin	git://github.com/schacon/ticgit.git
+pb	git://github.com/paulboone/ticgit.git</code></pre>
+
+<p>現在可看到命令列中的 pb 字串取代了整個 URL。 例如，若想取得 Paul 上傳的且本地端儲存庫沒有的更新，可執行 git fetch pb：</p>
+
+<pre><code>$ git fetch pb
+remote: Counting objects: 58, done.
+remote: Compressing objects: 100% (41/41), done.
+remote: Total 44 (delta 24), reused 1 (delta 0)
+Unpacking objects: 100% (44/44), done.
+From git://github.com/paulboone/ticgit
+ * [new branch]      master     -&gt; pb/master
+ * [new branch]      ticgit     -&gt; pb/ticgit</code></pre>
+
+<p>現在可在本地端使用 pb/master 存取 Paul 的 master 分支。 讀者可將它合併到本地端任一分支、或者建立一個本地端的分支指向它，如果讀者想監看它。</p>
+
+<h3 id='id511'>從遠端儲存庫擷取或合併</h3>
+
+<p>如剛才所示，欲從遠端擷取資料，可執行：</p>
+
+<pre><code>$ git fetch [remote-name]</code></pre>
+
+<p>此命令到該遠端專案將所有本地端沒有的資料拉下來。 在執行此動作後，讀者應該有參考到該遠端專案所有分支的參考點，可在任何時間點用來合併或監看。（在第三章將會提及更多關於如何使用分支的細節）</p>
+
+<p>若複製了一個儲存庫，會自動將該遠端儲存庫命令為 origin。 因此 git fetch origin 取出所有在複製或最後一下擷取後被上傳到該儲存庫的更新。 需留意的是 fetch 命令僅僅將資料拉到本地端的儲存庫，並未自動將它合併進來，也沒有修改任何目前工作的項目。 讀者得在必要時將它們手動合併進來。</p>
+
+<p>若讀者設定一個會追蹤遠端分支的分支（參考下一節及第三章，取得更多資料），可使用 git pull 命令自動擷取及合併遠端分支到目錄的分支。 這對讀者來說或許是較合適的工作流程。 而且 git clone 命令預設情況下會自動設定本地端的 master 分支追蹤被複製的遠端儲存庫的 master 分支。（假設該儲存庫有 master 分支） 執行 git pull 一般來說會從當初複製時的來源儲存庫擷取資料並自動試著合併到目前工作的版本。</p>
+
+<h3 id='id512'>上傳到遠端儲存庫</h3>
+
+<p>當讀者有想分享出去的專案，可將更新上傳到上游。 執行此動作的命令很簡單：git push 遠端儲存庫名字 分支名。 若想要上傳 master 分支到 origin 伺服器（再說一次，複製時通常自動設定此名字），接著執行以下命令即可上傳到伺服器：</p>
+
+<pre><code>$ git push origin master</code></pre>
+
+<p>此命令只有在被複製的伺服器開放寫入權限給使用者，而且同一時間內沒有其它人在上傳。 若讀者在其它同樣複製該伺服器的使用者上傳一些更新後上傳到上游，該上傳動作將會被拒絕。 讀者必須先將其它使用者上傳的資料拉下來並整合進來後才能上傳。 參考第三章瞭解如何上傳到遠端儲存庫的細節。</p>
+
+<h3 id='id513'>監看遠端儲存庫</h3>
+
+<p>若讀者想取得遠端儲存庫某部份更詳盡的資料，可執行 git remote show 遠端儲存庫名字。 若執行此命令時加上特定的遠端名字，比如說： origin。 會看到類似以下輸出：</p>
+
+<pre><code>$ git remote show origin
+* remote origin
+  URL: git://github.com/schacon/ticgit.git
+  Remote branch merged with &#39;git pull&#39; while on branch master
+    master
+  Tracked remote branches
+    master
+    ticgit</code></pre>
+
+<p>It lists the URL for the remote repository as well as the tracking branch information. The command helpfully tells you that if you’re on the master branch and you run <code>git pull</code>, it will automatically merge in the master branch on the remote after it fetches all the remote references. It also lists all the remote references it has pulled down.</p>
+
+<p>That is a simple example you’re likely to encounter. When you’re using Git more heavily, however, you may see much more information from <code>git remote show</code>:</p>
+
+<pre><code>$ git remote show origin
+* remote origin
+  URL: git@github.com:defunkt/github.git
+  Remote branch merged with &#39;git pull&#39; while on branch issues
+    issues
+  Remote branch merged with &#39;git pull&#39; while on branch master
+    master
+  New remote branches (next fetch will store in remotes/origin)
+    caching
+  Stale tracking branches (use &#39;git remote prune&#39;)
+    libwalker
+    walker2
+  Tracked remote branches
+    acl
+    apiv2
+    dashboard2
+    issues
+    master
+    postgres
+  Local branch pushed with &#39;git push&#39;
+    master:master</code></pre>
+
+<p>This command shows which branch is automatically pushed when you run <code>git push</code> on certain branches. It also shows you which remote branches on the server you don’t yet have, which remote branches you have that have been removed from the server, and multiple branches that are automatically merged when you run <code>git pull</code>.</p>
+
+<h3 id='removing_and_renaming_remotes'>Removing and Renaming Remotes</h3>
+
+<p>If you want to rename a reference, in newer versions of Git you can run <code>git remote rename</code> to change a remote’s shortname. For instance, if you want to rename <code>pb</code> to <code>paul</code>, you can do so with <code>git remote rename</code>:</p>
+
+<pre><code>$ git remote rename pb paul
+$ git remote
+origin
+paul</code></pre>
+
+<p>It’s worth mentioning that this changes your remote branch names, too. What used to be referenced at <code>pb/master</code> is now at <code>paul/master</code>.</p>
+
+<p>If you want to remove a reference for some reason — you’ve moved the server or are no longer using a particular mirror, or perhaps a contributor isn’t contributing anymore — you can use <code>git remote rm</code>:</p>
+
+<pre><code>$ git remote rm paul
+$ git remote
+origin</code></pre>
+
+<div id='nav'>
+<a href='ch2-4.html'>prev</a> | <a href='ch2-6.html'>next</a>
+</div>

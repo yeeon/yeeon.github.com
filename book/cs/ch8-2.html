@@ -1,0 +1,348 @@
+---
+layout: translation
+title: Pro Git 8.2 Git a ostatní systémy Přechod na systém Git
+---
+<h2 id='pechod_na_systm_git'>Přechod na systém Git</h2>
+
+<p>Máte-li existující základ kódu v jiném systému VCS, ale rádi byste začali používat Git, můžete do něj svůj projekt převést. Existuje přitom několik způsobů. V této části se seznámíte s několika importéry pro běžné systémy, které jsou součástí systému Git, a poté ukážeme, jak si můžete vytvořit importér vlastní.</p>
+
+<h3 id='import'>Import</h3>
+
+<p>Nyní se naučíte, jak importovat data ze dvou větších, profesionálně používaných systémů SCM – Subversion a Perforce. Oba tyto systémy jsem zvolil proto, že podle mých informací přechází na Git nejvíce uživatelů právě z nich, a také proto, že Git obsahuje vysoce kvalitní nástroje právě pro oba tyto systémy.</p>
+
+<h3 id='subversion'>Subversion</h3>
+
+<p>Pokud jste si přečetli předchozí část o používání nástrojů <code>git svn</code>, můžete získané informace použít. Příkazem <code>git svn clone</code> naklonujte repozitář, odešlete ho na nový server Git a začněte používat ten. Server Subversion můžete úplně přestat používat. Chcete-li získat historii projektu, dostanete ji tak rychle, jak jen dovedete stáhnout data ze serveru Subversion (což ovšem může chvíli trvat).</p>
+
+<p>Takový import však není úplně dokonalý a vzhledem k tomu, jak dlouho může trvat, nabízí se ještě jiná cesta. Prvním problémem jsou informace o autorovi. V Subversion má každá osoba zapisující revize v systému přiděleného uživatele, který je u zaznamenán informací o revizi. V předchozí části se u některých příkladů (výstupy příkazů <code>blame</code> nebo <code>git svn log</code>) objevilo jméno <code>schacon</code>. Jestliže vyžadujete podrobnější informace ve stylu systému Git, budete potřebovat mapování z uživatelů Subversion na autory Git. Vytvořte soubor <code>users.txt</code>, který bude toto mapování obsahovat v následující podobě:</p>
+
+<pre><code>schacon = Scott Chacon &lt;schacon@geemail.com&gt;
+selse = Someo Nelse &lt;selse@geemail.com&gt;</code></pre>
+
+<p>Chcete-li získat seznam jmen autorů používaných v SVN, spusťte tento příkaz:</p>
+
+<pre><code>$ svn log --xml | grep -P &quot;^&lt;author&quot; | sort -u | \
+      perl -pe &#39;s/&lt;author&gt;(.*?)&lt;\/author&gt;/$1 = /&#39;</code></pre>
+
+<p>Vytvoříte tím log ve formátu XML. Můžete v něm vyhledávat autory, vytvořit si vlastní seznam a XML zase vyjmout. (Tento příkaz pochopitelně funguje pouze na počítačích, v nichž je nainstalován <code>grep</code>, <code>sort</code> a <code>perl</code>.) Poté tento výstup přesměrujte do souboru users.txt, abyste mohli vedle každého záznamu přidat stejná data o uživatelích Git.</p>
+
+<p>Tento soubor můžete dát k dispozici nástroji <code>git svn</code>, aby mohl přesněji zmapovat informace o autorech. Nástroji <code>git svn</code> můžete také zadat, aby ignoroval metadata, která systém Subversion normálně importuje: zadejte parametr <code>--no-metadata</code> k příkazu <code>clone</code> nebo <code>init</code>. Váš příkaz <code>import</code> pak bude mít tuto podobu:</p>
+
+<pre><code>$ git-svn clone http://my-project.googlecode.com/svn/ \
+      --authors-file=users.txt --no-metadata -s my_project</code></pre>
+
+<p>Import ze systému Subversion v adresáři <code>my_project</code> by měl nyní vypadat o něco lépe. Revize už nebudou mít tuto podobu:</p>
+
+<pre><code>commit 37efa680e8473b615de980fa935944215428a35a
+Author: schacon &lt;schacon@4c93b258-373f-11de-be05-5f7a86268029&gt;
+Date:   Sun May 3 00:12:22 2009 +0000
+
+    fixed install - go to trunk
+
+    git-svn-id: https://my-project.googlecode.com/svn/trunk@94 4c93b258-373f-11de-
+    be05-5f7a86268029</code></pre>
+
+<p>they look like this:</p>
+
+<pre><code>commit 03a8785f44c8ea5cdb0e8834b7c8e6c469be2ff2
+Author: Scott Chacon &lt;schacon@geemail.com&gt;
+Date:   Sun May 3 00:12:22 2009 +0000
+
+    fixed install - go to trunk</code></pre>
+
+<p>Nejenže teď pole Author vypadá podstatně lépe, ale navíc jste se zbavili i záznamu <code>git-svn-id</code>.</p>
+
+<p>Po importu bude nutné data trochu vyčistit. Zaprvé je nutné vyčistit nejasné reference, které vytvořil příkaz <code>git svn</code>. Nejprve přesunete značky tak, aby se z nich staly skutečné značky, a ne podivné vzdálené větve. V dalším kroku přesunete zbytek větví a uděláte z nich větve lokální.</p>
+
+<p>Abyste značky upravili na korektní gitové značky, spusťte</p>
+
+<pre><code>$ git for-each-ref refs/remotes/tags | cut -d / -f 4- | grep -v @ | while read tagname; do git tag &quot;$tagname&quot; &quot;tags/$tagname&quot;; git branch -r -d &quot;tags/$tagname&quot;; done</code></pre>
+
+<p>Tím se reference, které označovaly vzdálené větve a začínaly <code>tag/</code>, převedou na skutečné (prosté) značky.</p>
+
+<p>Ze zbytku referencí vytvořte v repozitáři <code>refs/remotes</code> lokální větve:</p>
+
+<pre><code>$ git for-each-ref refs/remotes | cut -d / -f 3- | grep -v @ | while read branchname; do git branch &quot;$branchname&quot; &quot;refs/remotes/$branchname&quot;; git branch -r -d &quot;$branchname&quot;; done</code></pre>
+
+<p>Všechny staré větve jsou nyní skutečnými větvemi Git a všechny staré značky jsou nyní skutečnými značkami Git. Poslední věcí, která ještě zbývá, je přidat nový server Git jako vzdálený repozitář a odeslat do něj revize. Tady je příklad, jak můžete váš server přidat jako vzdálený:</p>
+
+<pre><code>$ git remote add origin git@my-git-server:myrepository.git</code></pre>
+
+<p>Protože do něj chcete odeslat všechny své větve a značky, můžete použít příkaz:</p>
+
+<pre><code>$ git push origin --all
+$ git push origin --tags</code></pre>
+
+<p>Na novém serveru Git tak nyní máte v úhledném, čistém importu uloženy všechny větve a značky.</p>
+
+<h3 id='perforce'>Perforce</h3>
+
+<p>Dalším systémem, z nějž budeme importovat, bude Perforce. Také importér Perforce je distribuován se systémem Git, avšak pouze v části <code>contrib</code> zdrojového kódu. Není standardně dostupný jako <code>git svn</code>. Abyste ho mohli spustit, budete muset stáhnout zdrojový kód systému Git ze serveru git.kernel.org:</p>
+
+<pre><code>$ git clone git://git.kernel.org/pub/scm/git/git.git
+$ cd git/contrib/fast-import</code></pre>
+
+<p>V adresáři <code>fast-import</code> byste měli najít spustitelný skript napsaný v jazyce Python pojmenovaný <code>git-p4</code>. Aby vám import fungoval, musíte mít v počítači nainstalován Python a nástroj <code>p4</code>. Budete chtít například importovat projekt Jam z veřejného úložiště Perforce Public Depot. K nastavení svého klienta budete muset exportovat proměnnou prostředí P4PORT, která bude ukazovat na depot Perforce:</p>
+
+<pre><code>$ export P4PORT=public.perforce.com:1666</code></pre>
+
+<p>Spusťte příkaz <code>git-p4 clone</code>, jímž importujete projekt Jam ze serveru Perforce. K příkazu zadejte depot a cestu k projektu, kromě toho také cestu, kam chcete projekt importovat:</p>
+
+<pre><code>$ git-p4 clone //public/jam/src@all /opt/p4import
+Importing from //public/jam/src@all into /opt/p4import
+Reinitialized existing Git repository in /opt/p4import/.git/
+Import destination: refs/remotes/p4/master
+Importing revision 4409 (100%)</code></pre>
+
+<p>Přejdete-li do adresáře <code>/opt/p4import</code> a spustíte příkaz <code>git log</code>, uvidíte, co jste importovali:</p>
+
+<pre><code>$ git log -2
+commit 1fd4ec126171790efd2db83548b85b1bbbc07dc2
+Author: Perforce staff &lt;support@perforce.com&gt;
+Date:   Thu Aug 19 10:18:45 2004 -0800
+
+    Drop &#39;rc3&#39; moniker of jam-2.5.  Folded rc2 and rc3 RELNOTES into
+    the main part of the document.  Built new tar/zip balls.
+
+    Only 16 months later.
+
+    [git-p4: depot-paths = &quot;//public/jam/src/&quot;: change = 4409]
+
+commit ca8870db541a23ed867f38847eda65bf4363371d
+Author: Richard Geiger &lt;rmg@perforce.com&gt;
+Date:   Tue Apr 22 20:51:34 2003 -0800
+
+    Update derived jamgram.c
+
+    [git-p4: depot-paths = &quot;//public/jam/src/&quot;: change = 3108]</code></pre>
+
+<p>V každé revizi si můžete všimnout identifikátoru <code>git-p4</code>. Je dobré ponechat tu identifikátor pro případ, že budete někdy v budoucnu potřebovat odkázat na číslo změny Perforce. Pokud ale chcete identifikátor přesto odstranit, teď, dokud jste nezačali pracovat na novém repozitáři, je ta správná chvíle. K odstranění všech řetězců identifikátoru najednou můžete použít příkaz <code>git filter-branch</code>:</p>
+
+<pre><code>$ git filter-branch --msg-filter &#39;
+        sed -e &quot;/^\[git-p4:/d&quot;
+&#39;
+Rewrite 1fd4ec126171790efd2db83548b85b1bbbc07dc2 (123/123)
+Ref &#39;refs/heads/master&#39; was rewritten</code></pre>
+
+<p>Spustíte-li příkaz <code>git log</code>, uvidíte, že se změnily všechny kontrolní součty revizí SHA-1, zato všechny řetězce <code>git-p4</code> ze zpráv k revizím zmizely:</p>
+
+<pre><code>$ git log -2
+commit 10a16d60cffca14d454a15c6164378f4082bc5b0
+Author: Perforce staff &lt;support@perforce.com&gt;
+Date:   Thu Aug 19 10:18:45 2004 -0800
+
+    Drop &#39;rc3&#39; moniker of jam-2.5.  Folded rc2 and rc3 RELNOTES into
+    the main part of the document.  Built new tar/zip balls.
+
+    Only 16 months later.
+
+commit 2b6c6db311dd76c34c66ec1c40a49405e6b527b2
+Author: Richard Geiger &lt;rmg@perforce.com&gt;
+Date:   Tue Apr 22 20:51:34 2003 -0800
+
+    Update derived jamgram.c</code></pre>
+
+<p>Váš import je připraven k odeslání na nový server Git.</p>
+
+<h3 id='vlastn_importr'>Vlastní importér</h3>
+
+<p>Není-li vaším současným systémem ani Subversion, ani Perforce, zkuste vyhledat importér online. Kvalitní importéry se dají najít pro CVS, Clear Case, Visual Source Safe, dokonce i adresář s archivy. Pokud vám nefunguje ani jeden z těchto nástrojů, používáte méně častý nástroj nebo potřebujete speciální proces importu ještě z jiného důvodu, použijte <code>git fast-import</code>. Tento příkaz načítá ze vstupů stdin jednoduché instrukce k zapsáni specifických dat systému Git. Je podstatně jednodušší vytvořit objekty Git tímto způsobem než spouštět syrové příkazy Git či se pokoušet zapsat syrové objekty (podrobnější informace v kapitole 9). Tímto způsobem lze vytvořit importovací skript, který bude načítat potřebné informace ze systému, z nějž import provádíte, a vypíše jasné instrukce do výstupu stdout. Tento program můžete spustit a jeho výstup nechat zpracovat příkazem <code>git fast-import</code>.</p>
+
+<p>Jako rychlou ukázku napíšeme jednoduchý importér. Řekněme, že pracujete na projektu, který příležitostně zálohujete zkopírováním pracovního adresáře do zálohového, datem označeného adresáře <code>back_YYYY_MM_DD</code>, a ten chcete nyní importovat do systému Git. Váš adresář má tuto strukturu:</p>
+
+<pre><code>$ ls /opt/import_from
+back_2009_01_02
+back_2009_01_04
+back_2009_01_14
+back_2009_02_03
+current</code></pre>
+
+<p>Chcete-li importovat adresář Git, budeme se muset podívat na to, jak Git ukládá svá data. Jak si možná vzpomínáte, říkali jsme, že Git je v podstatě seznam odkazů na objekty revizí, které ukazují na určitý snímek obsahu. Jediné, co tedy musíte udělat, je sdělit příkazu <code>fast-import</code>, co je obsahem snímků, jaká data revizí na ně ukazují a pořadí, v němž budou převzaty. Vaše strategie tedy bude spočívat v tom, že postupně projdete jednotlivé snímky a vytvoříte revize s obsahem každého adresáře, přičemž každá revize bude odkazovat na revizi předchozí.</p>
+
+<p>Stejně jako v části „Příklad systémem Git kontrolovaných standardů“ v kapitole 7 použijeme i tentokrát Ruby, s nímž většinou pracuji a který je srozumitelný. Tento příklad můžete ale beze všeho napsat v čemkoli, co vám vyhovuje. Jedinou podmínkou je, aby byly potřebné informace zapsány do výstupu stdout.</p>
+
+<p>Na začátku přejdete do cílového adresáře a identifikujete všechny podadresáře, z nichž bude každý představovat jeden snímek, který chcete importovat jako revizi. Přejdete do každého podadresáře a zadáte příkazy potřebné k jeho exportu. Základní smyčka bude mít tuto podobu:</p>
+
+<pre><code>last_mark = nil
+
+# loop through the directories
+Dir.chdir(ARGV[0]) do
+  Dir.glob(&quot;*&quot;).each do |dir|
+    next if File.file?(dir)
+
+    # move into the target directory
+    Dir.chdir(dir) do
+      last_mark = print_export(dir, last_mark)
+    end
+  end
+end</code></pre>
+
+<p>V každém adresáři spustíte soubor <code>print_export</code>, který vezme manifest a známku předchozího snímku a poskytne manifest a označovač tohoto snímku. Tímto způsobem je lze řádně spojit. „Označovač“ (angl. mark) je termín používaný v souvislosti s metodou <code>fast-import</code>. Jedná se o identifikátor, který jednoznačně přiřadíte revizi a lze ho použít k odkazování na tuto revizi z revizí ostatních. Prvním krokem, který tak při metodě se souborem <code>print_export</code> uděláte, bude vygenerování označovače na základě názvu adresáře:</p>
+
+<pre><code>mark = convert_dir_to_mark(dir)</code></pre>
+
+<p>Provedete to tak, že vytvoříte skupinu adresářů a jako označovač použijete hodnotu indexu, neboť označovač musí být celé číslo. Celý postup vypadá takto:</p>
+
+<pre><code>$marks = []
+def convert_dir_to_mark(dir)
+  if !$marks.include?(dir)
+    $marks &lt;&lt; dir
+  end
+  ($marks.index(dir) + 1).to_s
+end</code></pre>
+
+<p>Nyní jste označili revizi celým číslem a zbývá stanovit datum pro metadata revize. Protože je datum obsaženo v názvu adresáře, lze ho vyčíst odtud. Dalším řádkem v souboru <code>print_export</code> bude</p>
+
+<pre><code>date = convert_dir_to_date(dir)</code></pre>
+
+<p>kde <code>convert_dir_to_date</code> je definováno jako:</p>
+
+<pre><code>def convert_dir_to_date(dir)
+  if dir == &#39;current&#39;
+    return Time.now().to_i
+  else
+    dir = dir.gsub(&#39;back_&#39;, &#39;&#39;)
+    (year, month, day) = dir.split(&#39;_&#39;)
+    return Time.local(year, month, day).to_i
+  end
+end</code></pre>
+
+<p>Tím dostanete celé číslo pro data každého adresáře. Posledními metadaty, jež budete pro všechny revize potřebovat, jsou informace o autorovi revize, které zadáte v globální proměnné:</p>
+
+<pre><code>$author = &#39;Scott Chacon &lt;schacon@example.com&gt;&#39;</code></pre>
+
+<p>Nyní je už vše připraveno k vygenerování dat revizí pro váš importér. Úvodní informace sděluje, že definujete objekt revize a na jaké větvi se nachází. Následuje vygenerovaný označovač, informace o autorovi revize a zpráva k revizi, po ní následuje eventuální předchozí revize. Kód má tuto podobu:</p>
+
+<pre><code># print the import information
+puts &#39;commit refs/heads/master&#39;
+puts &#39;mark :&#39; + mark
+puts &quot;committer #{$author} #{date} -0700&quot;
+export_data(&#39;imported from &#39; + dir)
+puts &#39;from :&#39; + last_mark if last_mark</code></pre>
+
+<p>Časové pásmo definujete napevno (&#8211;0700), protože je to jednoduché. Pokud importujete z jiného systému, musíte zadat časové pásmo jako posun. Zpráva k revizi musí být ve speciálním formátu:</p>
+
+<pre><code>data (size)\n(contents)</code></pre>
+
+<p>Tento formát tedy obsahuje slovo data, velikost načítaných dat (size), nový řádek a konečně data samotná (contents). Protože budete stejný formát potřebovat i později, k určení obsahu souboru vytvoříte pomocnou metodu – <code>export_data</code>:</p>
+
+<pre><code>def export_data(string)
+  print &quot;data #{string.size}\n#{string}&quot;
+end</code></pre>
+
+<p>Teď už zbývá jen určit obsah souborů všech snímků. To bude snadné, protože máte všechny v jednom adresáři. Zadejte příkaz <code>deleteall</code> a k němu přidejte obsah každého souboru v adresáři. Git pak odpovídajícím způsobem nahraje všechny snímky:</p>
+
+<pre><code>puts &#39;deleteall&#39;
+Dir.glob(&quot;**/*&quot;).each do |file|
+  next if !File.file?(file)
+  inline_data(file)
+end</code></pre>
+
+<p>Poznámka: Vzhledem k tomu, že mnoho systémů chápe revize jako změny od jednoho zapsání k druhému, přijímá fast-import také příkazy s každým zapsáním a zjišťuje, které soubory byly přidány, odstraněny nebo změněny a co je jejich novým obsahem. Mohli byste také vypočítat rozdíly mezi snímky a poskytnout pouze tato data. To je však o něco složitější. Stejně tak můžete systému Git zadat všechna data a přenechat výpočet na něm. Pokud je pro vaše data tato metoda vhodnější, odkážeme vás na manuálovou stránku <code>fast-import</code>, kde najdete podrobnosti o tom, jak zadat data tímto způsobem.</p>
+
+<p>Formát pro výpis obsahu nového souboru nebo určení změněného souboru s novým obsahem je následující:</p>
+
+<pre><code>M 644 inline path/to/file
+data (size)
+(file contents)</code></pre>
+
+<p>644 je v tomto případě režim (jde-li o spustitelné soubory, budete je muset vyhledat a zadat režim 755) a výraz inline říká, že obsah uvedete bezprostředně po tomto řádku. Metoda <code>inline_data</code> má tuto podobu:</p>
+
+<pre><code>def inline_data(file, code = &#39;M&#39;, mode = &#39;644&#39;)
+  content = File.read(file)
+  puts &quot;#{code} #{mode} inline #{file}&quot;
+  export_data(content)
+end</code></pre>
+
+<p>Znovu tu využijete metodu <code>export_data</code>, kterou jste aplikovali před chvílí. Jedná se totiž o stejný způsob, jakým jste specifikovali data zprávy k revizi.</p>
+
+<p>Poslední věcí, kterou musíte udělat, je vrátit aktuální označovač, aby mohl být zadán do příští iterace:</p>
+
+<pre><code>return mark</code></pre>
+
+<p>Poznámka: Pokud používáte Windows, budete muset provést jeden krok navíc. Jak už jsem se zmínil, Windows používají nahrazují znak konce řádku posloupností CRLF, zatímco git fast-import očekává pouze LF. Abychom tento problém obešli a aby si git fast-import nestěžoval, musíte ruby říct, aby místo LF používal CRLF:</p>
+
+<pre><code>$stdout.binmode</code></pre>
+
+<p>A to je celé. Spustíte-li tento skript, získáte obsah v následující podobě:</p>
+
+<pre><code>$ ruby import.rb /opt/import_from
+commit refs/heads/master
+mark :1
+committer Scott Chacon &lt;schacon@geemail.com&gt; 1230883200 -0700
+data 29
+imported from back_2009_01_02deleteall
+M 644 inline file.rb
+data 12
+version two
+commit refs/heads/master
+mark :2
+committer Scott Chacon &lt;schacon@geemail.com&gt; 1231056000 -0700
+data 29
+imported from back_2009_01_04from :1
+deleteall
+M 644 inline file.rb
+data 14
+version three
+M 644 inline new.rb
+data 16
+new version one
+(...)</code></pre>
+
+<p>Pro spuštění importéru přesměrujte tento výstup do příkazu <code>git fast-import</code>. Příkaz spouštějte v adresáři Gitu, do nějž chcete data importovat. Můžete vytvořit nový adresář a spustit v něm příkaz <code>git init</code>, jímž si vytvoříte nový výchozí bod. Poté spusťte svůj skript:</p>
+
+<pre><code>$ git init
+Initialized empty Git repository in /opt/import_to/.git/
+$ ruby import.rb /opt/import_from | git fast-import
+git-fast-import statistics:
+---------------------------------------------------------------------
+Alloc&#39;d objects:       5000
+Total objects:           18 (         1 duplicates                  )
+      blobs  :            7 (         1 duplicates          0 deltas)
+      trees  :            6 (         0 duplicates          1 deltas)
+      commits:            5 (         0 duplicates          0 deltas)
+      tags   :            0 (         0 duplicates          0 deltas)
+Total branches:           1 (         1 loads     )
+      marks:           1024 (         5 unique    )
+      atoms:              3
+Memory total:          2255 KiB
+       pools:          2098 KiB
+     objects:           156 KiB
+---------------------------------------------------------------------
+pack_report: getpagesize()            =       4096
+pack_report: core.packedGitWindowSize =   33554432
+pack_report: core.packedGitLimit      =  268435456
+pack_report: pack_used_ctr            =          9
+pack_report: pack_mmap_calls          =          5
+pack_report: pack_open_windows        =          1 /          1
+pack_report: pack_mapped              =       1356 /       1356
+---------------------------------------------------------------------</code></pre>
+
+<p>Proběhne-li proces úspěšně, podá vám obsáhlou statistiku o tom, co bylo provedeno. V tomto případě jsme importovali celkem 18 objektů 5 revizí do 1 větve. Nyní si můžete nechat příkazem <code>git log</code> zobrazit svoji novou historii:</p>
+
+<pre><code>$ git log -2
+commit 10bfe7d22ce15ee25b60a824c8982157ca593d41
+Author: Scott Chacon &lt;schacon@example.com&gt;
+Date:   Sun May 3 12:57:39 2009 -0700
+
+    imported from current
+
+commit 7e519590de754d079dd73b44d695a42c9d2df452
+Author: Scott Chacon &lt;schacon@example.com&gt;
+Date:   Tue Feb 3 01:00:00 2009 -0700
+
+    imported from back_2009_02_03</code></pre>
+
+<p>A máme to tu — krásný, čistý repozitář Git. Měli bychom také dodat, že nejsou načtena žádná data, zatím neproběhl checkout žádných souborů do pracovního adresáře. Chcete-li je získat, musíte vaši větev resetovat do místa, kde se nyní nachází větev <code>master</code>:</p>
+
+<pre><code>$ ls
+$ git reset --hard master
+HEAD is now at 10bfe7d imported from current
+$ ls
+file.rb  lib</code></pre>
+
+<p>Nástroj <code>fast-import</code> vám nabízí ještě spoustu dalších možností – nastavení různých režimů, práci s binárními daty, manipulaci s několika větvemi a jejich slučování, značky, ukazatele postupu atd. Několik příkladů složitějších scénářů si můžete prohlédnout v adresáři <code>contrib/fast-import</code> ve zdrojovém kódu Git. Jedním z těch nejlepších je už zmíněný skript<code>git-p4</code>.</p>
+
+<div id='nav'>
+<a href='ch8-1.html'>prev</a> | <a href='ch8-3.html'>next</a>
+</div>

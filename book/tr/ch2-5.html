@@ -1,0 +1,147 @@
+---
+layout: translation
+title: Pro Git 2.5 Git&#8217;in Temelleri Uzak Uçbirimlerle Çalışmak
+---
+<h2 id='uzak_ubirimlerle_almak'>Uzak Uçbirimlerle Çalışmak</h2>
+
+<p>Bir Git projesine katkıda bulunabilmek için uzaktaki yazılım havuzlarını nasıl düzenleyeceğinizi bilmeniz gerekir. Uzaktaki yazılım havuzları, projenizin Internet&#8217;te ya da başka bir ağda barındırılan sürümleridir. Birden fazla uzak yazılım havuzunuz olabilir, bunlardan herbiri sizin için ya salt okunur ya da okunur/yazılır durumdadır. Başkalarıyla ortak çalışmak, bu yazılım havuzlarını düzenlemeyi, onlardan veri çikip (_pull_) onlara veri iterek (_push_) çalışmalarınızı paylaşmayı gerektirir.</p>
+
+<p>Uzaktaki yazılım havuzlarınızı düzenleyebilmek için, projenize uzak yazılım havuzlarının nasıl ekleneceğini, kullanılmayan havuzların nasıl çıkarılacağını, çeşitli uzak dalları düzenlemeyi ve onların izlenen dallar olarak belirleyip belirlememeyi ve daha başka şeyleri gerektirir. Bu alt bölümde bu uzağı yönetme yeteneklerini inceleyeceğiz.</p>
+
+<h3 id='uzak_ubirimleri_grntleme'>Uzak Uçbirimleri Görüntüleme</h3>
+
+<p>Projenizde hangi uzak sunucuları ayarladığınınızı görme için <code>git remote</code> komutunu kullanabilirsiniz. Bu komut, herbir uzak uçbirimin belirlenmiş kısa adını görüntüler. Eğer yazılım havuzunuzu bir yerden klonlamışsanız, en azından <em>origi</em> uzak uçbirimini görmelisiniz —bu Git&#8217;in klonlamanın yapıldığı sunucuya verdiği öntanımlı addır.</p>
+
+<pre><code>$ git clone git://github.com/schacon/ticgit.git
+Initialized empty Git repository in /private/tmp/ticgit/.git/
+remote: Counting objects: 595, done.
+remote: Compressing objects: 100% (269/269), done.
+remote: Total 595 (delta 255), reused 589 (delta 253)
+Receiving objects: 100% (595/595), 73.31 KiB | 1 KiB/s, done.
+Resolving deltas: 100% (255/255), done.
+$ cd ticgit
+$ git remote
+origin</code></pre>
+
+<p><code>-v</code> seçeneğini kullanarak Git&#8217;in bu kısa ad için depoladığı URL&#8217;yi de görebilirsiniz:</p>
+
+<pre><code>$ git remote -v
+origin	git://github.com/schacon/ticgit.git</code></pre>
+
+<p>Projenizde birden çok uzak uçbirim varsa, bu komut hepsini listeleyecektir. Örneğin, benim Git yazılım havuzum şöyle görünüyor:</p>
+
+<pre><code>$ cd grit
+$ git remote -v
+bakkdoor  git://github.com/bakkdoor/grit.git
+cho45     git://github.com/cho45/grit.git
+defunkt   git://github.com/defunkt/grit.git
+koke      git://github.com/koke/grit.git
+origin    git@github.com:mojombo/grit.git</code></pre>
+
+<p>Bu demek oluyor ki bu kullanıcıların herhangi birinden kolaylıkla çekme işlemi (_pull_) yapabiliriz. Fakat dikkat ederseniz, yalnızca <em>origin</em> uçbiriminin SSH URL&#8217;si var, yani yalnızca o hazuva kod itebilirim (_push_) (niye böyle olduğunu <em>4. Bölüm</em>&#8216;de inceleyeceğiz)</p>
+
+<h3 id='uzak_ubirimler_eklemek'>Uzak Uçbirimler Eklemek</h3>
+
+<p>Önceki alt bölümlerde uzak uçbirim eklemekten söz ettim ve bazı örnekler verdim, ama bir kez daha konuyu açıkça incelemekte yarar var. Uzaktaki bir yazılım havuzunu kısa bir ad vererek eklemek için <code>git remote add [kisa_ad] [url]</code> komutunu çalıştırın:</p>
+
+<pre><code>$ git remote
+origin
+$ git remote add pb git://github.com/paulboone/ticgit.git
+$ git remote -v
+origin	git://github.com/schacon/ticgit.git
+pb	git://github.com/paulboone/ticgit.git</code></pre>
+
+<p>Artık bütün bir URL yerine <code>pb</code>&#8216;yi kullanabilirsiniz. Örneğin, Paul&#8217;ün yazılım havuzunda bulunan ama sizde bulunmayan bütün bilgileri getirmek için <code>git fetch pb</code> komutunu kullanabilirsiniz:</p>
+
+<pre><code>$ git fetch pb
+remote: Counting objects: 58, done.
+remote: Compressing objects: 100% (41/41), done.
+remote: Total 44 (delta 24), reused 1 (delta 0)
+Unpacking objects: 100% (44/44), done.
+From git://github.com/paulboone/ticgit
+ * [new branch]      master     -&gt; pb/master
+ * [new branch]      ticgit     -&gt; pb/ticgit</code></pre>
+
+<p>Paul&#8217;ün <code>mastertr</code> dalı sizin yazılım havuzunuzda da <code>pb/master</code> olarak erişilebilir durumdadır —kendi dallarınızdan biriyle birleştirebilir (_merge_) ya da bir yerel dal olarak seçip içeriğini inceleyebilirsiniz.</p>
+
+<h3 id='uzak_ubirimlerden_getirme_ve_ekme_lemi_yapmak'>Uzak Uçbirimlerden Getirme ve Çekme İşlemi Yapmak</h3>
+
+<p>Biraz önce gördüğünüz gibi, uzaktaki yazılım havuzlarından veri almak için şu komutu kullanabilirsiniz:</p>
+
+<pre><code>$ git fetch [remote-name]</code></pre>
+
+<p>Bu komut, söz konusu uzaktaki yazılım havuuzna gidip orada bulunup da sizin projenizde bulunmayan bütün veriyi getirir. Bunu yaptıktan sonra sizin projenizde o uzak yazılım havuzundaki bütün dallarak referanslar oluşur —ki bunları birleştirme yapmak ya da içeriği incelemek için kullanabilirsiniz. (Dalların ne olduğunu ve onları nasıl kullanabileceğinizi <em>3. Bölüm</em>&#8216;de ayrınlıtı biçimde inceleyeceğiz.)</p>
+
+<p>Bir yazılım havuzunu klonladığınızda, klonlama komutu söz konusu kaynak yazılım havuzunu <em>origin</em> adıyla uzak uçbirimler arasına ekler. Dolayısıya, <code>git fetch origin</code> komutu, klonlamayı yaptığınızdan (ya da en son getirme işlemini (_fetch_) yatığınızdan) beri sunucuya itilmiş yeni değişiklikleri getirir. Unutmayın, <code>fetch</code> komutu veriyi yeler yazılım havuzunuza indirir —otomatik olarak sizin yaptıklarınızla birleştirmeye, ya da çalıştığınız şeyler üzerinde değişiklik yapmaya kalkışmaz. Hazır olduğunuzda birleştirme işlemini sizin yapmanız gerekir.</p>
+
+<p>Uzaktaki bir dalı izlemek üzere ayarlanmış bir dalınız varsa (daha fazla bilgi için sonraki alt bölüme ve <em>3. Bölüm</em>&#8216;e bakınız) bu dal üzerinde <code>git pull</code> komutunu kullanarak uzaktaki yazılım havuzundaki veriyi hem getirip hem de mevcut dalınızla birleştirebilirsiniz. Bu çalışması daha kolay bir düzen olabilir; bu arada, <code>git clone </code> komutu, otomatik olarak, yerel yazılım havuzunuzda, uzaktaki yazılım havuzunun <code>master</code> dalını takip eden bir <code>master</code> dalı oluşturur (uzaktaki yazılım havuzunun <code>master</code> adında bir dalı olması koşuluyla). <code>git pull</code> komutu genellikle yereldeki yazılım havuzunuza kaynaklık eden sunucudan veriyi getirip otomatik olarak üzerinde çalışmakta olduğunuz dalla birleştirir.</p>
+
+<h3 id='uzaktaki_yazlm_havuzuna_veri_tmek'>Uzaktaki Yazılım Havuzuna Veri İtmek</h3>
+
+<p>Projeniz paylaşmak istediğiniz bir hale geldiğinde, yaptıklarınızı kaynağa itmeniz gerekir. Bunun için kullanılan komut basittir: <code>git push [uzak-sunucu-adi] [dal-adi]</code>. Projenizdeki <code>master</code> dalını <code>origin</code> sunucunuzdaki <code>master</code> dalına itmek isterseniz (yineleyelim; kolanlama işlemi genellikle bu isimleri otomatik olarak oluşturur), şu komutu kullanabilirsiniz:</p>
+
+<pre><code>$ git push origin master</code></pre>
+
+<p>Bu komut, yalnızca yazma yetkisine sahip olduğunuz bir sunucudan klonlama yapmışsanız ve son getirme işleminizden beri hiçkimse itme işlemi yapmamışsa istediğiniz sonucu verir. Eğer sizinle birlikte bir başkası daha klonlama yapmışsa ve o kişi sizden önce itme yapmışsa, sizin itme işleminiz reddedilir. İtmeden önce sizden önce itilmiş değişiklikleri çekip kendi çalışmanızla birleştirmeniz gerekir. Uzaktaki yazılım havuzlarına itme yapmak konusunda daha ayrıntılı bilgi için bkz. <em>3. Bölüm</em>.</p>
+
+<h3 id='uzak_ubirim_hakknda_bilgi_almak'>Uzak Uçbirim Hakkında Bilgi Almak</h3>
+
+<p>Belirli bir uzak uçbirim hakkında daha fazla bilgi almak isterseniz <code>git remote show [ucbirim-adi]</code> komutunu kullanabilirsiniz. Bu komutu <code>origin</code> gibi belirli bir uçbirim kısa adıyla kullanırsanız şöyle bir sonuç alırsınız:</p>
+
+<pre><code>$ git remote show origin
+* remote origin
+  URL: git://github.com/schacon/ticgit.git
+  Remote branch merged with &#39;git pull&#39; while on branch master
+    master
+  Tracked remote branches
+    master
+    ticgit</code></pre>
+
+<p>Bu, uçbirimin URL&#8217;sini ve dalların izlenme durumunu gösterir. Komut, size, eğer <code>master</code> dalda iseniz ve <code>git pull</code> komutunu çalıştırırsanız, bütün referansları uzak uçbirimden indirip uzaktaki <code>master</code> dalından yerel <code>master</code> dalına birleştirme yapacağını da söylüyor. Ayrıca, ekmiş olduğu bütün uzak dalları da bir liste halinde veriyor.</p>
+
+<p>Yukarıdaki verdiğimiz, basit bir örnekti. Git&#8217;i daha yoğun biçimde kullandığınızda, <code>git remote show</code> komutu çok daha fazla bilgi içerecektir:</p>
+
+<pre><code>$ git remote show origin
+* remote origin
+  URL: git@github.com:defunkt/github.git
+  Remote branch merged with &#39;git pull&#39; while on branch issues
+    issues
+  Remote branch merged with &#39;git pull&#39; while on branch master
+    master
+  New remote branches (next fetch will store in remotes/origin)
+    caching
+  Stale tracking branches (use &#39;git remote prune&#39;)
+    libwalker
+    walker2
+  Tracked remote branches
+    acl
+    apiv2
+    dashboard2
+    issues
+    master
+    postgres
+  Local branch pushed with &#39;git push&#39;
+    master:master</code></pre>
+
+<p>Bu çıktı, belirli dallarda <code>git push</code> komutunu çalıştırdığınızda hangi dalların otomatik olarak itileceğini gösteriyor. Buna ek olarak uzak uçbirimde bulunup da sizin projenizde henüz bulunmayan uzak dalları, uzak uçbirimden silinmiş olduuğu halde sizin projenizde bulunan dalları ve <code>git pull</code> komutunu çalıştırdığınızda otomatik olarak birleştirme işlemine uğrayacak birden çok daı gösteriyor.</p>
+
+<h3 id='uzan_ubirimleri_kaldrmak_ve_yeniden_adlandrmak'>Uzan Uçbirimleri Kaldırmak ve Yeniden Adlandırmak</h3>
+
+<p>Bir uçbirimin kısa adını değiştirmek isterseniz, Git&#8217;in yeni sürümlerinde bunu <code>git remote rename</code> komutuyla yapabilirsiniz. Örneğin, <code>pb</code> uçbirimini <code>paul</code> diye yeniden adlandımak isterseniz, bunu <code>git remote rename</code>&#8216;i kullanarak yapabilirsiniz:</p>
+
+<pre><code>$ git remote rename pb paul
+$ git remote
+origin
+paul</code></pre>
+
+<p>Bu işlemin uçbirim dal adlarını da değiştirdiğini hatırlatmakta yarar var. Bu işlemden önce <code>pb/master</code> olan dalın adı artık <code>paul/master</code> olacaktır.</p>
+
+<p>Bir uçbirim referansını herhangi bir nedenle —sunucuyu taşımış ya da belirli bir yansısyı artık kullanmıyor olabilirsiniz; ya da belki katılımcılardan birisi artık katkıda bulunmuyordur— kaldırmak isterseniz <code>git remote rm</code> komutunu kullanabilirsiniz:</p>
+
+<pre><code>$ git remote rm paul
+$ git remote
+origin</code></pre>
+
+<div id='nav'>
+<a href='ch2-4.html'>prev</a> | <a href='ch2-6.html'>next</a>
+</div>

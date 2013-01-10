@@ -1,0 +1,83 @@
+---
+layout: translation
+title: Pro Git 3.1 Git Branching Che cos&#8217;è un Branch
+---
+<h2 id='che_cos_un_branch'>Che cos&#8217;è un Branch</h2>
+
+<p>Per capire veramente il modo con cui Git fa il branching, dobbiamo fare un passo indietro ed esaminare come Git memorizza le sue informazioni. Come puoi ricordare dal capitolo 1, Git non memorizza i dati come una serie di cambiamenti o delta, ma come una serie di istantanee (snapshot).</p>
+
+<p>Quando esegui un commit in Git, Git memorizza un oggetto commit che contiene un riferimento alla snapshot del contenuto che hai inserito, i metadata dell&#8217;autore e del messaggio, e zero o più riferimenti al commit (o ai commit) che erano i diretti genitori di questo commit: nessun genitore per il primo commit, un genitore per un commit normale, genitori multipli per un commit che è il risultato di un merge di due o più branches.</p>
+
+<p>Per immaginare questo, presumi di avere una cartella che contiene tre file, li inserisci nell&#8217;area di stage ed esegui il commit. Inserendoli nell&#8217;area di stage, ad ogni file va aggiunta la checksum (l&#8217;hash SHA-1 che abbiamo menzionato nel Capitolo 1), memorizza la versione del file nella repository di Git (Git si riferisce ad essa come blobs), e aggiunge la checksum all&#8217;area di stage:</p>
+
+<p>$ git add README test.rb LICENSE $ git commit -m &#8216;commit iniziale del mio progetto&#8217;</p>
+
+<p>Quando crei il commit eseguendo <code>git commit</code>, Git esegue il checksum per ogni sottocartella (in questo caso, solo la cartella radice (root) del progetto) e salva questi tre oggetti nel repository di Git. Dopo Git crea un oggetto commit che ha i metadata e un puntatore alla radice del progetto in modo che possa ricreare questo snapshot quando necessario.</p>
+
+<p>La tua repository Git ora contiene 5 oggetti: un blob per il contenuto di ognuno dei tuoi tre file, un albero che elenca il contenuto della cartella e specifica quali nomi di file sono memorizzati come blobs, e un commit con il riferimento alla cartella radice e a tutti i metadata del commit. Concettualmente i dati nella tua repository di Git dovrebbero essere organizzato in modo simile alla Figura 3.1:</p>
+
+<p><center><img src="/figures/ch3/18333fig0301-tn.png"></center><br/> Figura 3-1. Dati di una repository di un singolo commit.</p>
+
+<p>Se fai qualche cambiamento ed esegui nuovamente il commit, il successivo commit memorizza un puntatore al commit che viene immediatamente prima di esso. Dopo due o più commit, la tua storia potrebbe assomigliare a quella della Figura 3-2.</p>
+
+<p><center><img src="/figures/ch3/18333fig0302-tn.png"></center><br/> Figura 3-2. Dati di un oggetto Git per commit multipli.</p>
+
+<p>Un branch in Git è semplicemente un leggero puntatore mobile verso uno di questi commit. Il nome del branch di default in Git è master. Iniziando a fare dei commit, ti verrà dato un branch master che punta all&#8217;ultimo commit che hai effettuato. Ogni volta che esegui un commit, esso si muove in avanti automaticamente.</p>
+
+<p><center><img src="/figures/ch3/18333fig0303-tn.png"></center><br/> Figura 3-3. Il branch punta alla storia delle informazioni del commit.</p>
+
+<p>Cosa succede se crei uno nuovo branch? Beh, in questo modo crei un nuovo puntatore per te che si muove. Diciamo che crei un nuovo branch di nome testing. Fai questo con il comando <code>git branch</code></p>
+
+<p>$ git branch testing</p>
+
+<p>Questo crea un nuovo puntatore allo stesso commit sul quale sei (guarda la Figura 3-4).</p>
+
+<p><center><img src="/figures/ch3/18333fig0304-tn.png"></center><br/> Figura 3-4. Branch multipli puntano alla storia delle informazioni del commit.</p>
+
+<p>Come fa Git a sapere su quale branch sei attualmente? Esso mantiene uno speciale puntatore chiamato HEAD. Nota che questo è molto differente dal concetto di HEAD in altri VCS che potresti aver usato, come Subversion o CVS. In Git, questo è un puntatore al branch locale sul quale sei attualmente. In questo caso, sei ancora sul master. Il comando <code>git branch</code> crea soltanto un nuovo branch - non ti sposta su questo branch (guarda la Figura 3-5).</p>
+
+<p><center><img src="/figures/ch3/18333fig0305-tn.png"></center><br/> Figura 3-5. L&#8217;HEAD del file punta sul branch sul quale sei.</p>
+
+<p>Per spostarti su un branch esistente, esegui il comando <code>git checkout</code>. Spostiamoci sul nuovo branch testing:</p>
+
+<p>$ git checkout testing</p>
+
+<p>Questo sposta l&#8217;HEAD, facendolo puntare sul branch testing (guarda la Figura 3-6).</p>
+
+<p><center><img src="/figures/ch3/18333fig0306-tn.png"></center><br/> Figura 3-6. L&#8217;HEAD punta ad un altro branch quando sposti i branch.</p>
+
+<p>Cosa significa? Beh, facciamo un altro commit:</p>
+
+<p>$ vim test.rb $ git commit -a -m &#8216;made a change&#8217;</p>
+
+<p>La Figura 3-7 illustra il risultato.</p>
+
+<p><center><img src="/figures/ch3/18333fig0307-tn.png"></center><br/> Figura 3-7. Il branch al quale punta l&#8217;HEAD si muove in avanti per ogni commit.</p>
+
+<p>Questo è interessante, perchè ora il tuo branch testing si è mosso in avanti, ma il branch master punta ancora al commit sul quale eri quando hai eseguito <code>git checkout</code> per cambiare branch. Spostiamoci nuovamente al branch master:</p>
+
+<p>$ git checkout master</p>
+
+<p>La Figura 3-8 mostra il risultato:</p>
+
+<p><center><img src="/figures/ch3/18333fig0308-tn.png"></center><br/> Figura 3-8. L&#8217;HEAD si muove in un altro branch con il checkout.</p>
+
+<p>Questo comando ha fatto due cose. Ha spostato il puntatore dell&#8217;HEAD nuovamente sul branch master, e ha ripristinato i file nella tua cartella di lavoro allo snapshot al quale il master punta. Questo significa anche che i cambiamenti che fai da questo punto in poi si discosteranno da una più vecchia versione del progetto. Essenzialmente questo riavvolge il lavoro che hai fatto provvisoriamente nel tuo branch testing in modo che tu possa andare in una direzione differente.</p>
+
+<p>Facciamo alcune modifiche ed eseguiamo nuovamente il commit:</p>
+
+<p>$ vim test.rb $ git commit -a -m &#8216;apportate altre modifiche&#8217;</p>
+
+<p>Ora la storia del tuo progetto si è discostata (guarda la Figura 3.9). Hai creato e ti sei spostato su un branch, hai fatto un po&#8217; di lavoro su di esso, e dopo esserti spostato nuovamente al tuo branch principale hai fatto altro lavoro. Questi due cambiamenti sono isolati in branch separati: puoi spostarti indietro o avanti tra i branch e fonderli insieme quando sei pronto. E hai fatto tutto questo con i semplici comandi <code>branch</code> e <code>checkout</code>.</p>
+
+<p><center><img src="/figures/ch3/18333fig0309-tn.png"></center><br/> Figura 3-9. La storia dei branch sono divergenti.</p>
+
+<p>Dato che un branch in Git è in realtà un semplice file che contiene i 40 caratteri del checksum della codifica SHA-1 del commit a cui punta, i branch sono economici da creare e distruggere. Creare un nuovo branch è veloce è semplice come scrivere 41 byte in un file (40 caratteri e una nuova linea (newline)).</p>
+
+<p>Questo è in netto contrasto con la maggior parte degli strumenti branch dei VCS, che coinvolge la copia di tutti i file del progetto in una seconda cartella. Questo può impiegare parecchi secondi o addirittura minuti, in base alla grandezza del progetto, mentre in Git il processo è sempre istantaneo. Inoltre, poichè stiamo registrando i genitori quando eseguiamo il commit, trovare una base adeguata per il merge è automaticamente fatto per noi ed è veramente facile farlo. Queste caratteristiche aiutano ad incoraggiare gli sviluppatori a creare ed utilizzare i branch spesso.</p>
+
+<p>Vediamo perchè dovreste farlo.</p>
+
+<div id='nav'>
+<a href='ch3-0.html'>prev</a> | <a href='ch3-2.html'>next</a>
+</div>

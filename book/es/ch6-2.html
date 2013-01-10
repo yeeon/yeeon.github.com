@@ -1,0 +1,161 @@
+---
+layout: translation
+title: Pro Git 6.2 Las herramientas de Git Preparación interactiva
+---
+<h2 id='preparacin_interactiva'>Preparación interactiva</h2>
+
+<p>Git trae incluidos unos cuantos scripts para facilitar algunas de las tareas en la línea de comandos. Se van a mostrar unos pocos comandos interactivos que suelen ser de gran utilidad a la hora de recoger en una confirmación de cambios solo ciertas combinaciones y partes de archivos. Estas herramientas son útiles, por ejemplo, cuando se modifican unos cuantos archivos y luego se decide almacenar esos cambios en una serie de confirmaciones de cambio focalizadas en lugar de en una sola confirmación de cambio entremezclada. Así, se consiguen unas confirmaciones de cambio con agrupaciones lógicas de modificaciones, facilitando su revisión por parte otros desarrolladores que trabajen con nosotros. Al lanzar el comando &#8216;git add&#8217; con las opciones &#8216;-i&#8217; o &#8217;&#8211;interactive&#8217;, Git entra en un modo interactivo y muestra algo así como:</p>
+
+<pre><code>$ git add -i
+           staged     unstaged path
+  1:    unchanged        +0/-1 TODO
+  2:    unchanged        +1/-1 index.html
+  3:    unchanged        +5/-1 lib/simplegit.rb
+
+*** Commands ***
+  1: status     2: update      3: revert     4: add untracked
+  5: patch      6: diff        7: quit       8: help
+What now&gt; </code></pre>
+
+<p>Según se ve, este comando muestra una vista bastante diferente del área de preparación (staging area). Básicamente se trata de la misma información dada por el comando &#8216;git status&#8217;, pero mas sucinta e informativa. Se ve una lista de cambios ya preparados, en la izquierda; y de los que están aún sin preparar, en la derecha.</p>
+
+<p>Tras esa lista, viene la sección de comandos. Aquí se pueden lanzar acciones tales como: añadir archivos en el area de preparación (staging), sacar archivos de ella (unstaging), poner solo parte de algún archivo, añadir archivos nuevos que estaban fuera del sistema de control o mostrar diferencias en aquello que se ha añadido.</p>
+
+<h3 id='introduciendo_archivos_en_el_area_de_preparacin_y_sacandolos_de_ella'>Introduciendo archivos en el area de preparación y sacandolos de ella</h3>
+
+<p>Tecleando &#8216;2&#8217; o &#8216;u&#8217; (update) tras el indicador &#8216;What now&gt;&#8217;, el script interactivo preguntará cuales son los archivos que se quieren añadir al área de preparación:</p>
+
+<pre><code>What now&gt; 2
+           staged     unstaged path
+  1:    unchanged        +0/-1 TODO
+  2:    unchanged        +1/-1 index.html
+  3:    unchanged        +5/-1 lib/simplegit.rb
+Update&gt;&gt;</code></pre>
+
+<p>Para añadir los archivos TODO e index.html, se teclearian los números:</p>
+
+<pre><code>Update&gt;&gt; 1,2
+           staged     unstaged path
+* 1:    unchanged        +0/-1 TODO
+* 2:    unchanged        +1/-1 index.html
+  3:    unchanged        +5/-1 lib/simplegit.rb
+Update&gt;&gt;</code></pre>
+
+<p>El asterisco <code>*</code> al lado de cada archivo indica que dicho archivo ha sido seleccionado para ser preparado. Pulsando la tecla <span>Enter</span> tras el indicador &#8216;Update&#187;&#8217;, Git toma lo seleccionado y lo añade al área de preparación:</p>
+
+<pre><code>Update&gt;&gt; 
+updated 2 paths
+
+*** Commands ***
+  1: status     2: update      3: revert     4: add untracked
+  5: patch      6: diff        7: quit       8: help
+What now&gt; 1
+           staged     unstaged path
+  1:        +0/-1      nothing TODO
+  2:        +1/-1      nothing index.html
+  3:    unchanged        +5/-1 lib/simplegit.rb</code></pre>
+
+<p>En estos momentos se ve que los archivos TODO e index.html están en el área de preparación y que el archivo simplegit.rb no está aún. Si se desea sacar el archivo TODO del área, se puede utilizar la opción &#8216;3&#8217; o &#8216;r&#8217; (revert):</p>
+
+<pre><code>*** Commands ***
+  1: status     2: update      3: revert     4: add untracked
+  5: patch      6: diff        7: quit       8: help
+What now&gt; 3
+           staged     unstaged path
+  1:        +0/-1      nothing TODO
+  2:        +1/-1      nothing index.html
+  3:    unchanged        +5/-1 lib/simplegit.rb
+Revert&gt;&gt; 1
+           staged     unstaged path
+* 1:        +0/-1      nothing TODO
+  2:        +1/-1      nothing index.html
+  3:    unchanged        +5/-1 lib/simplegit.rb
+Revert&gt;&gt; [enter]
+reverted one path</code></pre>
+
+<p>Volviendo a mirar el estado de Git, se comprueba que se ha sacado el archivo TODO del área de preparación:</p>
+
+<pre><code>*** Commands ***
+  1: status     2: update      3: revert     4: add untracked
+  5: patch      6: diff        7: quit       8: help
+What now&gt; 1
+           staged     unstaged path
+  1:    unchanged        +0/-1 TODO
+  2:        +1/-1      nothing index.html
+  3:    unchanged        +5/-1 lib/simplegit.rb</code></pre>
+
+<p>Para ver las diferencis entre lo que está preparado, se puede utilizar la opción &#8216;6&#8217; o &#8216;d&#8217; (diff). Esta muestra una lista de los archivos preparados en el área de preparación, permitiendo la seleccion de aquellos sobre los que se desean ver diferencias. Es muy parecido a lanzar el comando &#8216;git diff &#8211;cached&#8217; directamente en la línea de comandos:</p>
+
+<pre><code>*** Commands ***
+  1: status     2: update      3: revert     4: add untracked
+  5: patch      6: diff        7: quit       8: help
+What now&gt; 6
+           staged     unstaged path
+  1:        +1/-1      nothing index.html
+Review diff&gt;&gt; 1
+diff --git a/index.html b/index.html
+index 4d07108..4335f49 100644
+--- a/index.html
++++ b/index.html
+@@ -16,7 +16,7 @@ Date Finder
+
+ &lt;p id=&quot;out&quot;&gt;...&lt;/p&gt;
+
+-&lt;div id=&quot;footer&quot;&gt;contact : support@github.com&lt;/div&gt;
++&lt;div id=&quot;footer&quot;&gt;contact : email.support@github.com&lt;/div&gt;
+
+ &lt;script type=&quot;text/javascript&quot;&gt;</code></pre>
+
+<p>Con estos comandos básicos, se ha visto cómo se puede emplear el modo interactivo para interactuar de forma más sencilla con el área de preparación.</p>
+
+<h3 id='parches_en_la_preparacin'>Parches en la preparación</h3>
+
+<p>También es posible añadir solo ciertas partes de algunos archivos y no otras. Por ejemplo, si se han realizado dos cambios en el archivo simplegit.rb y se desea pasar solo uno de ellos al área de preparación, pero no el otro. En el indicador interactivo se ha de teclear &#8216;5&#8217; o &#8216;p&#8217; (patch). Git preguntará cual es el archivo a pasar parcialmente al área de preparación. Y después irá mostrando trozos de las distintas secciones modificadas en el archivo, preguntando por cada una si se desea pasar o no al área de preparación:</p>
+
+<pre><code>diff --git a/lib/simplegit.rb b/lib/simplegit.rb
+index dd5ecc4..57399e0 100644
+--- a/lib/simplegit.rb
++++ b/lib/simplegit.rb
+@@ -22,7 +22,7 @@ class SimpleGit
+   end
+
+   def log(treeish = &#39;master&#39;)
+-    command(&quot;git log -n 25 #{treeish}&quot;)
++    command(&quot;git log -n 30 #{treeish}&quot;)
+   end
+
+   def blame(path)
+Stage this hunk [y,n,a,d,/,j,J,g,e,?]? </code></pre>
+
+<p>En estas preguntas, hay varias opciones de respuesta. Tecleando &#8217;?&#8217; se muestra una lista de las mismas:</p>
+
+<pre><code>Stage this hunk [y,n,a,d,/,j,J,g,e,?]? ?
+y - stage this hunk
+n - do not stage this hunk
+a - stage this and all the remaining hunks in the file
+d - do not stage this hunk nor any of the remaining hunks in the file
+g - select a hunk to go to
+/ - search for a hunk matching the given regex
+j - leave this hunk undecided, see next undecided hunk
+J - leave this hunk undecided, see next hunk
+k - leave this hunk undecided, see previous undecided hunk
+K - leave this hunk undecided, see previous hunk
+s - split the current hunk into smaller hunks
+e - manually edit the current hunk
+? - print help</code></pre>
+
+<p>Habitualmente se tecleará &#8216;y&#8217; o &#8216;n&#8217; según se desee pasar o no cada trozo. Pero habrá ocasiones donde pueda ser útil pasar todos ellos conjuntamente, o el dejar para más tarde la decisión sobre un trozo concreto. Si se decide pasar solo una parte de un archivo y dejar sin pasar otra parte, la salida de estado mostrará algo así como:</p>
+
+<pre><code>What now&gt; 1
+           staged     unstaged path
+  1:    unchanged        +0/-1 TODO
+  2:        +1/-1      nothing index.html
+  3:        +1/-1        +4/-0 lib/simplegit.rb</code></pre>
+
+<p>La línea correspondiente al estado del archivo simplegit.rb es bastante interesante. Muestra que un par de líneas han sido preparadas (staged) en el área de preparación y otro par han sido dejadas fuera de dicho área (unstaged). Es decir, se ha pasado parcialmente ese archivo al área de preparación. En este punto, es posible salir del script interactivo y lanzar el comando &#8216;git commit&#8217; para almacenar esa confirmación de cambios parciales en los archivos.</p>
+
+<p>Por último, cabe comentar que no es necesario entrar expresamente en el modo interactivo para preparar archivos parcialmente. También se puede acceder a ese script con los comandos &#8216;git add -p&#8217; o con &#8216;git add &#8211;patch&#8217;, directamente desde la línea de comandos.</p>
+
+<div id='nav'>
+<a href='ch6-1.html'>prev</a> | <a href='ch6-3.html'>next</a>
+</div>

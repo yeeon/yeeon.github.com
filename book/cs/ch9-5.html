@@ -1,0 +1,92 @@
+---
+layout: translation
+title: Pro Git 9.5 Elementární principy systému Git Refspec
+---
+<h2 id='refspec'>Refspec</h2>
+
+<p>V celé této knize jsme používali jednoduché mapování ze vzdálených větví do lokálních referencí. Mapování však může být i komplexnější. Řekněme, že přidáte například tento vzdálený repozitář:</p>
+
+<pre><code>$ git remote add origin git@github.com:schacon/simplegit-progit.git</code></pre>
+
+<p>Přidáte tím novou část do souboru <code>.git/config</code>, určíte název vzdáleného serveru (<code>origin</code>), URL vzdáleného repozitáře a refspec pro vyzvednutí dat:</p>
+
+<pre><code>[remote &quot;origin&quot;]
+       url = git@github.com:schacon/simplegit-progit.git
+       fetch = +refs/heads/*:refs/remotes/origin/*</code></pre>
+
+<p>Refspec má následující formát: fakultativní znak <code>+</code>, za nímž následuje <code>&lt;src&gt;:&lt;dst&gt;</code>, kde <code>&lt;src&gt;</code> je vzor pro referenci na straně vzdáleného serveru a <code>&lt;dst&gt;</code> je lokální umístění, kam mají být tyto reference zapsány. Znak <code>+</code> systému Git říká, aby aktualizoval referenci i v případě, že nesměřuje „rychle vpřed“.</p>
+
+<p>Ve výchozím případě, který se automaticky zapisuje příkazem <code>git remote add</code>, Git vyzvedne všechny reference z adresáře <code>refs/heads/</code> na serveru a zapíše je do lokálního adresáře <code>refs/remotes/origin/</code>. Je-li tedy na serveru hlavní větev <code>master</code>, lokálně lze získat přístup k jejímu logu některým z příkazů:</p>
+
+<pre><code>$ git log origin/master
+$ git log remotes/origin/master
+$ git log refs/remotes/origin/master</code></pre>
+
+<p>Všechny tři jsou přitom ekvivalentní, protože Git vždy rozšíří jejich podobu na <code>refs/remotes/origin/master</code>.</p>
+
+<p>Pokud ale raději chcete, aby Git pokaždé stáhl pouze větev <code>master</code> a nestahoval žádné jiné větve na vzdáleném serveru, změňte řádek příkazu fetch na:</p>
+
+<pre><code>fetch = +refs/heads/master:refs/remotes/origin/master</code></pre>
+
+<p>Toto je výchozí vzorec refspec pro příkaz <code>git fetch</code> pro tento vzdálený server. Chcete-li nějakou akci provést pouze jednou, můžete použít refspec také na příkazovém řádku. Chcete-li stáhnout větev <code>master</code> ze vzdáleného serveru do lokálního adresáře <code>origin/mymaster</code>, můžete zadat příkaz:</p>
+
+<pre><code>$ git fetch origin master:refs/remotes/origin/mymaster</code></pre>
+
+<p>Použít lze také kombinaci několika vzorců refspec. Několik větví můžete přímo z příkazového řádku stáhnout například takto:</p>
+
+<pre><code>$ git fetch origin master:refs/remotes/origin/mymaster \
+   topic:refs/remotes/origin/topic
+From git@github.com:schacon/simplegit
+ ! [rejected]        master     -&gt; origin/mymaster  (non fast forward)
+ * [new branch]      topic      -&gt; origin/topic</code></pre>
+
+<p>V tomto případě bylo odeslání hlavní větve odmítnuto, protože reference nesměřovala „rychle vpřed“. Odmítnutí serveru můžete potlačit zadáním znaku <code>+</code> před vzorec refspec.</p>
+
+<p>V konfiguračním souboru můžete také použít více vzorců refspec pro vyzvedávání dat. Chcete-li pokaždé vyzvednout hlavní větev a větev „experiment“, vložte do něj tyto dva řádky:</p>
+
+<pre><code>[remote &quot;origin&quot;]
+       url = git@github.com:schacon/simplegit-progit.git
+       fetch = +refs/heads/master:refs/remotes/origin/master
+       fetch = +refs/heads/experiment:refs/remotes/origin/experiment</code></pre>
+
+<p>Ve vzorci nelze použít částečné nahrazení, např. toto zadání by bylo neplatné:</p>
+
+<pre><code>fetch = +refs/heads/qa*:refs/remotes/origin/qa*</code></pre>
+
+<p>Místo nich však můžete využít možností jmenného prostoru. Jestliže pracujete v QA týmu, který odesílá několik větví, a vy chcete stáhnout hlavní větev a všechny větve QA týmu, avšak žádné jiné, můžete použít například takovouto část konfigurace:</p>
+
+<pre><code>[remote &quot;origin&quot;]
+       url = git@github.com:schacon/simplegit-progit.git
+       fetch = +refs/heads/master:refs/remotes/origin/master
+       fetch = +refs/heads/qa/*:refs/remotes/origin/qa/*</code></pre>
+
+<p>Jestliže používáte komplexní pracovní proces, kdy QA tým odesílá větve, vývojáři odesílají větve a integrační týmy odesílají větve a spolupracují na nich, můžete takto jednoduše využít možností, jež vám jmenný prostor nabízí.</p>
+
+<h3 id='odesln_vzorc_refspec'>Odesílání vzorců refspec</h3>
+
+<p>Je sice hezké, že můžete tímto způsobem vyzvedávat reference na základě jmenného prostoru, jenže jak vůbec QA tým dostane své větve do jmenného prostoru <code>qa/</code>? Tady vám při odesílání větví pomůže vzorec refspec.</p>
+
+<p>Chce-li QA tým odeslat větev <code>master</code> do adresáře <code>qa/master</code> na vzdáleném serveru, může použít příkaz:</p>
+
+<pre><code>$ git push origin master:refs/heads/qa/master</code></pre>
+
+<p>Chcete-li, aby toto Git provedl automaticky pokaždé, když spustíte příkaz <code>git push origin</code>, můžete do konfiguračního souboru vložit hodnotu <code>push</code>:</p>
+
+<pre><code>[remote &quot;origin&quot;]
+       url = git@github.com:schacon/simplegit-progit.git
+       fetch = +refs/heads/*:refs/remotes/origin/*
+       push = refs/heads/master:refs/heads/qa/master</code></pre>
+
+<p>Touto hodnotou zajistíte, že bude příkaz <code>git push origin</code> odesílat lokální větev <code>master</code> do vzdálené větve <code>qa/master</code>.</p>
+
+<h3 id='mazn_referenc'>Mazání referencí</h3>
+
+<p>Vzorce refspec můžete využít také k mazání referencí ze vzdáleného serveru. Spustit lze například příkaz následujícího znění:</p>
+
+<pre><code>$ git push origin :topic</code></pre>
+
+<p>Vynecháte-li z původního vzorce refspec ve tvaru <code>&lt;src&gt;:&lt;dst&gt;</code> část <code>&lt;src&gt;</code>, říkáte v podstatě, aby byla větev „topic“ na vzdáleném serveru nahrazena ničím, čímž ji smažete.</p>
+
+<div id='nav'>
+<a href='ch9-4.html'>prev</a> | <a href='ch9-6.html'>next</a>
+</div>

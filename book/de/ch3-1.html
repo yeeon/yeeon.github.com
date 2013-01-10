@@ -1,0 +1,88 @@
+---
+layout: translation
+title: Pro Git 3.1 Git Branching Was ist ein Branch?
+---
+<h2 id='was_ist_ein_branch'>Was ist ein Branch?</h2>
+
+<p>Um wirklich zu verstehen wie Git Branching durchführt, müssen wir einen Schritt zurück gehen und untersuchen wie Git die Daten speichert. Wie du dich vielleicht noch an Kapitel 1 erinnerst, speichert Git seine Daten nicht als Serie von Änderungen oder Unterschieden, sondern als Serie von Schnappschüssen.</p>
+
+<p>Wenn du in Git committest, speichert Git ein sogenanntes Commit-Objekt. Dieses enthält einen Zeiger zu dem Schnappschuss mit den Objekten der Staging-Area, dem Autor, den Commit-Metadaten und einem Zeiger zu den direkten Eltern des Commits. Ein initialer Commit hat keine Eltern-Commits, ein normaler Commit stammt von einem Eltern-Commit ab und ein Merge-Commit, welcher aus einer Zussammenführung von zwei oder mehr Branches resultiert, besitzt stammt von ebenso vielen Eltern-Commits ab.</p>
+
+<p>Um das zu verdeutlichen, lass uns annehmen, du hast ein Verzeichnis mit drei Dateien, die du alle zu der Staging-Area hinzufügst und in einem Commit verpackst. Durch das &#8220;Stagen&#8221; der Dateien erzeugt Git für jede Datei eine Prüfsumme (der SHA-1 Hash, den wir in Kapitel 1 erwähnt haben), speichert diese Version der Datei im Git-Repository (Git referenziert auf diese als Blobs) und fügt die Prüfsumme der Staging-Area hinzu:</p>
+
+<pre><code>$ git add README test.rb LICENSE2
+$ git commit -m &#39;initial commit of my project&#39;</code></pre>
+
+<p>Wenn du einen Commit mit dem Kommando <code>git commit</code> erstellst, erzeugt Git für jedes Unterverzeichnis eine Pürfsumme (in diesem Fall nur für das Root-Verzeichnis) und speichert diese drei Objekte im Git Repository. Git erzeugt dann ein Commit Objekt, das die Metadaten und den Pointer zur Wurzel des Projektbaums, um bei Bedarf den Snapshot erneut erzeugen zu können.</p>
+
+<p>Dein Git-Repository enthält nun fünf Objekte: einen Blob für den Inhalt jeder der drei Dateien, einen Baum, der den Inhalt des Verzeichnisses auflistet und spezifiziert welcher Dateiname zu welchem Blob gehört, sowie einen Pointer, der auf die Wurzel des Projektbaumes und die Metadaten des Commits verweist. Prinzipiell können deine Daten im Git Repository wie in Abbildung 3-1 aussehen.</p>
+
+<p><center><img src="/figures/ch3/18333fig0301-tn.png"></center><br/> Abbildung 3-1. Repository-Daten eines einzelnen Commits</p>
+
+<p>Wenn du erneut etwas änderst und wieder einen Commit machst, wird dieses einen Zeiger speichern, der auf den Vorhergehenden verweist. Nach zwei weiteren Commits könnte die Historie wie in Abbildung 3-2 aussehen.</p>
+
+<p><center><img src="/figures/ch3/18333fig0302-tn.png"></center><br/> Abbildung 3-2. Git Objektdaten für mehrere Commits</p>
+
+<p>Eine Branch in Git ist nichts anderes als ein simpler Zeiger auf einen dieser Commits. Der Standardname eines Git-Branches lautet <code>master</code>. Mit dem initialen Commit erhältst du einen <code>master</code>-Branch, der auf deinen letzten Commit zeigt. Mit jedem Commit wird bewegt er sich automatisch vorwärts.</p>
+
+<p><center><img src="/figures/ch3/18333fig0303-tn.png"></center><br/> Abbildung 3-3. Branch-Pointer in den Commit-Verlauf</p>
+
+<p>Was passiert, wenn du einen neuen Branch erstellst? Nun, zunächst wird ein neuer Zeiger erstellt. Sagen wir, du erstellst einen neuen Branch mit dem Namen <code>testing</code>. Das machst du mit dem <code>git branch</code> Befehl:</p>
+
+<pre><code>$ git branch testing</code></pre>
+
+<p>Dies erzeugt einen neuen Pointer auf den gleichen Commit, auf dem du gerade arbeitest (Abbildung 3-4).</p>
+
+<p><center><img src="/figures/ch3/18333fig0304-tn.png"></center><br/> Abbildung 3-4. Mehrere Branches zeigen in den Commit-Verlauf</p>
+
+<p>Woher weiß Git, welche Branch du momentan verwendest? Dafür gibt es einen speziellen Zeiger mit dem Namen &#8220;HEAD&#8221;. Berücksichtige, dass dieses Konzept sich grundsätzlich von anderen HEAD-Konzepten anderer VCS, wie Subversion oder CVS, unterscheidet. Bei Git handelt es sich um einen Zeiger deines aktuellen lokalen Branches. In dem Fall bist du immer noch auf der <code>master</code>-Branch. Das <code>git branch</code> Kommando hat nur einen neuen Branch erstellt, aber nicht zu diesem gewechselt (Abbildung 3-5).</p>
+
+<p><center><img src="/figures/ch3/18333fig0305-tn.png"></center><br/> Abbildung 3-5. Der HEAD-Zeiger verweist auf deinen aktuellen Branch</p>
+
+<p>Um zu einem anderen Branch zu wechseln, benutze das Kommando <code>git checkout</code>. Lass uns nun zu unserem neuen <code>testing</code>-Branch wechseln:</p>
+
+<pre><code>$ git checkout testing</code></pre>
+
+<p>Das lässt HEAD neuerdings auf den &#8220;testing&#8221;-Branch verweisen (siehe auch Abbildung 3-6). This moves HEAD to point to the testing branch (see Figure 3-6).</p>
+
+<p><center><img src="/figures/ch3/18333fig0306-tn.png"></center><br/> Abbildung 3-6. Wenn du den Branch wechselst, zeigt HEAD auf einen neuen Zweig.</p>
+
+<p>Und was bedeutet das? Ok, lass uns noch einen weiteren Commit machen:</p>
+
+<pre><code>$ vim test.rb
+$ git commit -a -m &#39;made a change&#39;</code></pre>
+
+<p>Abbildung 3-7 verdeutlich das Ergebnis.</p>
+
+<p><center><img src="/figures/ch3/18333fig0307-tn.png"></center><br/> Abbildung 3-7. Der HEAD-Zeiger schreitet mit jedem weiteren Commit voran.</p>
+
+<p>Das ist interessant, denn dein <code>testing</code>-Branch hat sich jetzt voranbewegt und der <code>master</code>-Branch zeigt immernoch auf seinen letzten Commit. Den Commit, den du zuletzt bearbeitet hattest, bevor du mit <code>git checkout</code> den aktuellen Zweig gewechselt hast. Lass uns zurück zu dem <code>master</code>-Branch wechseln:</p>
+
+<pre><code>$ git checkout master</code></pre>
+
+<p>Abbildung 3-8 zeigt das Ergebnis.</p>
+
+<p><center><img src="/figures/ch3/18333fig0308-tn.png"></center><br/> Abbildung 3-8. HEAD bewegt sich nach einem &#8220;checkout&#8221; zu einem anderen Branch.</p>
+
+<p>Das Kommando zwei Dinge veranlasst. Zum Einen bewegt es den HEAD-Zeiger zurück zum <code>master</code>-Branch, zum Anderen setzt es alle Dateien im Arbeitsverzeichnis auf den Bearbeitungsstand des letzte Commits in diesem Zweig zurück. Das bedeutet aber auch, dass nun alle Änderungen am Projekt vollkommen unabhängig von älteren Projekt-Versionen erfolgen. Kurz gesagt werden alle Änderungen aus dem <code>testing</code>-Zweig vorübergehend rückgängig gemacht und du hast die Möglichkeit einen vollkommen neuen Weg in der Entwicklung einzuschlagen.</p>
+
+<p>Lass uns ein paar Änderungen machen und mit einem Commit festhalten:</p>
+
+<pre><code>$ vim test.rb
+$ git commit -a -m &#39;made other changes&#39;</code></pre>
+
+<p>Nun verzweigen sich die Projektverläufe (siehe Abbildung 3-9). Du hast einen Branch erstellt und zu ihm gewechselt, ein bisschen gearbeitet, bist zum zu deinem Haupt-Zweig zurückgekehrt und hast da was ganz anderes gemacht. Beide Arbeiten existieren vollständig unabhängig voneinander in zwei unterschiedlichen Branches. Du kannst beliebig zwischen den beiden Zweigen wechseln und sie zusammenführen, wenn du meinst es wäre soweit. Und das alles hast du mit simplen <code>branch</code> und <code>checkout</code>-Befehlen vollbracht.</p>
+
+<p><center><img src="/figures/ch3/18333fig0309-tn.png"></center><br/> Abbildung 3-9. Die Branch-Historie läuft auseinander.</p>
+
+<p>Eine Branch in Git ist eine einfache Datei, die nur die 40 Zeichen lange SHA-1 Prüfsumme des Commits enthält, auf das sie zeigt. Es kostet nicht viel, Branches zu erstellen und zu zerstören. Das Erstellen einer Branch ist der einfache und schnelle Weg, 41 Bytes in eine Datei zu schreiben (40 Zeichen für die Prüdsumme und ein Zeilenumbruch).</p>
+
+<p>Branches können in Git spielend erstellt und entfernt werden, da sie nur kleine Dateien sind, die eine 40 Zeichen lange SHA-1 Prüfsumme der Commits enthalten, auf die sie verweisen. Einen neuen Zweig zu erstellen erzeugt ebenso viel Aufwand wie das Schreiben einer 41 Byte großen Datei (40 Zeichen und einen Zeilenumbruch).</p>
+
+<p>Das steht im krassen Gegensatz zu dem Weg, den die meisten andere VCS Tools beim Thema Branching einschlagen. Diese kopieren oftmals jeden neuen Entwicklungszweig in ein weiteres Verzeichnis, was - je nach Projektgröße - mehrere Minuten in Anspruch nehmen kann, wohingegen Git diese Aufgabe sofort erledigt. Da wir ausserdem immer den Ursprungs-Commit aufzeichnen, lässt sich problemlos eine gemeinsame Basis für eine Zusammenführung finden und umsetzen. Diese Eigenschaft soll Entwickler ermutigen Entwicklungszweige häufig zu erstellen und zu nutzen.</p>
+
+<p>Lass uns mal sehen, warum du das machen solltest.</p>
+
+<div id='nav'>
+<a href='ch3-0.html'>prev</a> | <a href='ch3-2.html'>next</a>
+</div>

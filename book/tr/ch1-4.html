@@ -1,0 +1,70 @@
+---
+layout: translation
+title: Pro Git 1.4 Başlangıç Git&#8217;in Kurulumu
+---
+<h2 id='gitin_kurulumu'>Git&#8217;in Kurulumu</h2>
+
+<p>Gelin Git&#8217;i kullanmaya başlayalım. Her şeyden önce, Git&#8217;i kurmanız gerekiyor. Bunu iki başlıca biçimde gerçekleştirebilirsiniz: kaynak kodundan ya da platformunuz için halihazırda varolan paketi kullanarak kurabilirsiniz.</p>
+
+<h3 id='kaynak_kodundan_kurulum'>Kaynak Kodundan Kurulum</h3>
+
+<p>Yapabiilyorsanız, Git&#8217;i kaynak kodundan kurmak kullanışlıdır, çünkü böylece en yeni versiyonunu edinebilirsiniz. Git&#8217;in her yeni versiyonu yararlı kullanıcı arayüzü güncellemeleri içerir, dolayısıyla en son versiyonu kurmak, eğer yazılım derlemek konusunda sıkıntı yaşamayacağınızı düşünüyorsanız, en iyi yoldur. Ayrıca kimi zaman, Linux dağıtımları yazılımlaarın çok eski paketlerini içerirler; dolayısıyla, çok güncel bir dağıtıma sahip değilseniz ya da terstaşımalar (_backport_) kullanmıyorsanız, kaynak koddan kurulum en mantıklı seçenek olabilir.</p>
+
+<p>Git&#8217;i kurmak için, Git&#8217;in bağımlı olduğu şu kütüphanelerin sisteminizde bulunması gerekiyor: curl, zlib, openssl, expat, ve libiconv. Örneğin, (Fedora gibi) yum aracına ya da (Debian tabanlı sistemler gibi) apt-get aracına sahip bir sistemdeyseniz, bağımlılıkları kurmak için şu komutlardan birini kullanabilirsiniz:</p>
+
+<pre><code>$ yum install curl-devel expat-devel gettext-devel \
+  openssl-devel zlib-devel
+
+$ apt-get install libcurl4-gnutls-dev libexpat1-dev gettext \
+  libz-dev libssl-dev</code></pre>
+
+<p>Bütün gerekli bağımlılıkları yükledikten sonra Git web sitesinden en son bellek kopyasını edinebilirsiniz:</p>
+
+<pre><code>http://git-scm.com/download</code></pre>
+
+<p>Sonra derleyip kurabilirsiniz:</p>
+
+<pre><code>$ tar -zxf git-1.7.2.2.tar.gz
+$ cd git-1.7.2.2
+$ make prefix=/usr/local all
+$ sudo make prefix=/usr/local install</code></pre>
+
+<p>Bu adımdan sonra, Git&#8217;teki yeni güncellemeleri Git&#8217;in kendisini kullanarak edinebilirsiniz:</p>
+
+<pre><code>$ git clone git://git.kernel.org/pub/scm/git/git.git</code></pre>
+
+<h3 id='linuxta_kurulum'>Linux&#8217;ta Kurulum</h3>
+
+<p>Git&#8217;i Linux sisteminize paket kurucu yardımıyla kurmak istiyorsanız, bunu genellikle dağıtımınızla birlikte gelen temel paket yönetim aracıyla yapabilirsiniz. Fedora kullanıcısıysanız, yum&#8217;u kullanabilirsiniz:</p>
+
+<pre><code>$ yum install git-core</code></pre>
+
+<p>Ubuntu gibi Debian-tabanlı bir sistemdeyseniz, apt-get&#8217;i kullanabilirsiniz:</p>
+
+<pre><code>$ apt-get install git-core</code></pre>
+
+<h3 id='macte_kurulum'>Mac&#8217;te Kurulum</h3>
+
+<p>Git&#8217;i Mac&#8217;te kurmak için iki kolay yol vardır. En kolayı, Google Code sayfasından indirebileceğiniz görsel Git yükleyicisini kullanmaktır (bkz. Figür 1-7).</p>
+
+<pre><code>http://code.google.com/p/git-osx-installer</code></pre>
+
+<p><center><img src="/figures/ch1/18333fig0107-tn.png"></center><br/> Figür 1-7. Git OS X yükleyicisi.</p>
+
+<p>Diğer başlıca yol, Git&#8217;i MacPorts (<code>http://www.macports.org</code>) vasıtasıyla kurmaktır. MacPorts halihazırda kurulu bulunuyorsa Git&#8217;i şu komutla kurabilirsiniz:</p>
+
+<pre><code>$ sudo port install git-core +svn +doc +bash_completion +gitweb</code></pre>
+
+<p>Bütün ek paketleri kurmanız şart değil, ama Git&#8217;i Subversion yazılım havuzlarıyla kullanmanız gerekecekse en azından +svn&#8217;i edinmelisiniz.</p>
+
+<h3 id='windowsta_kurulum'>Windows&#8217;ta Kurulum</h3>
+
+<p>Git&#8217;i Windows&#8217;da kurmak oldukça kolaydır. mysysGit projesi en basit kurulum yöntemlerinden birine sahip. Çalıştırılabilir kurulum dosyasını Google Code sayfasından indirip çalıştırmanız yeterli:</p>
+
+<pre><code>http://code.google.com/p/msysgit</code></pre>
+
+<p>Kurulum tamamlandığında hem (daha sonra işe yarayacak olan SSH istemcisini de içeren) komut satırı nüshasına hem de standart kullanıcı arayüzüne sahip olacaksınız.</p>
+
+<div id='nav'>
+<a href='ch1-3.html'>prev</a> | <a href='ch1-5.html'>next</a>
+</div>

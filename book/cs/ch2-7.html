@@ -1,0 +1,74 @@
+---
+layout: translation
+title: Pro Git 2.7 Základy práce se systémem Git Tipy a triky
+---
+<h2 id='tipy_a_triky'>Tipy a triky</h2>
+
+<p>Než ukončíme tuto kapitolu o základech práce se systémem Git, přidáme ještě pár tipů a triků, které vám mohou usnadnit či zpříjemnit práci. Mnoho uživatelů pracuje se systémem Git, aniž by tyto triky znali a používali. V dalších částech knihy se už o nich nebudeme zmiňovat ani nebudeme předpokládat, že je používáte. Přesto pro vás mohou být užitečné.</p>
+
+<h3 id='automatick_dokonovn'>Automatické dokončování</h3>
+
+<p>Jestliže používáte shell Bash, nabízí vám Git možnost zapnout si skript automatického dokončování. Stáhněte si zdrojový kód Git a podívejte se do adresáře <code>contrib/completion</code>. Měli byste tam najít soubor s názvem <code>git-completion.bash</code>. Zkopírujte tento soubor do svého domovského adresáře a přidejte ho do souboru <code>.bashrc</code>:</p>
+
+<pre><code>source ~/.git-completion.bash</code></pre>
+
+<p>Chcete-li nastavit Git tak, aby měl automaticky dokončování pro shell Bash pro všechny uživatele, zkopírujte tento skript do adresáře <code>/opt/local/etc/bash_completion.d</code> v systémech Mac nebo do adresáře <code>/etc/bash_completion.d/</code> v systémech Linux. Toto je adresář skriptů, z nějž Bash automaticky načítá pro shellové dokončování.</p>
+
+<p>Pokud používáte Git Bash v systému Windows (Git Bash je výchozím programem při instalaci systému Git v OS Windows pomocí msysGit), mělo by být automatické dokončování přednastaveno.</p>
+
+<p>Při zadávání příkazu Git stiskněte klávesu Tab a měla by se objevit nabídka, z níž můžete zvolit příslušné dokončení:</p>
+
+<pre><code>$ git co&lt;tab&gt;&lt;tab&gt;
+commit config</code></pre>
+
+<p>Pokud zadáte – stejně jako v našem příkladu nahoře – <code>git co</code> a dvakrát stisknete klávesu Tab, systém vám navrhne „commit“ a „config“. Doplníte-li ještě <code>m&lt;tab&gt;</code>, skript automaticky dokončí příkaz na <code>git commit</code>.</p>
+
+<p>Automatické dokončování pravděpodobně více využijete v případě parametrů. Pokud například zadáváte příkaz <code>git log</code> a nemůžete si vzpomenout na některý z parametrů, můžete zadat jeho začátek a stisknout klávesu Tab, aby vám systém navrhl možná dokončení.</p>
+
+<pre><code>$ git log --s&lt;tab&gt;
+--shortstat  --since=  --src-prefix=  --stat   --summary</code></pre>
+
+<p>Jedná se o užitečný trik, který vám může ušetřit čas a pročítání dokumentace.</p>
+
+<h3 id='aliasy_git'>Aliasy Git</h3>
+
+<p>Jestliže zadáte systému Git neúplný příkaz, systém ho neakceptuje. Pokud nechcete zadávat celý text příkazů Git, můžete pomocí <code>git config</code> jednoduše nastavit pro každý příkaz tzv. alias. Uveďme několik příkladů možného nastavení:</p>
+
+<pre><code>$ git config --global alias.co checkout
+$ git config --global alias.br branch
+$ git config --global alias.ci commit
+$ git config --global alias.st status</code></pre>
+
+<p>To znamená, že například místo kompletního příkazu <code>git commit</code> stačí zadat pouze zkrácené <code>git ci</code>. Budete-li pracovat v systému Git častěji, pravděpodobně budete hojně využívat i jiné příkazy. V takovém případě neváhejte a vytvořte si nové aliasy.</p>
+
+<p>Tato metoda může být velmi užitečná také k vytváření příkazů, které by podle vás měly existovat. Pokud jste například narazili na problém s používáním příkazu pro vrácení souboru z oblasti připravených změn, můžete ho vyřešit zadáním vlastního aliasu:</p>
+
+<pre><code>$ git config --global alias.unstage &#39;reset HEAD --&#39;</code></pre>
+
+<p>Po zadání takového příkazu budete mít k dispozici dva ekvivalentní příkazy:</p>
+
+<pre><code>$ git unstage fileA
+$ git reset HEAD fileA</code></pre>
+
+<p>Příkaz unstage je o něco jasnější. Běžně se také přidává příkaz <code>last</code>:</p>
+
+<pre><code>$ git config --global alias.last &#39;log -1 HEAD&#39;</code></pre>
+
+<p>Tímto způsobem snadno zobrazíte poslední revizi:</p>
+
+<pre><code>$ git last
+commit 66938dae3329c7aebe598c2246a8e6af90d04646
+Author: Josh Goebel &lt;dreamer3@example.com&gt;
+Date:   Tue Aug 26 19:48:51 2008 +0800
+
+    test for current head
+
+    Signed-off-by: Scott Chacon &lt;schacon@example.com&gt;</code></pre>
+
+<p>Chtělo by se tedy říci, že Git jednoduše nahradí nový příkaz jakýmkoli aliasem, který vytvoříte. Může se však stát, že budete chtít spustit externí příkaz, a ne dílčí příkaz Git. V takovém případě zadejte na začátek příkazu znak <code>!</code>. Tuto možnost využijete, pokud si píšete své vlastní nástroje, které fungují s repozitářem Git. Jako příklad můžeme uvést situaci, kdy nahradíte příkaz <code>git visual</code> aliasem <code>gitk</code>:</p>
+
+<pre><code>$ git config --global alias.visual &#39;!gitk&#39;</code></pre>
+
+<div id='nav'>
+<a href='ch2-6.html'>prev</a> | <a href='ch2-8.html'>next</a>
+</div>

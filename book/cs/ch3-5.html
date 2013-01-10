@@ -1,0 +1,97 @@
+---
+layout: translation
+title: Pro Git 3.5 Větve v systému Git Vzdálené větve
+---
+<h2 id='vzdlen_vtve'>Vzdálené větve</h2>
+
+<p>Vzdálené větve jsou reference (tj. odkazy) na stav větví ve vašich vzdálených repozitářích. Jsou to lokální větve, které nemůžete přesouvat. Přesouvají se automaticky při síťové komunikaci. Vzdálené větve slouží jako záložky, které vám připomínají, kde byly větve ve vzdálených repozitářích, když jste se k nim naposledy připojili.</p>
+
+<p>Vzdálené větve mají podobu <code>(vzdálený repozitář)/(větev)</code>. Například: Chcete-li zjistit, jak vypadala větev <code>master</code> na vašem vzdáleném serveru <code>origin</code>, když jste s ní naposledy komunikovali, budete hledat větev <code>origin/master</code>. Pokud pracujete s kolegou na stejném problému a on odešle na server větev s názvem <code>iss53</code>, může se stát, že i vy máte jednu z lokálních větví pojmenovanou jako <code>iss53</code>. Větev na serveru však ukazuje na revizi označenou jako <code>origin/iss53</code>.</p>
+
+<p>Možná to není úplně jasné, a tak uvedeme malý příklad. Řekněme, že máte v síti server Git označený <code>git.ourcompany.com</code>. Pokud provedete klonování z tohoto serveru, Git ho automaticky pojmenuje <code>origin</code>, stáhne z něj všechna data, vytvoří ukazatel, který bude označovat jeho větev <code>master</code>, a lokálně ji pojmenuje <code>origin/master</code>. Tuto větev nemůžete přesouvat. Git vám rovněž vytvoří vaši vlastní větev <code>master</code>, která bude začínat ve stejném místě jako větev <code>master</code> serveru <code>origin</code>. Máte tak definován výchozí bod pro svoji práci (viz obrázek 3-22).</p>
+
+<p><center><img src="/figures/ch3/18333fig0322-tn.png"></center><br/> Figure 3-22. Příkaz git clone vám vytvoří vlastní hlavní větev a větev origin/master, ukazující na hlavní větev serveru origin.</p>
+
+<p>Pokud nyní budete pracovat na své lokální hlavní větvi a někdo z kolegů mezitím pošle svou práci na server <code>git.ourcompany.com</code> a aktualizuje jeho hlavní větev, budou se vaše historie vyvíjet odlišně. A dokud zůstanete od serveru origin odpojeni, váš ukazatel <code>origin/master</code> se nemůže přemístit (viz obrázek 3-23).</p>
+
+<p><center><img src="/figures/ch3/18333fig0323-tn.png"></center><br/> Figure 3-23. Pokud pracujete lokálně a někdo jiný odešle svou práci na vzdálený server, obě historie se rozejdou.</p>
+
+<p>K synchronizaci své práce použijte příkaz <code>git fetch origin</code>. Tento příkaz zjistí, který server je „origin“ (v našem případě je to <code>git.ourcompany.com</code>), vyzvedne z něj všechna data, která ještě nemáte, a aktualizuje vaši lokální databázi. Při tom přemístí ukazatel <code>origin/master</code> na novou, aktuálnější pozici (viz obrázek 3-24).</p>
+
+<p><center><img src="/figures/ch3/18333fig0324-tn.png"></center><br/> Figure 3-24. Příkaz git fetch aktualizuje vaše reference na vzdálený server.</p>
+
+<p>Abychom si mohli ukázat, jak se pracuje s několika vzdálenými servery a jak vypadají vzdálené větve takových vzdálených projektů, předpokládejme, že máte ještě další interní server Git, který při vývoji používá pouze jeden z vašich sprint teamů. Tento server se nachází na <code>git.team1.ourcompany.com</code>. Můžete ho přidat jako novou vzdálenou referenci k projektu, na němž právě pracujete – spusťte příkaz <code>git remote add</code> (viz kapitola 2). Pojmenujte tento vzdálený server jako <code>teamone</code>, což bude zkrácený název pro celou URL adresu (viz obrázek 3-25).</p>
+
+<p><center><img src="/figures/ch3/18333fig0325-tn.png"></center><br/> Figure 3-25. Přidání dalšího vzdáleného serveru.</p>
+
+<p>Nyní můžete spustit příkaz <code>git fetch teamone</code>, který ze vzdáleného serveru <code>teamone</code> vyzvedne vše, co ještě nemáte. Protože je tento server podmnožinou dat, která jsou právě na serveru <code>origin</code>, Git nevyzvedne žádná data, ale nastaví vzdálenou větev nazvanou <code>teamone/master</code> tak, aby ukazovala na revizi, kterou má server <code>teamone</code> nastavenou jako větev <code>master</code> (viz obrázek 3-26).</p>
+
+<p><center><img src="/figures/ch3/18333fig0326-tn.png"></center><br/> Figure 3-26. Lokálně získáte referenci na pozici hlavní větve serveru teamone.</p>
+
+<h3 id='odesln'>Odesílání</h3>
+
+<p>Chcete-li svou větev sdílet s okolním světem, musíte ji odeslat na vzdálený server, k němuž máte oprávnění pro zápis. Vaše lokální větve nejsou automaticky synchronizovány se vzdálenými servery, na něž zapisujete – ty, které chcete sdílet, musíte explicitně odeslat. Tímto způsobem si můžete zachovat soukromé větve pro práci, kterou nehodláte sdílet, a odesílat pouze tematické větve, na nichž chcete spolupracovat.</p>
+
+<p>Máte-li větev s názvem <code>serverfix</code>, na níž chcete spolupracovat s ostatními, můžete ji odeslat stejným způsobem, jakým jste odesílali svou první větev. Spusťte příkaz <code>git push (server) (větev)</code>:</p>
+
+<pre><code>$ git push origin serverfix
+Counting objects: 20, done.
+Compressing objects: 100% (14/14), done.
+Writing objects: 100% (15/15), 1.74 KiB, done.
+Total 15 (delta 5), reused 0 (delta 0)
+To git@github.com:schacon/simplegit.git
+ * [new branch]      serverfix -&gt; serverfix</code></pre>
+
+<p>Toto je zkrácená verze příkazu. Git automaticky rozšíří název větve <code>serverfix</code> na <code>refs/heads/serverfix:refs/heads/serverfix</code>, což znamená: „Vezmi mou lokální větev <code>serverfix</code> a odešli ji na vzdálený server, kde aktualizuje tamní větev <code>serverfix</code>.“ Části <code>refs/heads/</code> se budeme podrobněji věnovat v kapitole 9, pro většinu uživatelů však nebude zajímavá. Můžete rovněž zadat příkaz <code>git push origin serverfix:serverfix</code>, který provede totéž. Systému Git říká: „Vezmi mou větev <code>serverfix</code> a udělej z ní <code>serverfix</code> na vzdáleném serveru.“ Tento formát můžete použít k odeslání lokální větve do vzdálené větve, která se jmenuje jinak. Pokud jste nechtěli, aby se větev na vzdáleném serveru jmenovala <code>serverfix</code>, mohli jste zadat příkaz ve tvaru <code>git push origin serverfix:awesomebranch</code>. Vaše lokální větev <code>serverfix</code> by byla odeslána do větve <code>awesomebranch</code> ve vzdáleném projektu.</p>
+
+<p>Až bude příště některý z vašich spolupracovníků vyzvedávat data ze serveru, obdrží referenci o tom, kde se nachází serverová verze větve <code>serverfix</code> ve vzdálené větvi <code>origin/serverfix</code>:</p>
+
+<pre><code>$ git fetch origin
+remote: Counting objects: 20, done.
+remote: Compressing objects: 100% (14/14), done.
+remote: Total 15 (delta 5), reused 0 (delta 0)
+Unpacking objects: 100% (15/15), done.
+From git@github.com:schacon/simplegit
+ * [new branch]      serverfix    -&gt; origin/serverfix</code></pre>
+
+<p>Tady je důležité upozornit, že pokud vyzvedáváte data a stáhnete s nimi i nové vzdálené větve, nemáte automaticky jejich lokální, editovatelné kopie. Jinak řečeno: v tomto případě nebudete mít novou větev <code>serverfix</code>, budete mít pouze ukazatel <code>origin/serverfix</code>, který nemůžete měnit.</p>
+
+<p>Chcete-li začlenit tato data do své aktuální pracovní větve, spusťte příkaz <code>git merge origin/serverfix</code>. Chcete-li mít vlastní větev <code>serverfix</code>, na níž budete pracovat, můžete ji ze vzdálené větve vyvázat:</p>
+
+<pre><code>$ git checkout -b serverfix origin/serverfix
+Branch serverfix set up to track remote branch refs/remotes/origin/serverfix.
+Switched to a new branch &quot;serverfix&quot;</code></pre>
+
+<p>Tímto způsobem získáte lokální větev, na níž můžete pracovat a která začíná na pozici <code>origin/serverfix</code>.</p>
+
+<h3 id='sledujc_vtve'>Sledující větve</h3>
+
+<p>Checkoutem lokální větve ze vzdálené větve automaticky vytvoříte tzv. Sledující větev (angl. tracking branch). Sledující větve jsou lokální větve s přímým vztahem ke vzdálené větvi. Pokud se nacházíte na Sledující větvi a zadáte příkaz <code>git push</code>, Git automaticky ví, na který server a do které větve má data odeslat. Také příkazem <code>git pull</code> zadaným na sledovací větvi vyzvednete všechny vzdálené reference a Git poté odpovídající vzdálenou větev automaticky začlení.</p>
+
+<p>Pokud klonujete repozitář, většinou se vytvoří větev <code>master</code>, která bude sledovat větev <code>origin/ master</code>. To je také důvod, proč příkazy <code>git push</code> a <code>git pull</code> fungují i bez dalších parametrů. Pokud chcete, můžete nastavit i jiné sledující větve – takové, které nebudou sledovat větve na serveru <code>origin</code> a nebudou sledovat hlavní větev <code>master</code>. Jednoduchým případem je příklad, který jste právě viděli: spuštění příkazu <code>git checkout -b [větev] [vzdálený server]/[větev]</code>. Máte-li Git ve verzi 1.6.2 nebo novější, můžete použít také zkrácenou variantu <code>--track</code>:</p>
+
+<pre><code>$ git checkout --track origin/serverfix
+Branch serverfix set up to track remote branch refs/remotes/origin/serverfix.
+Switched to a new branch &quot;serverfix&quot;</code></pre>
+
+<p>Chcete-li nastavit lokální větev s jiným názvem, než má vzdálená větev, můžete jednoduše použít první variantu s odlišným názvem lokální větve:</p>
+
+<pre><code>$ git checkout -b sf origin/serverfix
+Branch sf set up to track remote branch refs/remotes/origin/serverfix.
+Switched to a new branch &quot;sf&quot;</code></pre>
+
+<p>Vaše lokální větev „sf“ bude nyní automaticky stahovat data ze vzdálené větve origin/serverfix a bude do ní i odesílat.</p>
+
+<h3 id='mazn_vzdlench_vtv'>Mazání vzdálených větví</h3>
+
+<p>Předpokládejme, že už nepotřebujete jednu ze vzdálených větví. Spolu se svými spolupracovníky jste dokončili určitou funkci a začlenili jste ji do větve <code>master</code> na vzdáleném serveru (nebo do jakékoli jiné větve, kterou používáte pro stabilní kód). Vzdálenou větev nyní můžete smazat pomocí poněkud neohrabané syntaxe <code>git push [vzdálený server] :[větev]</code>. Chcete-li ze serveru odstranit větev <code>serverfix</code>, můžete to provést takto:</p>
+
+<pre><code>$ git push origin :serverfix
+To git@github.com:schacon/simplegit.git
+ - [deleted]         serverfix</code></pre>
+
+<p>Šup! A větev je ze serveru pryč. Na této stránce si možná chcete ohnout rožek, protože tento příkaz budete určitě potřebovat, ale jeho syntaxi pravděpodobně zapomenete. Zapamatovat si jej ale můžete tak, že si vybavíte příkaz <code>git push [vzdálený server] [lokální větev]:[vzdálená větev]</code>, o kterém jsme se zmínili před chvílí. Pokud vynecháte složku <code>[lokální větev]</code>, pak v podstatě říkáte: „Neber na mé straně nic a toto nic teď bude <code>[vzdálená větev]</code>.“</p>
+
+<div id='nav'>
+<a href='ch3-4.html'>prev</a> | <a href='ch3-6.html'>next</a>
+</div>

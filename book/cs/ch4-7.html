@@ -1,0 +1,155 @@
+---
+layout: translation
+title: Pro Git 4.7 Git na serveru Gitosis
+---
+<h2 id='gitosis'>Gitosis</h2>
+
+<p>Uchovávat veřejné klíče všech uživatelů v souboru <code>authorized_keys</code> není uspokojivým řešením na věčné časy. Musíte-li spravovat stovky uživatelů, je tento proces příliš náročný. Pokaždé se musíte přihlásit na server a k dispozici nemáte žádnou správu přístupu – všichni, kdo jsou uvedeni v souboru, mají ke každému projektu oprávnění pro čtení i pro zápis.</p>
+
+<p>Proto možná rádi přejdete na rozšířený softwarový projekt „Gitosis“. Gitosis je v podstatě sada skriptů usnadňující správu souboru <code>authorized_keys</code> a implementaci jednoduché správy přístupu. Nejzajímavější je na nástroji Gitosis jeho uživatelské rozhraní pro přidávání uživatelů a specifikaci přístupu – nejedná se totiž o webové rozhraní, ale o speciální repozitář Git. V tomto projektu nastavíte všechny informace, a až ho odešlete, Gitosis překonfiguruje server, který je na něm založen. To je jistě příjemné řešení.</p>
+
+<p>Instalace nástroje Gitosis sice nepatří mezi nejsnazší, ale není ani příliš složitá. Nejjednodušší je k ní použít linuxový server – tyto příklady používají běžný Ubuntu server 8.10.</p>
+
+<p>Gitosis vyžaduje některé nástroje v jazyce Python, a proto první, co musíte udělat, je nainstalovat balíček nástrojů nastavení Python, který je v Ubuntu dostupný jako python-setuptools:</p>
+
+<pre><code>$ apt-get install python-setuptools</code></pre>
+
+<p>Dále naklonujte a nainstalujte Gitosis z hlavní stránky projektu:</p>
+
+<pre><code>$ git clone git://eagain.net/gitosis.git
+$ cd gitosis
+$ sudo python setup.py install</code></pre>
+
+<p>Tímto příkazem nainstalujete několik spustitelných souborů, které bude Gitosis používat. Gitosis dále vyžaduje, abyste jeho repozitáře uložili do adresáře <code>/home/git</code>. Vy už však máte repozitáře vytvořeny ve složce <code>/opt/git</code>, a tak místo toho, abyste museli vše překonfigurovat, vytvoříte symbolický odkaz:</p>
+
+<pre><code>$ ln -s /opt/git /home/git/repositories</code></pre>
+
+<p>Gitosis teď bude spravovat klíče za vás. Proto je třeba, abyste odstranili aktuální soubor, klíče znovu přidali později a nechali Gitosis automaticky spravovat soubor <code>authorized_keys</code>. Pro tuto chvíli tedy odstraňte soubor <code>authorized_keys</code>:</p>
+
+<pre><code>$ mv /home/git/.ssh/authorized_keys /home/git/.ssh/ak.bak</code></pre>
+
+<p>Dále musíte znovu zapnout shell na uživatele &#8216;git&#8217;, jestliže jste ho změnili na příkaz <code>git-shell</code>. Uživatelé se stále ještě nebudou moci přihlásit, ale Gitosis za vás bude provádět správu. V souboru <code>/etc/passwd</code> tak nyní změníme řádek:</p>
+
+<pre><code>git:x:1000:1000::/home/git:/usr/bin/git-shell</code></pre>
+
+<p>zpět na</p>
+
+<pre><code>git:x:1000:1000::/home/git:/bin/sh</code></pre>
+
+<p>V tomto okamžiku můžeme inicializovat nástroj Gitosis. Učiníte tak spuštěním příkazu <code>gitosis-init</code> se svým osobním veřejným klíčem. Není-li váš veřejný klíč na serveru, bude ho tam nutné zkopírovat:</p>
+
+<pre><code>$ sudo -H -u git gitosis-init &lt; /tmp/id_dsa.pub
+Initialized empty Git repository in /opt/git/gitosis-admin.git/
+Reinitialized existing Git repository in /opt/git/gitosis-admin.git/</code></pre>
+
+<p>Uživatel s tímto klíčem poté bude moci měnit hlavní repozitář Git, který kontroluje nastavení nástroje Gitosis. Dále je třeba ručně nastavit právo spuštění na skriptu <code>post-update</code> pro nový řídicí repozitář.</p>
+
+<pre><code>$ sudo chmod 755 /opt/git/gitosis-admin.git/hooks/post-update</code></pre>
+
+<p>Nyní máte vše hotovo. Pokud jste nastavení provedli správně, můžete vyzkoušet SSH přístup na server jako uživatel, pro kterého jste přidali veřejný klíč při inicializaci nástroje Gitosis. Mělo by se zobrazit asi následující:</p>
+
+<pre><code>$ ssh git@gitserver
+PTY allocation request failed on channel 0
+fatal: unrecognized command &#39;gitosis-serve schacon@quaternion&#39;
+  Connection to gitserver closed.</code></pre>
+
+<p>To znamená, že vás Gitosis sice rozpoznal, ale nedovolí vám přístup, protože se nepokoušíte zadat žádný příkaz Git. Provedeme tedy skutečný příkaz systému Git a naklonujeme řídicí repozitář Gitosis:</p>
+
+<pre><code># on your local computer
+$ git clone git@gitserver:gitosis-admin.git</code></pre>
+
+<p>Nyní máte adresář s názvem <code>gitosis-admin</code>, sestávající ze dvou hlavních částí:</p>
+
+<pre><code>$ cd gitosis-admin
+$ find .
+./gitosis.conf
+./keydir
+./keydir/scott.pub</code></pre>
+
+<p>Soubor <code>gitosis.conf</code> je řídicí soubor, který slouží ke specifikaci uživatelů, repozitářů a oprávnění. V adresáři <code>keydir</code> jsou pak uloženy veřejné klíče pro všechny uživatele, kteří mají (ať už jakýkoli) přístup k vašim repozitářům – jeden soubor pro každého uživatele. Název souboru v adresáři <code>keydir</code> (v předchozím příkladu <code>scott.pub</code>) bude ve vašem případě jiný. Gitosis převezme tento název z popisu na konci veřejného klíče, který byl importován spolu se skriptem <code>gitosis-init</code>.</p>
+
+<p>Pokud se podíváte na soubor <code>gitosis.conf</code>, měl by udávat pouze informace o projektu <code>gitosis-admin</code>, který jste právě naklonovali:</p>
+
+<pre><code>$ cat gitosis.conf
+[gitosis]
+
+[group gitosis-admin]
+writable = gitosis-admin
+members = scott</code></pre>
+
+<p>Tato informace znamená, že uživatel &#8216;scott&#8217; – ten, jehož veřejným klíčem jste inicializovali Gitosis – je jediným uživatelem, který má přístup k projektu <code>gitosis-admin</code>.</p>
+
+<p>Nyní přidáme nový projekt. Přidáte novou část s názvem <code>mobile</code>, která bude obsahovat seznam vývojářů vašeho mobilního týmu a projektů, k nimž tito vývojáři potřebují přístup. Protože je v tuto chvíli jediným uživatelem v systému &#8216;scott&#8217;, přidáte ho jako jediného člena a vytvoříte pro něj nový projekt s názvem <code>iphone_project</code>:</p>
+
+<pre><code>[group mobile]
+writable = iphone_project
+members = scott</code></pre>
+
+<p>Pokaždé, když provedete změny v projektu <code>gitosis-admin</code>, musíte tyto změny zapsat a odeslat je zpět na server, aby nabyly účinnosti:</p>
+
+<pre><code>$ git commit -am &#39;add iphone_project and mobile group&#39;
+[master]: created 8962da8: &quot;changed name&quot;
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+$ git push
+Counting objects: 5, done.
+Compressing objects: 100% (2/2), done.
+Writing objects: 100% (3/3), 272 bytes, done.
+Total 3 (delta 1), reused 0 (delta 0)
+To git@gitserver:/opt/git/gitosis-admin.git
+   fb27aec..8962da8  master -&gt; master</code></pre>
+
+<p>Do nového projektu <code>iphone_project</code> teď můžete odeslat svá první data: přidejte do lokální verze projektu svůj server jako vzdálený repozitář a odešlete změny. Od této chvíle už nebudete muset ručně vytvářet holé repozitáře pro nové projekty na serveru. Gitosis je vytvoří automaticky, jakmile zjistí první odeslání dat:</p>
+
+<pre><code>$ git remote add origin git@gitserver:iphone_project.git
+$ git push origin master
+Initialized empty Git repository in /opt/git/iphone_project.git/
+Counting objects: 3, done.
+Writing objects: 100% (3/3), 230 bytes, done.
+Total 3 (delta 0), reused 0 (delta 0)
+To git@gitserver:iphone_project.git
+ * [new branch]      master -&gt; master</code></pre>
+
+<p>Všimněte si, že není třeba zadávat cestu (naopak, příkaz by pak nefungoval), pouze dvojtečku a za ní název projektu. Gitosis už projekt vyhledá.</p>
+
+<p>Na tomto projektu chcete spolupracovat s přáteli, a proto budete muset znovu přidat jejich veřejné klíče. Ale místo toho, abyste je vkládali ručně do souboru <code>~/.ssh/authorized_keys</code> na serveru, přidáte je do adresáře <code>keydir</code>, jeden soubor pro každý klíč. Jak tyto klíče pojmenujete, závisí na tom, jak jsou uživatelé označeni v souboru <code>gitosis.conf</code>. Přidejme znovu veřejné klíče pro uživatele Johna, Josie a Jessicu:</p>
+
+<pre><code>$ cp /tmp/id_rsa.john.pub keydir/john.pub
+$ cp /tmp/id_rsa.josie.pub keydir/josie.pub
+$ cp /tmp/id_rsa.jessica.pub keydir/jessica.pub</code></pre>
+
+<p>Nyní je můžete všechny přidat do týmu &#8216;mobile&#8217;, čímž získají oprávnění pro čtení i pro zápis k <code>iphone_project</code>:</p>
+
+<pre><code>[group mobile]
+writable = iphone_project
+members = scott john josie jessica</code></pre>
+
+<p>Až tuto změnu zapíšete a odešlete, všichni čtyři uživatelé budou moci z tohoto projektu číst a zapisovat do něj.</p>
+
+<p>Gitosis nabízí také jednoduchou správu přístupu. Pokud chcete, aby měl John u projektu pouze oprávnění pro čtení, můžete provést následující:</p>
+
+<pre><code>[group mobile]
+writable = iphone_project
+members = scott josie jessica
+
+[group mobile_ro]
+readonly = iphone_project
+members = john</code></pre>
+
+<p>John nyní může naklonovat projekt a stahovat jeho aktualizace, ale Gitosis mu neumožní, aby odesílal data zpět do projektu. Takových skupin můžete vytvořit libovolně mnoho. Každá může obsahovat různé uživatele a projekty. Jako jednoho ze členů skupiny můžete zadat také celou jinou skupinu (použijete pro ni předponu <code>@</code>). Všichni její členové se tím automaticky zdědí.</p>
+
+<pre><code>[group mobile_committers]
+members = scott josie jessica
+
+[group mobile]
+writable  = iphone_project
+members   = @mobile_committers
+
+[group mobile_2]
+writable  = another_iphone_project
+members   = @mobile_committers john</code></pre>
+
+<p>Máte-li jakékoli problémy, může vám pomoci zadání <code>loglevel=DEBUG</code> do části <code>[gitosis]</code>. Pokud jste odesláním nesprávné konfigurace ztratili oprávnění k odesílání dat, můžete ručně opravit soubor na serveru v adresáři <code>/home/git/.gitosis.conf</code> – jedná se o soubor, z nějž Gitosis načítá data. Po odeslání dat do projektu bude soubor <code>gitosis.conf</code>, který jste právě odeslali, umístěn do tohoto adresáře. Pokud soubor ručně upravíte, zůstane v této podobě až do dalšího úspěšného odeslání do projektu <code>gitosis-admin</code>.</p>
+
+<div id='nav'>
+<a href='ch4-6.html'>prev</a> | <a href='ch4-8.html'>next</a>
+</div>

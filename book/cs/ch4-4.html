@@ -1,0 +1,77 @@
+---
+layout: translation
+title: Pro Git 4.4 Git na serveru Nastavení serveru
+---
+<h2 id='nastaven_serveru'>Nastavení serveru</h2>
+
+<p>Podívejme se nyní na nastavení SSH přístupu na straně serveru. V tomto příkladu použijeme k ověření uživatelů metodu <code>authorized_keys</code>. Předpokládáme také, že pracujete se standardní linuxovou distribucí, jako je např. Ubuntu. Nejprve vytvoříte uživatele &#8216;git&#8217; a adresář <code>.ssh</code> pro tohoto uživatele.</p>
+
+<pre><code>$ sudo adduser git
+$ su git
+$ cd
+$ mkdir .ssh</code></pre>
+
+<p>V dalším kroku musíte vložit veřejné SSH klíče od svých vývojářů do souboru <code>authorized_keys</code> pro tohoto uživatele. Předpokládejme, že jste e-mailem dostali několik klíčů a uložili jste je do dočasných souborů. Veřejné klíče vypadají opět nějak takto:</p>
+
+<pre><code>$ cat /tmp/id_rsa.john.pub
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCB007n/ww+ouN4gSLKssMxXnBOvf9LGt4L
+ojG6rs6hPB09j9R/T17/x4lhJA0F3FR1rP6kYBRsWj2aThGw6HXLm9/5zytK6Ztg3RPKK+4k
+Yjh6541NYsnEAZuXz0jTTyAUfrtU3Z5E003C4oxOj6H0rfIF1kKI9MAQLMdpGW1GYEIgS9Ez
+Sdfd8AcCIicTDWbqLAcU4UpkaX8KyGlLwsNuuGztobF8m72ALC/nLF6JLtPofwFBlgc+myiv
+O7TCUSBdLQlgMVOFq1I2uPWQOkOWQAHukEOmfjy2jctxSDBQ220ymjaNsHT4kgtZg2AYYgPq
+dAv8JggJICUvax2T9va5 gsg-keypair</code></pre>
+
+<p>Vy nyní klíče vložíte do souboru <code>authorized_keys</code>:</p>
+
+<pre><code>$ cat /tmp/id_rsa.john.pub &gt;&gt; ~/.ssh/authorized_keys
+$ cat /tmp/id_rsa.josie.pub &gt;&gt; ~/.ssh/authorized_keys
+$ cat /tmp/id_rsa.jessica.pub &gt;&gt; ~/.ssh/authorized_keys</code></pre>
+
+<p>Nyní pro ně můžete nastavit prázdný repozitář. Spusťte příkaz <code>git init</code> s parametrem <code>--bare</code>, který inicializuje repozitář bez pracovního adresáře:</p>
+
+<pre><code>$ cd /opt/git
+$ mkdir project.git
+$ cd project.git
+$ git --bare init</code></pre>
+
+<p>John, Josie a Jessica pak mohou do tohoto repozitáře odeslat první verzi svého projektu: přidají si ho jako vzdálený repozitář a odešlou do něj svou větev. Nezapomeňte, že pokaždé, když chcete přidat projekt, se musí k počítači někdo přihlásit a vytvořit holý repozitář. Pro server, na kterém jste nastavili uživatele &#8216;git&#8217; a repozitář, můžeme použít název hostitele <code>gitserver</code>. Pokud server provozujete interně a nastavíte DNS pro <code>gitserver</code> tak, aby ukazovalo na tento server, můžete používat i takovéto příkazy:</p>
+
+<pre><code># on Johns computer
+$ cd myproject
+$ git init
+$ git add .
+$ git commit -m &#39;initial commit&#39;
+$ git remote add origin git@gitserver:/opt/git/project.git
+$ git push origin master</code></pre>
+
+<p>Ostatní nyní mohou velmi snadno repozitář naklonovat i do něj odesílat změny:</p>
+
+<pre><code>$ git clone git@gitserver:/opt/git/project.git
+$ cd project
+$ vim README
+$ git commit -am &#39;fix for the README file&#39;
+$ git push origin master</code></pre>
+
+<p>Tímto způsobem lze rychle vytvořit a spustit server Git ke čtení i zápisu pro menší počet vývojářů.</p>
+
+<p>Pro větší bezpečnost máte možnost využít nástroj <code>git-shell</code>, který je distribuován se systémem Git. Pomocí něj lze snadno nastavit, aby uživatel &#8216;git&#8217; prováděl pouze operace systému Git. Pokud ho nastavíte jako přihlašovací shell uživatele &#8216;git&#8217;, pak nebude mít uživatel &#8216;git&#8217; normální shellový přístup k vašemu serveru. Chcete-li nástroj použít, zadejte pro přihlašovací shell vašeho uživatele <code>git-shell</code> místo bash nebo csh. V takovém případě pravděpodobně budete muset upravit soubor <code>/etc/passwd</code>:</p>
+
+<pre><code>$ sudo vim /etc/passwd</code></pre>
+
+<p>Dole byste měli najít řádek, který vypadá asi takto:</p>
+
+<pre><code>git:x:1000:1000::/home/git:/bin/sh</code></pre>
+
+<p>Změňte <code>/bin/sh</code> na <code>/usr/bin/git-shell</code> (nebo spusťte příkaz <code>which git-shell</code>, abyste viděli, kde je nainstalován). Řádek by měl vypadat takto:</p>
+
+<pre><code>git:x:1000:1000::/home/git:/usr/bin/git-shell</code></pre>
+
+<p>Uživatel &#8216;git&#8217; nyní může používat SSH připojení k odesílání a stahování repozitářů Git, ale nemůže se přihlásit k počítači. Pokud to zkusíte, zobrazí se zamítnutí přihlášení:</p>
+
+<pre><code>$ ssh git@gitserver
+fatal: What do you think I am? A shell?
+Connection to gitserver closed.</code></pre>
+
+<div id='nav'>
+<a href='ch4-3.html'>prev</a> | <a href='ch4-5.html'>next</a>
+</div>

@@ -1,0 +1,74 @@
+---
+layout: translation
+title: Pro Git 2.7 Git&#8217;in Temelleri İpuçları
+---
+<h2 id='pular'>İpuçları</h2>
+
+<p>Git&#8217;in temelleri hakkındaki bu bölümü tamamlamadan önce, Git deneyiminizi kolaylaştırabilmek için birkaç ipucu vermekte yarar var. Pekçok insan Git&#8217;i bu ipuçlarına başvurmadan kullanıyor; bu ipuçlarından ileride tekrar söz etmeyeceğimiz gibi bunları bilmeniz gereltiğini de varsaymıyoruz; ama yine de bilmeniz yararınıza olacaktır.</p>
+
+<h3 id='otomatik_tamamlama'>Otomatik Tamamlama</h3>
+
+<p>Eğer Bash -shell_&#8217;ini kullanıyorsanız, Git&#8217;in otomatik tamamlama betiğini (_script_) kullanabilirsiniz. Git kaynak kodunu indirip <code>contrib/completion</code> klasörüne bakın; orada <code>git-completion.bash</code> adında bir dosya olmalı. Bu dosyayı ana dizininize (_home_) kopyalayıp <code>.bashrc</code> dosyanıza ekleyin:</p>
+
+<pre><code>source ~/.git-completion.bash</code></pre>
+
+<p>Otomatik tamamlama özelliğinin bütün Git kullanıcıları için geçerli olmasını istiyorsanız, bu betik dosyasını Mac sistemler için <code>/opt/local/etc/bash_completion.d</code> konumuna Linux sistemlerde <code>/etc/bash_completion.d/</code> konumuna kopyalayın. Bu, Bash&#8217;ın otomatik olarak yükleyeceği betiklerin bulunduğu bir klasördür.</p>
+
+<p>Eğer bir Windows kullanıcısıysanız ve Git Bash kullanıyorsanız- ki bu msysGit&#8217;le kurulum yaptığınızdaki öntanımlı programdır, otomatik tamamlama kendiliğinden gelecektir.</p>
+
+<p>Bir Git komutu yazarken Tab tuşuna bastığınızda, karşınıza bir dizi seçenek getirir:</p>
+
+<pre><code>$ git co&lt;tab&gt;&lt;tab&gt;
+commit config</code></pre>
+
+<p>Bu örnekte, <code>git co</code> yazıp Tab tuşuna iki kez basmak <code>commit</code> ve <code>config</code> komutlarını öneriyor. Komutun devamında <code>m</code> yazıp bir kez daha Tab tuşuna basacak olursanız, komut otomatik olarak <code>git commit</code>&#8216;e tamamlanır.</p>
+
+<p>Bu, seçeneklerde de kullanılabilir, ki muhtemelen daha yararlı olacaktır. Örneğin, <code>git log</code> komutunu çalıştırıren seçeneklerden birisini hatırlayamadınız, seçeneği yazmaya başlayıp Tab tuşuna basarak eşleşen seçenekleri görebilirsiniz:</p>
+
+<pre><code>$ git log --s&lt;tab&gt;
+--shortstat  --since=  --src-prefix=  --stat   --summary</code></pre>
+
+<p>Bu güzel özellik sizi zaman kazandırabileceği gibi ikide bir dokümantasyona bakma gereğini de ortadan kaldırır.</p>
+
+<h3 id='takma_adlar'>Takma Adlar</h3>
+
+<p>Bir komutun bir kısmını yazdığınızda Git bunu anlamayacaktır. Komutların uzun adlarını kullanmak istemezseniz, <code>git cofig</code> komutunu kullanarak bunların yerine daha kısa takma adlar belirleyebilirsiniz. Kullanmak isteyebileceğiniz bazı takma adları buraya aldık:</p>
+
+<pre><code>$ git config --global alias.co checkout
+$ git config --global alias.br branch
+$ git config --global alias.ci commit
+$ git config --global alias.st status</code></pre>
+
+<p>Bu durumda, örneğin, <code>git commit</code> yazmak yerine <code>git ci</code> yazmanız yeterli olacaktır. Git&#8217;i kullandıkça sık kullandığınız başka komutlar da olacaktır, o zaman o komutlar için de takma adlar oluşturabilirsiniz.</p>
+
+<p>Bu teknik, eksikliğini hissettiğiniz komutları oluşturmakta da yararlı olabilir. Örneğin, bir dosyayı hazırlık alanından kaldırmak için yapılması gerekenleri yeni bir komut olarak tanımlayabilirsiniz:</p>
+
+<pre><code>$ git config --global alias.unstage &#39;reset HEAD --&#39;</code></pre>
+
+<p>Bu durumda şu iki komut eşdeğer olacaktır:</p>
+
+<pre><code>$ git unstage fileA
+$ git reset HEAD fileA</code></pre>
+
+<p>Biraz daha temiz değil mi? Bir <code>last</code> komutu ekleek de oldukça yaygındır:</p>
+
+<pre><code>$ git config --global alias.last &#39;log -1 HEAD&#39;</code></pre>
+
+<p>Böylece son kaydı kolaylıkla görebilirsiniz:</p>
+
+<pre><code>$ git last
+commit 66938dae3329c7aebe598c2246a8e6af90d04646
+Author: Josh Goebel &lt;dreamer3@example.com&gt;
+Date:   Tue Aug 26 19:48:51 2008 +0800
+
+    test for current head
+
+    Signed-off-by: Scott Chacon &lt;schacon@example.com&gt;</code></pre>
+
+<p>Gördüğünüz gibi Git yeni komutu takma ad olarak belirlediğini şeyin yerine kullanıyor. Ama belki de bir Git komutu çalıştırmak değil de başka br program kullanmak istiyorsunuz. Bu durumda komutun başına <code>!</code> karakterini koymalısınız. Bir Git yazılım havuzu üzerinde çalışan kendi araçlarınızı yazıyorsanız bu seçenek yararlı olabilir. Bunu göstermek için ,<code>gitk</code>&#8216;yi çalıştırmak için <code>git visual</code> diye yeni bir takma ad tanımlayabiliriz:</p>
+
+<pre><code>$ git config --global alias.visual &#39;!gitk&#39;</code></pre>
+
+<div id='nav'>
+<a href='ch2-6.html'>prev</a> | <a href='ch2-8.html'>next</a>
+</div>

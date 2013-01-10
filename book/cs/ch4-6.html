@@ -1,0 +1,48 @@
+---
+layout: translation
+title: Pro Git 4.6 Git na serveru GitWeb
+---
+<h2 id='gitweb'>GitWeb</h2>
+
+<p>Nyní, když máte ke svému projektu nastavena základní oprávnění pro čtení/zápis a pouze pro čtení, možná budete chtít nastavit jednoduchou online vizualizaci. Git vám nabízí CGI skript s názvem GitWeb, který slouží k tomuto účelu. Jak GitWeb funguje, na to se můžete podívat např. na stránkách <code>http://git.kernel.org</code> (viz obrázek 4-1).</p>
+
+<p><center><img src="/figures/ch4/18333fig0401-tn.png"></center><br/> Figure 4-1. Online uživatelské rozhraní GitWeb</p>
+
+<p>Pokud vás zajímá, jak by GitWeb vypadal pro váš projekt, nabízí Git příkaz, jímž lze spustit dočasnou instanci. V systému je třeba mít lehký server typu <code>lighttpd</code> nebo <code>webrick</code>. V počítačích se systémem Linux je často nainstalován <code>lighttpd</code>. Spustit ho lze zadáním příkazu <code>git instaweb</code> v adresáři vašeho projektu. Pokud používáte OS Mac, v systému Leopard je předinstalován jazyk Ruby, a proto pro vás bude nejlepší variantou zřejmě server <code>webrick</code>. Chcete-li spustit <code>instaweb</code> s jiným správcem než <code>lighttpd</code>, použijte parametr <code>--httpd</code>:</p>
+
+<pre><code>$ git instaweb --httpd=webrick
+[2009-02-21 10:02:21] INFO  WEBrick 1.3.1
+[2009-02-21 10:02:21] INFO  ruby 1.8.6 (2008-03-03) [universal-darwin9.0]</code></pre>
+
+<p>Tím spustíte HTTPD server na portu 1234 a automaticky se spustí webový prohlížeč, který otevře tuto stránku. Není to nic obtížného. Až skončíte a budete chtít server vypnout, spusťte stejný příkaz s parametrem <code>--stop</code>:</p>
+
+<pre><code>$ git instaweb --httpd=webrick --stop</code></pre>
+
+<p>Chcete-li trvale spustit webové rozhraní na serveru pro svůj tým nebo nebo pro open-source projekt, který hostujete, musíte nastavit CGI skript tak, aby byl obsluhován vaším běžným webovým serverem. Některé linuxové distribuce mají balíček <code>gitweb</code>, který by mělo být možné nainstalovat pomocí nástrojů <code>apt</code> nebo <code>yum</code>. Zkuste proto tuto možnost jako první. Ruční instalaci skriptu probereme velmi rychle. Nejprve je třeba získat zdrojový kód systému Git, s nímž je GitWeb distribuován, a vygenerovat uživatelský CGI skript:</p>
+
+<pre><code>$ git clone git://git.kernel.org/pub/scm/git/git.git
+$ cd git/
+$ make GITWEB_PROJECTROOT=&quot;/opt/git&quot; \
+        prefix=/usr gitweb
+$ sudo cp -Rf gitweb /var/www/</code></pre>
+
+<p>Všimněte si, že musíte příkazu pomocí proměnné <code>GITWEB_PROJECTROOT</code> sdělit, kde najde repozitáře Git. Nyní musíte zajistit, aby server Apache používal CGI pro skript, pro který můžete přidat VirtualHost:</p>
+
+<pre><code>&lt;VirtualHost *:80&gt;
+    ServerName gitserver
+    DocumentRoot /var/www/gitweb
+    &lt;Directory /var/www/gitweb&gt;
+        Options ExecCGI +FollowSymLinks +SymLinksIfOwnerMatch
+        AllowOverride All
+        order allow,deny
+        Allow from all
+        AddHandler cgi-script cgi
+        DirectoryIndex gitweb.cgi
+    &lt;/Directory&gt;
+&lt;/VirtualHost&gt;</code></pre>
+
+<p>Také GitWeb může být obsluhován jakýmkoli webovým serverem umožňujícím CGI. Chcete-li používat jakýkoli jiný server, nemělo by být nastavení obtížné. V tomto okamžiku byste měli být schopni prohlížet své repozitáře online na adrese <code>http://gitserver/</code> a používat <code>http://git.gitserver</code> ke klonování a vyzvedávání repozitářů prostřednictvím protokolu HTTP.</p>
+
+<div id='nav'>
+<a href='ch4-5.html'>prev</a> | <a href='ch4-7.html'>next</a>
+</div>

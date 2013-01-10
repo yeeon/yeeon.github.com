@@ -1,0 +1,92 @@
+---
+layout: translation
+title: Pro Git 9.5 Git 內部原理 The Refspec
+---
+<h2 id='the_refspec'>The Refspec</h2>
+
+<p>這本書讀到這裡，你已經使用過一些簡單的遠端分支到本地引用的映射方式了，這種映射可以更為複雜。假設你像這樣添加了一項遠端倉庫：</p>
+
+<pre><code>$ git remote add origin git@github.com:schacon/simplegit-progit.git</code></pre>
+
+<p>它在你的 <code>.git/config</code> 檔中添加了一節，指定了遠程的名稱 (<code>origin</code>), 遠程倉庫的 URL 地址，和用於獲取(fetch)操作的 Refspec:</p>
+
+<pre><code>[remote &quot;origin&quot;]
+       url = git@github.com:schacon/simplegit-progit.git
+       fetch = +refs/heads/*:refs/remotes/origin/*</code></pre>
+
+<p>Refspec 的格式是一個可選的 <code>+</code> 號，接著是 <code>&lt;src&gt;:&lt;dst&gt;</code> 的格式，這裡 <code>&lt;src&gt;</code> 是遠端上的引用格式， <code>&lt;dst&gt;</code> 是將要記錄在本地的引用格式。可選的 <code>+</code> 號告訴 Git 在即使不能快速演進(fast-forward)的情況下，也去強制更新它。</p>
+
+<p>預設情況下 refspec 會被 <code>git remote add</code> 命令所自動產生，Git 會獲取遠端伺服器上 <code>refs/heads/</code> 下面的所有引用，並將它寫入到本地的 <code>refs/remotes/origin/</code>. 所以，如果遠端伺服器上有一個 <code>master</code> 分支，你在本地可以通過下面這種方式來取得它的歷史記錄：</p>
+
+<pre><code>$ git log origin/master
+$ git log remotes/origin/master
+$ git log refs/remotes/origin/master</code></pre>
+
+<p>They’re all equivalent, because Git expands each of them to <code>refs/remotes/origin/master</code>. 它們的作用都是相同的，因為 Git 把它們都擴展成 <code>refs/remotes/origin/master</code>.</p>
+
+<p>如果你想讓 Git 每次只拉取遠端的 <code>master</code> 分支，而不是遠端的所有分支，你可以把 fetch 這一行修改成這樣：</p>
+
+<pre><code>fetch = +refs/heads/master:refs/remotes/origin/master</code></pre>
+
+<p>這是 <code>git fetch</code> 操作對這個遠端的預設 refspec 值。而如果你只想做一次該操作，也可以在命令列上指定這個 refspec. 例如可以這樣拉取遠端的 <code>master</code> 分支到本地的 <code>origin/mymaster</code> 分支：</p>
+
+<pre><code>$ git fetch origin master:refs/remotes/origin/mymaster</code></pre>
+
+<p>你也可以在命令列上指定多個 refspec. 像這樣可以一次獲取遠端的多個分支：</p>
+
+<pre><code>$ git fetch origin master:refs/remotes/origin/mymaster \
+   topic:refs/remotes/origin/topic
+From git@github.com:schacon/simplegit
+ ! [rejected]        master     -&gt; origin/mymaster  (non fast forward)
+ * [new branch]      topic      -&gt; origin/topic</code></pre>
+
+<p>在這個例子中， master 分支因為不是一個可以快速演進的引用而拉取操作被拒絕。你可以在 refspec 之前使用一個 <code>+</code> 號來 override 這種行為。</p>
+
+<p>你也可以在設定檔中指定多個 refspec. 如你想在每次獲取時都獲取 master 和 experiment 分支，就添加兩行：</p>
+
+<pre><code>[remote &quot;origin&quot;]
+       url = git@github.com:schacon/simplegit-progit.git
+       fetch = +refs/heads/master:refs/remotes/origin/master
+       fetch = +refs/heads/experiment:refs/remotes/origin/experiment</code></pre>
+
+<p>但是這裡不能使用部分萬用字元，像這樣就是不合法的：</p>
+
+<pre><code>fetch = +refs/heads/qa*:refs/remotes/origin/qa*</code></pre>
+
+<p>但是你可以使用命名空間來達到這個目的。如果你有一個 QA 團隊，他們推送一系列分支，你想每次獲取 master 分支和 QA 團隊 的所有分支，你可以使用這樣的配置段落(config section)：</p>
+
+<pre><code>[remote &quot;origin&quot;]
+       url = git@github.com:schacon/simplegit-progit.git
+       fetch = +refs/heads/master:refs/remotes/origin/master
+       fetch = +refs/heads/qa/*:refs/remotes/origin/qa/*</code></pre>
+
+<p>如果你的工作流程很複雜，有QA團隊推送的分支、開發人員推送的分支、和集成人員推送的分支，並且他們在遠端分支上協作，你可以採用這種方式為他們創建各自的命名空間。</p>
+
+<h3 id='_refspecs'>推送 Refspecs</h3>
+
+<p>採用命名空間的方式確實很棒，但QA團隊第一次是如何將他們的分支推送到 <code>qa/</code> 空間裡面的呢？答案是你可以使用 refspec 來推送。</p>
+
+<p>如果QA團隊想把他們的 <code>master</code> 分支推送到遠端的 <code>qa/master</code> 分支上，可以這樣執行：</p>
+
+<pre><code>$ git push origin master:refs/heads/qa/master</code></pre>
+
+<p>如果他們想讓 Git 每次運行 <code>git push origin</code> 時都這樣自動推送，他們可以在設定檔中添加 <code>push</code> 值：</p>
+
+<pre><code>[remote &quot;origin&quot;]
+       url = git@github.com:schacon/simplegit-progit.git
+       fetch = +refs/heads/*:refs/remotes/origin/*
+       push = refs/heads/master:refs/heads/qa/master</code></pre>
+
+<p>這樣，就會讓 <code>git push origin</code> 預設就把本地的 <code>master</code> 分支推送到遠端的 <code>qa/master</code> 分支上。</p>
+
+<h3 id='_references'>刪除 References</h3>
+
+<p>你也可以使用 refspec 來刪除遠端的引用(references)，是通過執行這樣的命令：</p>
+
+<pre><code>$ git push origin :topic</code></pre>
+
+<p>因為 refspec 的格式是 <code>&lt;src&gt;:&lt;dst&gt;</code>, 通過把 <code>&lt;src&gt;</code> 部分留空的方式，這個意思是是把遠端的 topic 分支變成空，也就是刪除它。</p>
+
+<div id='nav'>
+<a href='ch9-4.html'>prev</a> | <a href='ch9-6.html'>next</a>
+</div>

@@ -1,0 +1,70 @@
+---
+layout: translation
+title: Pro Git 1.4 開始 安裝Git
+---
+<h2 id='git'>安裝Git</h2>
+
+<p>Let’s get into using some Git. First things first—you have to install it. You can get it a number of ways; the two major ones are to install it from source or to install an existing package for your platform. 讓我們開始使用Git。 首先讀者要做的事是安裝Git。 讀者有很多取得它們的方法。 主要的兩種分別是從原始碼安裝或者從讀者使用平台現存的套件安裝。</p>
+
+<h3 id='id483'>從原始碼安裝</h3>
+
+<p>若讀者有能力的話，從原始碼安裝是非常有用的。 因為讀者能取得最新版本。 每一版Git通常都會包含有用的UI改善。 因此取得最新版本通常是最好的，只要讀者覺得編譯軟體的原始碼是很容易的。 許多Linux發行套件通常都是附上非常舊的套件。 除非讀者使用的發行套件非常新或者使用向後相容的移植版本。 從原始碼安裝通常是最好的選擇。</p>
+
+<p>要安裝Git，讀者需要先安裝它需要的程式庫：curl、zlib、openssl、expat及libiconv。 例如：若讀者的系統有yum（如：Fedpra）或apt-get（如：以Debian為基礎的系統），讀者可使用下列任一命令安裝所有需要的程式庫：</p>
+
+<pre><code>$ yum install curl-devel expat-devel gettext-devel \
+  openssl-devel zlib-devel
+
+$ apt-get install libcurl4-gnutls-dev libexpat1-dev gettext \
+  libz-dev</code></pre>
+
+<p>當讀者安裝所有必要的程式庫，讀者可到Git的網站取得最新版本：</p>
+
+<pre><code>http://git-scm.com/download</code></pre>
+
+<p>接著，編譯及安裝：</p>
+
+<pre><code>$ tar -zxf git-1.6.0.5.tar.gz
+$ cd git-1.6.0.5
+$ make prefix=/usr/local all
+$ sudo make prefix=/usr/local install</code></pre>
+
+<p>在這些工作完成後，讀者也可以使用Git取得Git的更新版：</p>
+
+<pre><code>$ git clone git://git.kernel.org/pub/scm/git/git.git</code></pre>
+
+<h3 id='linux'>在Linux系統安裝</h3>
+
+<p>若讀者想使用二進位安裝程式安裝Git到Linux，一般來說讀者可經由發行套件提供的套件管理工具完成此工作。 若讀者使用Fedora，可使用yum：</p>
+
+<pre><code>$ yum install git-core</code></pre>
+
+<p>若讀者在以Debian為基礎的發行套件，如：Ubuntu。 試試apt-get：</p>
+
+<pre><code>$ apt-get install git-core</code></pre>
+
+<h3 id='mac'>在Mac系統安裝</h3>
+
+<p>有兩種很容易將Git安裝到Mac的方法。 最簡單的是使用圖形化界面的Git安裝程式，可從Google Code下載）圖1－7）：</p>
+
+<pre><code>http://code.google.com/p/git-osx-installer</code></pre>
+
+<p><center><img src="/figures/ch1/18333fig0107-tn.png"></center><br/> 圖1-7. Git OS X 安裝程式。</p>
+
+<p>藉由MacPorts安裝Git是另一種主要的方法。 若讀者已安裝MacPorts，使用下列命令安裝Git</p>
+
+<pre><code>$ sudo port install git-core +svn +doc +bash_completion +gitweb</code></pre>
+
+<p>讀者完全不需要安裝所有的額外套件，但讀者可能會想要加上+svn參數，以利於使用Git讀寫Subversion儲存庫（參考第8章）</p>
+
+<h3 id='windows'>在Windows系統安裝</h3>
+
+<p>在Windows系統安裝Git相當的容易。 msysGit專案已提供相當容易安裝的程序。 只要從Google Code網頁下載安裝程式並執行即可：</p>
+
+<pre><code>http://code.google.com/p/msysgit</code></pre>
+
+<p>在安裝完畢後，讀者同時會有命令列版本（包含SSH客戶端程式）及標準的圖形界面版本。</p>
+
+<div id='nav'>
+<a href='ch1-3.html'>prev</a> | <a href='ch1-5.html'>next</a>
+</div>

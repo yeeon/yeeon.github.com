@@ -1,0 +1,155 @@
+---
+layout: translation
+title: Pro Git 4.8 Git sur le serveur Gitolite
+---
+<h2 id='gitolite'>Gitolite</h2>
+
+<p>Cette section constitue une introduction à Gitolite et fournit des instructions de base pour son installation et sa mise en œuvre. Elle ne peut pas cependant se substituer à l&#8217;importante quantité de <a href='http://sitaramc.github.com/gitolite/progit.html'>documenentation</a> fournie avec Gitolite. Il se peut qu&#8217;elle subisse aussi occasionnellement quelques corrections qui sont disponibles <a href='http://sitaramc.github.com/gitolite/master-toc.html'>ici</a>.</p>
+
+<p>Gitolite est une couche de gestion d&#8217;accès posée au dessus de Git, reposant sur sshd et httpd pour l&#8217;authentification. L&#8217;authentification consiste à identifier l&#8217;utilisateur, la gestion d&#8217;accès permet de décider si celui-ci est autorisé à accomplir ce qu&#8217;il s&#8217;apprête à faire.</p>
+
+<h3 id='installation'>Installation</h3>
+
+<p>L&#8217;installation de Gitolite est très simple, même sans lire la documentation extensive qui l&#8217;accompagne. Vous n&#8217;avez besoin que d&#8217;un compte sur un serveur de type Unix. Vous n&#8217;avez pas besoin d&#8217;accès root si Git, Perl et un serveur compatible OpenSSH sont déjà installés. Dans les exemples qui suivent, un compte <code>git</code> sur un serveur <code>gitserver</code> sera utilisé.</p>
+
+<p>Pour commencer, créez un utilisateur nommé <code>git</code> et loggez vous avec cet utilisateur. Copiez votre clé publique SSH depuis votre station de travail en la renommant <code>VotreNom.pub</code>. Ensuite, lancez les commandes ci-dessous :</p>
+
+<pre><code>git clone git://github.com/sitaramc/gitolite
+gitolite/install -ln
+  # suppose que $HOME/bin existe et apparaît dans $PATH
+gitolite setup -pk $HOME/VotreNom.pub
+  # Par exemple, je lancerais &#39;gitolite setup -pk $HOME/sitaram.pub&#39;</code></pre>
+
+<p>Enfin, de retour sur la station de travail, lancez <code>git clone git@gitserver:gitolite-admin</code>.</p>
+
+<p>C&#8217;est fini ! Gitolite est à présent installé sur le serveur ainsi qu&#8217;un nouveau dépôt appelé <code>gitolite-admin</code> qui a été cloné sur la station de travail. L&#8217;administration de gitolite passe par des modifications dans ce dépôt suivi d&#8217;une poussée sur le serveur.</p>
+
+<h3 id='personnalisation_de_linstallation'>Personnalisation de l&#8217;installation</h3>
+
+<p>L&#8217;installation rapide par défaut suffit à la majorité des besoins, mais il existe des moyens de la paramétrer plus finement. Ces modifications sont réalisées en éditant le fichier « rc » utilisé par le serveur, mais si cela ne s&#8217;avère pas suffisant, il existe plus d&#8217;information dans la documentation sur la personnalisation de Gitolite.</p>
+
+<h3 id='fichier_de_configuration_et_rgles_de_contrle_daccs'>Fichier de configuration et règles de contrôle d&#8217;accès</h3>
+
+<p>Une fois l&#8217;installation terminée, vous pouvez basculer vers le clone <code>gitolite-admin</code> présent sur votre station de travail et inspecter ce qui s&#8217;y trouve :</p>
+
+<pre><code>$ cd ~/gitolite-admin/
+$ ls
+conf/  keydir/
+$ find conf keydir -type f
+conf/gitolite.conf
+keydir/sitaram.pub
+$ cat conf/gitolite.conf
+
+repo gitolite-admin
+    RW+                 = sitaram
+
+repo testing
+    RW+                 = @all</code></pre>
+
+<p>Notez que « sitaram » (le nom de la clé publique pour la commande <code>gl-setup</code> ci-dessus) détient les permissions en lecture-écriture sur le dépôt <code>gitolite-admin</code> ainsi qu&#8217;une clé publique du même nom.</p>
+
+<p>L&#8217;ajout d&#8217;utilisateurs est simple. Pour ajouter une utilisatrice appelée « alice », demandez-lui de vous fournir une clé publique SSH, renommez-la <code>alice.pub</code>, et placez-la dans le répertoire <code>keydir</code> du clone du dépôt <code>gitolite-admin</code> sur la station de travail. Validez le fichier dans le dépôt et poussez les modifications sur le serveur. L&#8217;utilisatrice alice vient d&#8217;être ajoutée.</p>
+
+<p>Le fichier de configuration est richement commenté et nous n&#8217;allons donc mentionner ici que quelques points principaux.</p>
+
+<p>Pour vous simplifier la tâche, vous pouvez grouper les utilisateurs et les dépôts. Les noms de groupes sont juste comme des macros. À leur définition, il importe peu que ce soient des projets ou de utilisateurs. Cette distinction ne sert que lors de <em>l&#8217;utilisation</em> de la « macro ».</p>
+
+<pre><code>@oss_repos      = linux perl rakudo git gitolite
+@secret_repos   = fenestra pear
+
+@admins         = scott     # Adams, not Chacon, sorry :)
+@interns        = ashok     # get the spelling right, Scott!
+@engineers      = sitaram dilbert wally alice
+@staff          = @admins @engineers @interns</code></pre>
+
+<p>Vous pouvez contrôler les permissions au niveau « ref ». Dans l&#8217;exemple suivant, les stagiaires (intern) ne peuvent pousser que sur la branche « int ». Les ingénieurs peuvent pousser toutes les branches dont le nom commence par « eng » et les étiquettes qui commencent par « rc » suivi d&#8217;un chiffre. Les administrateurs ont tous les droits (y compris le rembobinage) sur toutes les <code>refs</code>.</p>
+
+<pre><code>repo @oss_repos
+    RW  int$                = @interns
+    RW  eng-                = @engineers
+    RW  refs/tags/rc[0-9]   = @engineers
+    RW+                     = @admins</code></pre>
+
+<p>L&#8217;expression après les <code>RW</code> ou les <code>RW+</code> est une expression rationnelle (<em>regular expression</em> ou regex) qui filtre le nom de la référence (<code>ref</code>). Elle s&#8217;appelle donc une « refex » ! Bien entendu, une « refex » peut être bien plus puissante que celles montrées ci-dessus et il est inutile de trop chercher si vous n&#8217;êtes pas à l&#8217;aise avec les regex Perl.</p>
+
+<p>De plus, logiquement, Gitolite préfixe les refex qui ne commencent pas par <code>refs/</code> avec la chaîne <code>refs/heads/</code>.</p>
+
+<p>Une autre particularité importante de la syntaxe du fichier de configuration est que toutes les règles ne sont pas nécessairement à un seul endroit. On peut conserver toute la configuration commune, telle que l&#8217;ensemble des règles pour tous les dépôts <code>oss_repo</code> ci-dessus au début puis ajouter des règles spécifiques plus loin, comme :</p>
+
+<pre><code>repo gitolite
+    RW+                     = sitaram</code></pre>
+
+<p>Cette règle sera juste ajoutée à l&#8217;ensemble des règles préexistantes du dépôt <code>gitolite</code>.</p>
+
+<p>Du coup, il est nécessaire d&#8217;expliciter la politique d&#8217;application des règles de contrôle d&#8217;accès.</p>
+
+<p>Il existe deux niveaux de contrôle d&#8217;accès dans gitolite. Le premier réside au niveau du dépôt. Si vous avez un droit d&#8217;accès en lecture (resp. en écriture) à <em>n&#8217;importe quelle</em> <code>ref</code> du dépôt, alors vous avez accès en lecture (resp. en écriture) au dépôt.</p>
+
+<p>Le second niveau, applicable seulement pour l&#8217;accès en écriture se focalise sur les branches et les étiquettes dans un dépôt. L&#8217;utilisateur, le type d&#8217;accès en cours (<code>W</code> ou <code>+</code>) et le nom de la référence permettent de définir les critères. Les règles d&#8217;accès sont vérifiées par ordre d&#8217;apparition dans le fichier de configuration, par recherche d&#8217;une correspondance sur cette combinaison (en se souvenant que la correspondance de référence est une refex, non une simple comparaison). Si une correspondance est trouvée, l&#8217;accès en poussée est accepté. Si aucune correspondance n&#8217;est trouvée, l&#8217;accès est refusé.</p>
+
+<h3 id='contrle_daccs_avanc_avec_les_rgles_deny'>Contrôle d&#8217;accès avancé avec les règles « deny »</h3>
+
+<p>Jusqu&#8217;ici, les seuls types de permissions rencontrés ont été <code>R</code>, <code>RW</code> ou <code>RW+</code>. Néanmoins, Gitolite connaît une autre permission : <code>-</code> qui signifie « deny », accès refusé. Cela vous donne bien plus de possibilités, au prix d&#8217;une complexité accrue car à présent l&#8217;absence de correspondance n&#8217;est plus la <em>seule</em> manière de refuser l&#8217;accès, mais il devient nécessaire de faire attention à l&#8217;ordre des règles !</p>
+
+<p>Supposons que dans la situation ci-dessus, nous souhaitons que les ingénieurs soient capables de rembobiner n&#8217;importe quelle branche <em>excepté</em> master et integ. Voici comment faire :</p>
+
+<pre><code>    RW  master integ    = @engineers
+    -   master integ    = @engineers
+    RW+                 = @engineers</code></pre>
+
+<p>Une fois encore, il suffit de suivre simplement les règles de haut en bas jusqu&#8217;à rencontrer une correspondance pour votre mode d&#8217;accès ou de refus. Les poussées en non-rembobinage sur master ou integ sont permises par la première règle. Les poussées en rembobinage à ces références n&#8217;ont pas de correspondance dans la première règle et se poursuivent par la seconde qui les refuse. Toute poussée (en rembobinage ou non) à des <code>refs</code> autres que master ou integ ne correspondra pas aux deux premières règles et sera permise par la troisième.</p>
+
+<h3 id='restriction_des_pousses_sur_les_fichiers_modifis'>Restriction des poussées sur les fichiers modifiés</h3>
+
+<p>En sus de la restriction sur les branches utilisables par un utilisateur, il est possible de mettre en place des restrictions sur les fichiers qu&#8217;il aura droit de toucher. Par exemple, un Makefile (ou tout autre script) n&#8217;est pas supposé être modifié par n&#8217;importe qui, du fait que de nombreuses choses en dépendent et qu&#8217;une modification non maîtrisée pourrait casser beaucoup de choses. Vous pouvez indiquer à Gitolite :</p>
+
+<pre><code>repo foo
+    RW                      =   @junior_devs @senior_devs
+
+    RW  NAME/               =   @senior_devs
+    -   NAME/Makefile       =   @junior_devs
+    RW  NAME/               =   @junior_devs
+	-   VREF/NAME/Makefile  =   @junior_devs</code></pre>
+
+<p>Les utilisateurs migrant depuis une version précédente de Gitolite pourront noter qu&#8217;il y a une modification significative du comportement de cette fonctionnalité. Référez-vous au guide de migration pour plus de détails.</p>
+
+<h3 id='branches_personnelles'>Branches personnelles</h3>
+
+<p>Gitolite a aussi une fonction appelée « branches personnelles » (ou plutôt « espace de branches personnelles ») qui peuvent s&#8217;avérer très utiles en environnement professionnel.</p>
+
+<p>Dans le monde de Git, une grande quantité d&#8217;échange de code se passe par requêtes de tirage. En environnement professionnel, cependant, les accès non-authentifiés sont inimaginables et une authentification poste à poste est impossible. Il est donc nécessaire de pousser sur le serveur central et demander à quelqu&#8217;un d&#8217;en tirer.</p>
+
+<p>Cela provoquerait normalement le même bazar de branches que dans les VCS centralisés, avec en plus la surcharge pour l&#8217;administrateur de la gestion des permissions.</p>
+
+<p>Gitolite permet de définir un préfixe d&#8217;espace de nom « personnel » ou « brouillon » pour chaque développeur (par exemple, <code>refs/personnel/&lt;nom du dev&gt;/*</code>). Référez-vous à la documentation pour plus de détails.</p>
+
+<h3 id='dpts_joker'>Dépôts « joker »</h3>
+
+<p>Gitolite permet de spécifier des dépôts avec jokers (en fait des regex Perl), comme par exemple, au hasard, <code>devoirs/s[0-9][0-9]/a[0-9][0-9]</code>. Un nouveau mode de permission devient accessible (« C »). En suivant ces schémas de nommage, les utilisateurs peuvent alors créer des dépôts dont ils seront automatiquement propriétaires, leur permettant ainsi de leur assigner des droits en lecture ou lecture-écriture pour d&#8217;autres utilisateurs avec lesquels ils souhaitent collaborer. Référez-vous à la documentation pour plus de détail.</p>
+
+<h3 id='autres_fonctionnalits'>Autres fonctionnalités</h3>
+
+<p>Nous terminerons cette section avec quelques échantillons d&#8217;autres fonctions qui sont toutes décrites, ainsi que d&#8217;autres dans la documentation.</p>
+
+<p><strong>Journalisation</strong> : Gitolite enregistre tous les accès réussis. Si vous étiez réticent à donner aux utilisateurs des droits de rembobiner (<code>RW+</code>) et qu&#8217;un plaisantin a complètement cassé « master », le journal des activités est là pour vous aider à trouver facilement et rapidement le SHA qui a tout déclenché.</p>
+
+<p><strong>Rapport sur les droits d&#8217;accès</strong> : une autre fonctionnalité très utile concerne la prise en charge de la connexion SSH au serveur. Gitolite vous affiche quels dépôts vous pouvez accéder et avec quels droits. Ci-dessous un exemple :</p>
+
+<pre><code>hello sitaram, this is git@git running gitolite3 \
+v3.01-18-g9609868 on git 1.7.4.4
+
+         R     anu-wsd
+         R     entrans
+         R  W  git-notes
+         R  W  gitolite
+         R  W  gitolite-admin
+         R     indic_web_input
+         R     shreelipi_converter</code></pre>
+
+<p><strong>Délégation</strong> : Pour les grands déploiements, il est possible de déléguer la responsabilité de groupes de dépôts à différentes personnes en leur permettant de les gérer de manière autonome. Cela permet de réduire la charge de travail de l&#8217;administrateur principal et évite d&#8217;en faire un goulet d&#8217;étranglement.</p>
+
+<p><strong>Miroirs</strong> : Gitolite peut vous aider à maintenir de multiples miroirs et à basculer simplement entre eux si le miroir principal tombe en panne.</p>
+
+<div id='nav'>
+<a href='ch4-7.html'>prev</a> | <a href='ch4-9.html'>next</a>
+</div>

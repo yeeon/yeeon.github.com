@@ -1,0 +1,258 @@
+---
+layout: translation
+title: Pro Git 9.2 Elementární principy systému Git Objekty Git
+---
+<h2 id='objekty_git'>Objekty Git</h2>
+
+<p>Git je obsahově adresovatelný systém souborů. Výborně. A co to znamená? Znamená to, že v jádru systému Git se nachází jednoduché úložiště dat, ke kterému lze přistupovat pomocí klíčů. Můžete do něj vložit jakýkoli obsah a na oplátku dostanete klíč, který můžete kdykoli v budoucnu použít k vyzvednutí obsahu. Můžete tak použít například nízkoúrovňový příkaz <code>hash-object</code>, který vezme určitá data, uloží je v adresáři <code>.git</code> a dá vám klíč, pod nímž jsou tato data uložena. Vytvořme nejprve nový repozitář Git. Můžeme se přesvědčit, že je adresář <code>objects</code> prázdný:</p>
+
+<pre><code>$ mkdir test
+$ cd test
+$ git init
+Initialized empty Git repository in /tmp/test/.git/
+$ find .git/objects
+.git/objects
+.git/objects/info
+.git/objects/pack
+$ find .git/objects -type f
+$</code></pre>
+
+<p>Git inicializoval adresář <code>objects</code> a vytvořil v něm podadresáře <code>pack</code> a <code>info</code>, nenajdeme tu však žádné skutečné soubory. Nyní můžete uložit kousek textu do databáze Git:</p>
+
+<pre><code>$ echo &#39;test content&#39; | git hash-object -w --stdin
+d670460b4b4aece5915caf5c68d12f560a9fe3e4</code></pre>
+
+<p>Parametr <code>-w</code> sděluje příkazu <code>hash-object</code>, aby objekt uložil. Bez parametru by vám příkaz jen sdělil, jaký klíč by byl přidělen. Parametr <code>--stdin</code> zase příkazu sděluje, aby načetl obsah ze standardního vstupu. Pokud byste parametr nezadali, příkaz <code>hash-object</code> by očekával, že zadáte cestu k souboru. Výstupem příkazu je 40znakový otisk kontrolního součtu (checksum hash). Jedná se o otisk SHA-1 – kontrolní součet spojení ukládaného obsahu a záhlaví, o němž si povíme za okamžik. Nyní se můžete podívat, jak Git vaše data uložil:</p>
+
+<pre><code>$ find .git/objects -type f
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4</code></pre>
+
+<p>Vidíte, že v adresáři <code>objects</code> přibyl nový soubor. Takto Git ukládá nejprve veškerý obsah – jeden soubor pro každý kus obsahu, nazvaný kontrolním součtem SHA-1 obsahu a záhlaví. Podadresář je pojmenován prvními dvěma znaky SHA, název souboru zbývajícími 38 znaky.</p>
+
+<p>Obsah můžete ze systému Git zase vytáhnout, k tomu slouží příkaz <code>cat-file</code>. Tento příkaz je něco jako švýcarský nůž k prohlížení objektů Git. Přidáte-li k příkazu <code>cat-file</code> parametr <code>-p</code>, říkáte mu, aby zjistil typ obsahu a přehledně vám ho zobrazil:</p>
+
+<pre><code>$ git cat-file -p d670460b4b4aece5915caf5c68d12f560a9fe3e4
+test content</code></pre>
+
+<p>Nyní tedy umíte vložit do systému Git určitý obsah a ten poté zase vytáhnout. Totéž můžete udělat také s obsahem v souborech. Na souboru můžete například provádět jednoduché verzování. Vytvořte nový soubor a uložte jeho obsah do své databáze:</p>
+
+<pre><code>$ echo &#39;version 1&#39; &gt; test.txt
+$ git hash-object -w test.txt
+83baae61804e65cc73a7201a7252750c76066a30</code></pre>
+
+<p>Poté do souboru zapište nový obsah a znovu ho uložte:</p>
+
+<pre><code>$ echo &#39;version 2&#39; &gt; test.txt
+$ git hash-object -w test.txt
+1f7a7a472abf3dd9643fd615f6da379c4acb3e3a</code></pre>
+
+<p>Vaše databáze obsahuje dvě nové verze souboru a počáteční obsah, který jste do ní vložili:</p>
+
+<pre><code>$ find .git/objects -type f
+.git/objects/1f/7a7a472abf3dd9643fd615f6da379c4acb3e3a
+.git/objects/83/baae61804e65cc73a7201a7252750c76066a30
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4</code></pre>
+
+<p>Soubor nyní můžete vrátit do první verze:</p>
+
+<pre><code>$ git cat-file -p 83baae61804e65cc73a7201a7252750c76066a30 &gt; test.txt
+$ cat test.txt
+version 1</code></pre>
+
+<p>Nebo do druhé verze:</p>
+
+<pre><code>$ git cat-file -p 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a &gt; test.txt
+$ cat test.txt
+version 2</code></pre>
+
+<p>Pamatovat si klíč SHA-1 každé verze souboru ale není praktické, navíc v systému neukládáte název souboru, pouze jeho obsah. Tento typ objektu se nazývá blob. Zadáte-li příkaz <code>cat-file -t</code> v kombinaci s klíčem SHA-1 objektu, Git vám sdělí jeho typ, ať se jedná o jakýkoli objekt Git.</p>
+
+<pre><code>$ git cat-file -t 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a
+blob</code></pre>
+
+<h3 id='objekty_stromu'>Objekty stromu</h3>
+
+<p>Dalším typem objektu, na který se podíváme, je objekt stromu (tree object), jenž řeší problém ukládání názvu souboru a zároveň umožňuje uložit skupinu souborů dohromady. Git ukládá obsah podobným způsobem jako systém souborů UNIX, jen trochu jednodušeji. Veškerý obsah se ukládá v podobě blobů a objektů stromu. Stromy odpovídají položkám v adresáři UNIX a bloby víceméně odpovídají inodům neboli obsahům souborů. Jeden objekt stromu obsahuje jednu nebo více položek stromu, z nichž každá obsahuje ukazatel SHA-1 na blob nebo podstrom s asociovaným režimem, typem a názvem souboru. Nejnovější strom v projektu „simplegit“ může vypadat například takto:</p>
+
+<pre><code>$ git cat-file -p master^{tree}
+100644 blob a906cb2a4a904a152e80877d4088654daad0c859      README
+100644 blob 8f94139338f9404f26296befa88755fc2598c289      Rakefile
+040000 tree 99f1a6d12cb4b6f19c8655fca46c3ecf317074e0      lib</code></pre>
+
+<p>Syntaxe <code>master^{tree}</code> určuje objekt stromu, na nějž ukazuje poslední revize větve <code>master</code>. Všimněte si, že podadresář <code>lib</code> není blob, ale ukazatel na jiný strom:</p>
+
+<pre><code>$ git cat-file -p 99f1a6d12cb4b6f19c8655fca46c3ecf317074e0
+100644 blob 47c6340d6459e05787f644c2447d2595f5d3a54b      simplegit.rb</code></pre>
+
+<p>Data, která Git ukládá, vypadají v principu jako na obrázku 9-1.</p>
+
+<p><center><img src="/figures/ch9/18333fig0901-tn.png"></center><br/> Figure 9-1. Zjednodušený model dat v systému Git</p>
+
+<p>Můžete si vytvořit i vlastní strom. Git běžně vytváří strom tak, že vezme stav oblasti připravených změn nebo-li indexu a zapíše z nich objekt stromu. Proto chcete-li vytvořit objekt stromu, musíte ze všeho nejdříve připravit soubory k zapsání, a vytvořit tak index. Chcete-li vytvořit index s jediným záznamem – první verzí souboru text.txt – můžete k tomu použít nízkoúrovňový příkaz <code>update-index</code>. Tento příkaz lze použít, jestliže chcete uměle přidat starší verzi souboru test.txt do nové oblasti připravených změn. K příkazu je třeba zadat parametr <code>--add</code>, neboť tento soubor ve vaší oblasti připravených změn ještě neexistuje (dokonce ještě nemáte ani vytvořenou oblast připravených změn), a parametr <code>--cacheinfo</code>, protože soubor, který přidáváte, není ve vašem adresáři, je ale ve vaší databázi. K tomu všemu přidáte režim, SHA-1 a název souboru:</p>
+
+<pre><code>$ git update-index --add --cacheinfo 100644 \
+  83baae61804e65cc73a7201a7252750c76066a30 test.txt</code></pre>
+
+<p>V tomto případě jste zadali režim <code>100644</code>, který znamená, že se jedná o běžný soubor. Dalšími možnostmi režimu jsou <code>100755</code>, který označuje spustitelný soubor, a <code>120000</code>, který znamená symbolický odkaz. Režim (mode) je převzat z normálních režimů UNIX, jen je podstatně méně flexibilní. Tyto tři režimy jsou jediné platné pro soubory (bloby) v systému Git (ačkoli se pro adresáře a submoduly používají ještě další režimy).</p>
+
+<p>Nyní můžete použít příkaz <code>write-tree</code>, jímž zapíšete stav oblasti připravovaných změn neboli indexu do objektu stromu. Tentokrát se obejdete bez parametru <code>-w</code>. Příkaz <code>write-tree</code> automaticky vytvoří objekt stromu ze stavu indexu, pokud tento strom ještě neexistuje:</p>
+
+<pre><code>$ git write-tree
+d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+$ git cat-file -p d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+100644 blob 83baae61804e65cc73a7201a7252750c76066a30      test.txt</code></pre>
+
+<p>Můžete si také ověřit, že jde skutečně o objekt stromu:</p>
+
+<pre><code>$ git cat-file -t d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+tree</code></pre>
+
+<p>Nyní vytvoříte nový strom s druhou verzí souboru test.txt a jedním novým souborem (new.txt):</p>
+
+<pre><code>$ echo &#39;new file&#39; &gt; new.txt
+$ git update-index test.txt
+$ git update-index --add new.txt</code></pre>
+
+<p>V oblasti připravených změn nyní máte jak novou verzi souboru test.txt, tak nový soubor new.txt. Uložte tento strom (zaznamenáním stavu oblasti připravených změn neboli indexu do objektu stromu) a prohlédněte si výsledek:</p>
+
+<pre><code>$ git write-tree
+0155eb4229851634a0f03eb265b69f5a2d56f341
+$ git cat-file -p 0155eb4229851634a0f03eb265b69f5a2d56f341
+100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
+100644 blob 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a      test.txt</code></pre>
+
+<p>Všimněte si, že tento strom má oba záznamy souborů a že hodnota SHA souboru test.txt je SHA původní „verze 2“ (<code>1f7a7a</code>). Jen pro zábavu nyní můžete přidat první strom jako podadresář do tohoto stromu. Stromy můžete do oblasti připravených změn načíst příkazem <code>read-tree</code>. V tomto případě můžete načíst existující strom jako podstrom do oblasti připravených změn pomocí parametru <code>--prefix</code>, který zadáte k příkazu <code>read-tree</code>:</p>
+
+<pre><code>$ git read-tree --prefix=bak d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+$ git write-tree
+3c4e9cd789d88d8d89c1073707c3585e41b0e614
+$ git cat-file -p 3c4e9cd789d88d8d89c1073707c3585e41b0e614
+040000 tree d8329fc1cc938780ffdd9f94e0d364e0ea74f579      bak
+100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
+100644 blob 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a      test.txt</code></pre>
+
+<p>Pokud byste vytvořili pracovní adresář z nového stromu, který jste právě zapsali, dostali byste dva soubory na nejvyšší úrovni pracovního adresáře a podadresář <code>bak</code>, obsahující první verzi souboru test.txt. Data, která Git pro tyto struktury obsahuje, si můžete představit jako ilustraci na obrázku 9-2.</p>
+
+<p><center><img src="/figures/ch9/18333fig0902-tn.png"></center><br/> Figure 9-2. Struktura obsahu vašich současných dat Git</p>
+
+<h3 id='objekty_revize'>Objekty revize</h3>
+
+<p>Máte vytvořeny tři stromy označující různé snímky vašeho projektu, jež chcete sledovat. Původního problému jsme se však stále nezbavili: musíte si pamatovat všechny tři hodnoty SHA-1, abyste mohli snímky znovu vyvolat. Nemáte také žádné informace o tom, kdo snímky uložil, kdy byly uloženy a proč se tak stalo. Toto jsou základní informace, které obsahuje objekt revize.</p>
+
+<p>Pro vytvoření objektu revize zavolejte příkaz <code>commit-tree</code> a zadejte jeden SHA-1 stromu a eventuální objekty revize, které mu bezprostředně předcházely. Začněte prvním stromem, který jste zapsali:</p>
+
+<pre><code>$ echo &#39;first commit&#39; | git commit-tree d8329f
+fdf4fc3344e67ab068f836878b6c4951e3b15f3d</code></pre>
+
+<p>Nyní se můžete podívat na nově vytvořený objekt revize. Použijte příkaz <code>cat-file</code>:</p>
+
+<pre><code>$ git cat-file -p fdf4fc3
+tree d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+author Scott Chacon &lt;schacon@gmail.com&gt; 1243040974 -0700
+committer Scott Chacon &lt;schacon@gmail.com&gt; 1243040974 -0700
+
+first commit</code></pre>
+
+<p>Formát objektu revize je prostý. Udává strom nejvyšší úrovně pro snímek projektu v tomto místě; informace o autorovi řešení/autorovi změny revize získané z konfiguračního nastavení <code>user.name</code> a <code>user.email</code>, spolu s aktuálním časovým údajem; poté následuje prázdný řádek a za ním zpráva k revizi.</p>
+
+<p>Dále zapíšete i zbylé dva objekty revize. Oba budou odkazovat na revizi, která jim bezprostředně předcházela:</p>
+
+<pre><code>$ echo &#39;second commit&#39; | git commit-tree 0155eb -p fdf4fc3
+cac0cab538b970a37ea1e769cbbde608743bc96d
+$ echo &#39;third commit&#39;  | git commit-tree 3c4e9c -p cac0cab
+1a410efbd13591db07496601ebc7a059dd55cfe9</code></pre>
+
+<p>Všechny tři tyto objekty revizí ukazují na jeden ze tří stromů snímku, který jste vytvořili. Může se to zdát zvláštní, ale nyní máte vytvořenu skutečnou historii revizí Git, kterou lze zobrazit příkazem <code>git log</code> spuštěným pro hodnotu SHA-1 poslední revize:</p>
+
+<pre><code>$ git log --stat 1a410e
+commit 1a410efbd13591db07496601ebc7a059dd55cfe9
+Author: Scott Chacon &lt;schacon@gmail.com&gt;
+Date:   Fri May 22 18:15:24 2009 -0700
+
+    third commit
+
+ bak/test.txt |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit cac0cab538b970a37ea1e769cbbde608743bc96d
+Author: Scott Chacon &lt;schacon@gmail.com&gt;
+Date:   Fri May 22 18:14:29 2009 -0700
+
+    second commit
+
+ new.txt  |    1 +
+ test.txt |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletions(-)
+
+commit fdf4fc3344e67ab068f836878b6c4951e3b15f3d
+Author: Scott Chacon &lt;schacon@gmail.com&gt;
+Date:   Fri May 22 18:09:34 2009 -0700
+
+    first commit
+
+ test.txt |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
+
+<p>Úžasné! Právě jste vytvořili historii Git jen na základě nízkoúrovňových operací, bez použití front-endů. To je v podstatě také to, co se odehrává, když zadáte příkazy jako <code>git add</code> nebo <code>git commit</code> – Git uloží bloby souborů, které byly změněny, akutalizuje index, uloží stromy a zapíše objekty revize, které referencí odkazují na stromy nejvyšší úrovně a revize, které jim bezprostředně předcházely. Tyto tři základní objekty Git – bloby, stromy a revize – jsou nejprve uloženy jako samostatné soubory do adresáře <code>.git/objects</code>. Toto jsou všechny objekty v ukázkovém adresáři spolu s komentářem k tomu co obsahují:</p>
+
+<pre><code>$ find .git/objects -type f
+.git/objects/01/55eb4229851634a0f03eb265b69f5a2d56f341 # tree 2
+.git/objects/1a/410efbd13591db07496601ebc7a059dd55cfe9 # commit 3
+.git/objects/1f/7a7a472abf3dd9643fd615f6da379c4acb3e3a # test.txt v2
+.git/objects/3c/4e9cd789d88d8d89c1073707c3585e41b0e614 # tree 3
+.git/objects/83/baae61804e65cc73a7201a7252750c76066a30 # test.txt v1
+.git/objects/ca/c0cab538b970a37ea1e769cbbde608743bc96d # commit 2
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4 # &#39;test content&#39;
+.git/objects/d8/329fc1cc938780ffdd9f94e0d364e0ea74f579 # tree 1
+.git/objects/fa/49b077972391ad58037050f2a75f74e3671e92 # new.txt
+.git/objects/fd/f4fc3344e67ab068f836878b6c4951e3b15f3d # commit 1</code></pre>
+
+<p>Pokud byste hledali vztahy mezi všemi interními ukazateli, vyšel by vám celý diagram objektů – viz obrázek 9-3.</p>
+
+<p><center><img src="/figures/ch9/18333fig0903-tn.png"></center><br/> Figure 9-3. Všechny objekty v adresáři Git</p>
+
+<h3 id='ukldn_objekt'>Ukládání objektů</h3>
+
+<p>Už jsem zmínil, že se spolu s obsahem ukládá také záhlaví (header). Zaměřme se teď chvíli na to, jak Git ukládá své objekty. Uvidíte, jak lze uložit objekt blobu – v našem případě řetězec „what is up, doc?“ – interaktivně v skriptovacím jazyce Ruby. Interaktivní režim Ruby spustíte příkazem <code>irb</code>:</p>
+
+<pre><code>$ irb
+&gt;&gt; content = &quot;what is up, doc?&quot;
+=&gt; &quot;what is up, doc?&quot;</code></pre>
+
+<p>Git vytvoří záhlaví, které bude začínat typem objektu, jímž je v našem případě blob. Poté vloží mezeru, za níž bude následovat velikost obsahu a na konec nulový byte:</p>
+
+<pre><code>&gt;&gt; header = &quot;blob #{content.length}\0&quot;
+=&gt; &quot;blob 16\000&quot;</code></pre>
+
+<p>Git vytvoří řetězec ze záhlaví a původního obsahu a vypočítá kontrolní součet SHA-1 tohoto nového obsahu. V Ruby můžete hodnotu SHA-1 daného řetězce spočítat tak, že příkazem <code>require</code> připojíte knihovnu pro počítání SHA1 a zavoláte <code>Digest::SHA1.hexdigest()</code> s daným řetězcem:</p>
+
+<pre><code>&gt;&gt; store = header + content
+=&gt; &quot;blob 16\000what is up, doc?&quot;
+&gt;&gt; require &#39;digest/sha1&#39;
+=&gt; true
+&gt;&gt; sha1 = Digest::SHA1.hexdigest(store)
+=&gt; &quot;bd9dbf5aae1a3862dd1526723246b20206e5fc37&quot;</code></pre>
+
+<p>Git zkomprimuje nový obsah metodou zlib, která je obsažena v knihovně zlib. Nejprve je třeba vyžádat si knihovnu a poté na obsah spustit příkaz <code>Zlib::Deflate.deflate()</code>:</p>
+
+<pre><code>&gt;&gt; require &#39;zlib&#39;
+=&gt; true
+&gt;&gt; zlib_content = Zlib::Deflate.deflate(store)
+=&gt; &quot;x\234K\312\311OR04c(\317H,Q\310,V(-\320QH\311O\266\a\000_\034\a\235&quot;</code></pre>
+
+<p>Na závěr zapíšete obsah zkomprimovaný metodou zlib do objektu na disku. Musíte tu určit cestu k objektu, který chcete zapsat (první dva znaky hodnoty SHA-1 budou název podadresáře, zbývajících 38 znaků bude tvořit název souboru v tomto adresáři). Pokud podadresář neexistuje, můžete ho v jazyce Ruby vytvořit pomocí funkce <code>FileUtils.mkdir_p()</code>. Poté zadejte <code>File.open()</code> pro otevření souboru a voláním <code>write()</code> na vzniklý identifikátor souboru zapište do souboru právě zkomprimovaný (zlib) obsah:</p>
+
+<pre><code>&gt;&gt; path = &#39;.git/objects/&#39; + sha1[0,2] + &#39;/&#39; + sha1[2,38]
+=&gt; &quot;.git/objects/bd/9dbf5aae1a3862dd1526723246b20206e5fc37&quot;
+&gt;&gt; require &#39;fileutils&#39;
+=&gt; true
+&gt;&gt; FileUtils.mkdir_p(File.dirname(path))
+=&gt; &quot;.git/objects/bd&quot;
+&gt;&gt; File.open(path, &#39;w&#39;) { |f| f.write zlib_content }
+=&gt; 32</code></pre>
+
+<p>A je hotovo. Právě jste vytvořili platný objekt blobu Git. Všechny objekty Git se ukládají stejným způsobem, jen s odlišným typem. Místo řetězce blob bude záhlaví začínat řetězcem „commit“ (u revize) nebo „tree“ (u stromu). A navíc, zatímco obsahem blobu může být téměř cokoliv, obsah revize nebo stromu má velmi specifický formát.</p>
+
+<div id='nav'>
+<a href='ch9-1.html'>prev</a> | <a href='ch9-3.html'>next</a>
+</div>
