@@ -1,108 +1,85 @@
 ---
 layout: translation
-title: Pro Git 4.1 Git op de Server De Protocollen
+title: Pro Git 4.1 Branchen in Git Wat een branch is
 ---
-<h2 id='de_protocollen'>De Protocollen</h2>
+<h2 id='wat_een_branch_is'>Wat een branch is</h2>
 
-<p>Git kan vier veel voorkomende netwerk protocollen gebruiken om data te transporteren: Lokaal, Beveiligde Shell (SSH), Git en HTTP. Hier laten we zien wat het zijn, en in welke omstandigheden je ze wilt gebruiken (of juist niet).</p>
+<p>Om de manier waarop Git branched echt te begrijpen, moeten we een stap terug doen en onderzoeken hoe Git zijn gegevens opslaat. Zoals je je kunt herinneren van Hoofdstuk 1, slaat Git zijn gegevens niet op als een reeks van sets met wijzigingen of delta&#8217;s, maar in plaats daarvan als een serie snapshots.</p>
 
-<p>Het is belangrijk om te zien dat, met uitzondering van de HTTP protocollen, ze allemaal een werkende Git versie op de server geinstalleerd moeten hebben.</p>
+<p>Als je in Git commit, dan slaat Git een commit object op dat een verwijzing bevat naar het snapshot van de inhoud die je gestaged hebt, de auteur en bericht metagegevens, en nul of meer verwijzingen naar de commit of commits die de directe ouders van deze commit waren: nul ouders voor de eerste commit, één ouder voor een normale commit, en meerdere ouders voor een commit die resulteert uit een samenvoeging of twee of meer branches.</p>
 
-<h3 id='lokaal_protocol'>Lokaal Protocol</h3>
+<p>Om dit te visualiseren, laten we aannemen dat je een map hebt die drie bestanden bevat, en je staged ze allemaal en commit. Door de bestanden te stagen krijgen ze allen een checksum (de SHA-1 hash die we in Hoofdstuk 1 noemden), bewaart die versie van het bestand in het Git repository (Git verwijst ernaar als blobs), en voegt die checksum toe aan het stage gebied:</p>
 
-<p>Het meest basale is het <em>lokale protocol</em>, waarbij het remote repository in een andere map op de schijf is. Dit wordt vaak gebruikt als iedereen in je team toegang heeft op een gedeeld bestandssyteem zoals een NFS map, of in het weinig voorkomende geval dat iedereen in dezelfde computer werkt. Het laatste zou niet ideaal zijn, want dan zouden alle repositories zich op dezelfde computer bevinden, zodat de kans op een fataal verlies veel groter wordt.</p>
+<pre><code>$ git add README test.rb LICENSE
+$ git commit -m &#39;initial commit of my project&#39;</code></pre>
 
-<p>Als je een gedeeld bestandssyteem hebt, dan kun je clonen, pushen en pullen van een op een lokaal bestand gebaseerde repository. Om een dergelijk repository te clonen, of om er een als een remote aan een bestaand project toe te voegen, moet je het pad naar het repository als URL gebruiken. Bijvoorbeeld, om een lokaal repository te clonen, kun je zoiets als dit uitvoeren:</p>
+<p>Als je de commit aanmaakt door <code>git commit</code> uit te voeren, zal Git iedere submap van een checksum voorzien (in dit geval, alleen de hoofdmap); en die drie objecten in het Git repository opslaan. Daarna creëert Git een commit object dat de metagegevens bevat en een verwijzing naar de hoofd project boom zodat het het snapshot kan namaken als dat nodig is.</p>
 
-<pre><code>$ git clone /opt/git/project.git</code></pre>
+<p>Je Git repository bevat nu vijf objecten: een blob voor de inhoud van ieder van je drie bestanden, een boom dat de inhoud van de map weergeeft en specificeert welke bestandsnamen opgeslagen zijn als welke blobs, en een commit met de verwijzing naar die hoofd boom en alle commit metagegevens. Conceptueel zien de gegevens in je Git repository eruit zoals in Figuur 3-1.</p>
 
-<p>Of je kunt dit doen:</p>
+<p><center><img src="/figures/ch4/18333fig0301-tn.png"></center><br/> Figuur 3-1. Enkele commit repository gegevens.</p>
 
-<pre><code>$ git clone file:///opt/git/project.git</code></pre>
+<p>Als je wat wijzigingen doet en nogmaals commit, dan slaat de volgende commit een verwijzing op naar de commit die er direct aan vooraf ging. Na nog eens twee commits, zal je historie er misschien uit zien als Figuur 3-2.</p>
 
-<p>Git werkt iets anders als je explicite <code>file://</code> aan het begin van de URL zet. Als je alleen het pad specificeert, probeert Git hardlinks te gebruiken, of het kopieert de bestanden die het nodig heeft. Als je <code>file://</code> specificeert, dan start Git de processen die het normaal gebruikt om data te transporteren over een netwerk, wat over het algemeen een stuk minder efficiente methode is om data te transporteren. De reden om <code>file://</code> wel te specificeren is als je een schone kopie van de repository wilt met de extra referenties of objecten eruit gelaten – over het algemeen na een import van een ander versie beheer systeem of iets dergelijks (zie Hoofdstuk 9 voor onderhoudstaken). We zullen het normale pad hier gebruiken, omdat het bijna altijd sneller is om het zo te doen.</p>
+<p><center><img src="/figures/ch4/18333fig0302-tn.png"></center><br/> Figuur 3-2. Git object gegevens voor meerdere commits.</p>
 
-<p>Om een lokaal repository aan een bestaand Git project toe te voegen, kun je zoiets als dit uitvoeren:</p>
+<p>Een branch in Git is simpelweg een lichtgewicht verplaatsbare verwijzing naar een van deze commits. De standaard branch naam in Git is master. Als je initieel commits maakt, dan wordt je een master branch gegeven die wijst naar de laatste commit die je gemaakt hebt. Iedere keer als je commit, beweegt het automatisch vooruit.</p>
 
-<pre><code>$ git remote add local_proj /opt/git/project.git</code></pre>
+<p><center><img src="/figures/ch4/18333fig0303-tn.png"></center><br/> Figuur 3-3. Branch wijzend in de commit gegevens historie.</p>
 
-<p>Daarna kun je pushen en pullen van dat remote alsof je over een netwerk werkt.</p>
+<p>Wat gebeurt er als je een nieuwe branch maakt? Wel, door dat te doen wordt een nieuwe verwijzing aangemaakt voor jou om te verplaatsen. Laten we zeggen dat je een nieuwe branch genaamd testing maakt. Je doet dit met het <code>git branch</code> commando:</p>
 
-<h4 id='de_voordelen'>De Voordelen</h4>
+<pre><code>$ git branch testing</code></pre>
 
-<p>De voordelen van bestands-gebaseerde repositories zijn dat ze eenvoudig zijn en ze maken gebruik van bestaande bestandspermissies en netwerk toegang. Als je al een gedeeld bestandssysteem hebt, waar je hele team al toegang tot heeft, dan is een repository opzetten heel gemakkelijk. Je stopt de kale repository ergens waar iedereen gedeelde toegang tot heeft, en stelt de lees- en schrijfrechten in zoals je dat bij iedere andere gedeelde map zou doen. In de volgende sectie &#8220;Git op een Server krijgen&#8221; bespreken we hoe je een kopie van een kale repository kunt exporteren voor dit doeleind.</p>
+<p>Dit maakt een nieuwe verwijzing naar dezelfde commit waar je nu op zit (zie Figuur 3-4).</p>
 
-<p>Dit is ook een fijne optie om snel werk van een repository van iemand anders te pakken. Als jij en een collega aan hetzelfde project aan het werk zijn, en hij wil dat je iets bekijkt, dan is het uitvoeren van een commando zoals <code>git pull /home/john/project</code> vaak makkelijker dan dat hij naar een remote server moet pushen, en jij er van moet pullen.</p>
+<p><center><img src="/figures/ch4/18333fig0304-tn.png"></center><br/> Figuur 3-4. Meerdere branches wijzend naar de commit gegevens historie.</p>
 
-<h4 id='de_nadelen'>De Nadelen</h4>
+<p>Hoe weet Git op welke branch je nu zit? Het houdt een speciale verwijzing bij genaamd HEAD. Let op dat dit heel anders is dan het concept van HEAD in andere VCS&#8217;s waar je misschien gewend aan bent, zoals bijvoorbeeld Subversion of CVS. In Git, is dit een verwijzing naar de lokale branch waar je nu op zit. In dit geval, zit je nog steeds op master. Het git branch commando heeft alleen een nieuwe branch aangemaakt — het is nog niet omgeschakeld naar die branch (zie Figuur 3-5).</p>
 
-<p>Een van de nadelen van deze methode is dat gedeelde toegang over het algemeen moeilijker op te zetten en te bereiken is vanaf meerdere lokaties dan basaal netwerk toegang. Als je wilt pushen van je laptop als je thuis bent, dan moet je de remote schijf aankoppelen, wat moeilijk en langzaam kan zijn in vergelijking tot netwerk gebaseerde toegang.</p>
+<p><center><img src="/figures/ch4/18333fig0305-tn.png"></center><br/> Figuur 3-5. HEAD bestand wijzend naar de branch waar je op zit.</p>
 
-<p>Het is ook belangrijk om te melden dat het niet noodzakelijk de snelste optie is, als je een gedeeld koppelpunt of iets dergelijks gebruikt. Een lokale repository is alleen snel als je snelle toegang tot de data hebt. Een repository op NFS is vaak langzamer dan het repository via SSH op dezelfde server, wat Git toelaat om vanaf lokale schijven te werken op ieder systeem.</p>
+<p>Om te schakelen naar een bestaande branch, voer je het <code>git checkout</code> commando uit. Laten we eens omschakelen naar de nieuwe testing branch:</p>
 
-<h3 id='het_ssh_protocol'>Het SSH Protocol</h3>
+<pre><code>$ git checkout testing</code></pre>
 
-<p>Waarschijnlijk het meest voorkomende protocol voor Git is SSH. Dit is omdat SSH toegang tot servers in veel plaatsen al geconfigureerd is – en als dat niet het geval is, dan is het makkelijk om dat te doen. SSH is ook het enige netwerk gebaseerde protocol waarvan je makkelijk kunt lezen en naartoe kunt schrijven. De andere twee netwerk protocollen (HTTP en Git) zijn over het algemeen alleen-lezen, dus zelfs als je ze al beschikbaar hebt voor de ongeinitieerden, dan heb je nog steeds SSH nodig voor je eigen schrijftoegang. SSH is ook een geverifieerd protocol; en omdat het overal voorkomt, is het over het algemeen eenvoudig om in te stellen en te gebruiken.</p>
+<p>Dit verplaatst HEAD zodat het wijst naar de testing branch (zie Figuur 3-6).</p>
 
-<p>Om een Git repository via SSH te clonen, kun je een ssh:// URL opgeven zoals:</p>
+<p><center><img src="/figures/ch4/18333fig0306-tn.png"></center><br/> Figuur 3-6. HEAD wijst naar een andere branch als je omschakelt.</p>
 
-<pre><code>$ git clone ssh://user@server:project.git</code></pre>
+<p>Wat is hier het belang van? Wel, laten we eens een andere commit doen:</p>
 
-<p>Of je geeft geen protocol op – Git gaat uit van SSH als je niet expliciet bent:</p>
+<pre><code>$ vim test.rb
+$ git commit -a -m &#39;made a change&#39;</code></pre>
 
-<pre><code>$ git clone user@server:project.git</code></pre>
+<p>Figuur 3-7 toont het resultaat.</p>
 
-<p>Je kunt ook de gebruiker niet opgeven, en Git neemt aan dat je de gebruiker bedoelt waarmee je op het moment bent ingelogged.</p>
+<p><center><img src="/figures/ch4/18333fig0307-tn.png"></center><br/> Figuur 3-7. De branch waar HEAD naar wijst gaat vooruit met iedere commit.</p>
 
-<h4 id='de_voordelen'>De Voordelen</h4>
+<p>Dit is interessant, omdat je testing branch nu vooruit is gegaan, maar je master branch nog steeds wijst naar de commit waar je op was toen je <code>git checkout</code> uitvoerde om om te schakelen. Laten we eens terugschakelen naar de master branch:</p>
 
-<p>Er zijn vele voordelen om SSH te gebruiken. De eerste is dat je het eigenlijk wel moet gebruiken als je geverifieerde schrijftoegang op je repository via een netwerk wilt. Het tweede is dat het relatief eenvoudig in te stellen is – SSH daemons komen veel voor, veel systeembeheerders hebben er ervaring mee, en veel operating systemen zijn er mee uitgerust of hebben applicaties om ze te beheren. Daarnaast is toegang via SSH veilig – alle data transporten zijn versleuteld en geverifieerd. En als laatste is SSH efficient, zoals het Git en lokale protocol, waarbij de data zo compact mogelijk wordt gemaakt voordat het getransporteerd wordt.</p>
+<pre><code>$ git checkout master</code></pre>
 
-<h4 id='de_nadelen'>De Nadelen</h4>
+<p>Figuur 3-8 toont het resultaat.</p>
 
-<p>Het negatieve aspect van SSH is dat je er geen anonieme toegang over kunt geven. Mensen moeten via SSH toegang hebben om er gebruik van te kunnen maken, zelfs als het alleen lezen is, zodat SSH toegang niet bevordelijk is voor open source projecten. Als je het alleen binnen je bedrijfsnetwerk gebruikt, dan kan SSH misschien het enige protocol zijn waar je mee in aanraking komt. Als je anonieme alleen-lezen toegang wilt toestaan tot je projecten, dan moet je SSH voor jezelf instellen om over te pushen, maar iets anders voor anderen om over te pullen.</p>
+<p><center><img src="/figures/ch4/18333fig0308-tn.png"></center><br/> Figuur 3-8. HEAD verschuift naar een andere branch bij een checkout.</p>
 
-<h3 id='het_git_protocol'>Het Git Protocol</h3>
+<p>Dat commando deed twee dingen. Het verplaatste de HEAD verwijzing terug naar de master branch, en het draaide de bestanden in je werkmap terug naar het snapshot waar master naar wijst. Dit betekent ook dat de wijzigingen die je vanaf dit punt maakt zullen afwijken van een oudere versie van het project. Het betekent in essentie dat het het werk dat je in je testing branch hebt gedaan tijdelijk terugdraait zodat je in een andere richting kunt gaan.</p>
 
-<p>Het volgende is het Git protocol. Dit is een aparte daemon, die samen met Git geleverd wordt; het luistert op een toegewezen poort (9418), dat een vergelijkbare dienst verleend als het SSH protocol, maar dan zonder enige verificatie. Om een repository te serveren over het Git protocol, moet je het <code>git-export-daemon-ok</code> bestand aanmaken – de daemon zal een repository zonder dit bestand erin niet serveren – maar buiten dat is er geen beveiliging. Ofwel het Git repository is er om gecloned te kunnen worden door iedereen, of het is er helemaal niet. Dit betekent dat er over het algemeen geen pushing is via dit protocol. Je kunt push toegang aanzetten; maar gegeven het gebrek aan verificatie als je push toegang aan zet, kan iedereen die de URL van jouw project op het internet vindt, pushen naar jouw project. We volstaan met te zeggen dat dit zeldzaam is.</p>
+<p>Laten we een paar wijzigingen doen en nog eens committen:</p>
 
-<h4 id='de_voordelen'>De Voordelen</h4>
+<pre><code>$ vim test.rb
+$ git commit -a -m &#39;made other changes&#39;</code></pre>
 
-<p>Het Git protocol is het snelste dat beschikbaar is. Als je veel verkeer serveert voor een publiek project, of een zeer groot project dat geen gebruikersverificatie nodig heeft voor leestoegang, dan is het waarschijnlijk dat je een Git daemon wilt instellen om je project te serveren. Het maakt van hetzelfde data-transport mechanisme gebruik als het SSH protocol, maar dan zonder de extra belasting van versleuteling en verificatie.</p>
+<p>Nu is je project historie afgeweken (zie Figuur 3-9). Je hebt een branch gemaakt en bent er naartoe omgeschakeld, hebt er wat werk op gedaan, en bent toen teruggeschakeld naar je hoofd branch en hebt nog ander werk gedaan. Beide van die veranderingen zijn geïsoleerd van elkaar in aparte branches: je kunt heen en weer schakelen tussen de branches en ze samenvoegen als je klaar bent. En je hebt dat alles gedaan met eenvoudige <code>branch</code> en <code>checkout</code> commando&#8217;s.</p>
 
-<h4 id='de_nadelen'>De Nadelen</h4>
+<p><center><img src="/figures/ch4/18333fig0309-tn.png"></center><br/> Figuur 3-9. De branch histories zijn uiteen gegaan.</p>
 
-<p>Het nadeel van het Git protocol is het gebrek van verificatie. Het is over het algemeen onwenselijk dat het Git protocol de enige toegang tot je project is. Over het algemeen zul je het samen met SSH toegang gebruiken voor de paar ontwikkelaars die push (schrijf-)toegang hebben en de rest laat je <code>git://</code> voor alleen leestoegang gebruiken. Het is waarschijnlijk ook het meest ingewikkelde protocol om in te stellen. Het moet een eigen daemon hebben, die speciaal ontworpen is – we zullen er een instellen in het &#8220;Gitosis&#8221; gedeelte van dit hoofdstuk – het gebruikt <code>xinetd</code> configuratie of iets dergelijks, wat niet altijd eenvoudig is. Het heeft ook firewall toegang tot poort 9418 nodig, wat geen standaard poort is dat bedrijfsfirewalls altijd toestaan. Achter grote bedrijfsfirewalls, is deze obscure poort meestal geblokkeerd.</p>
+<p>Omdat een branch in Git in feite een eenvoudig bestand is dat de 40 karakter lange SHA-1 checksum van de commit bevat waar het naar wijst, zijn branches goedkoop om te maken en weg te gooien. Een nieuwe branch aanmaken is zo makkelijk en eenvoudig als 41 bytes naar een bestand schrijven (40 karakters en een harde return).</p>
 
-<h3 id='het_https_protocol'>Het HTTP/S Protocol</h3>
+<p>Dit is in scherp contrast met de manier waarop de meeste VCS applicaties branchen, wat inhoud dat alle project bestanden naar een tweede map gekopieerd worden. Dit kan enkele seconden of zelfs minuten duren, afhankelijk van de grootte van het project, en daarentegen is het in Git altijd meteen klaar. En omdat we de ouders opslaan terwijl we committen, wordt het vinden van een goed punt als basis voor het samenvoegen automatisch voor ons gedaan en is over het algemeen eenvoudig om te doen. Deze eigenschappen helpen ontwikkelaars aan te moedigen om branches vaak aan te maken en te gebruiken.</p>
 
-<p>Als laatste hebben we het HTTP protocol. Het mooie aan het HTTP of HTTPS protocol is dat het simpel in te stellen is. Eigenlijk is alles wat je moet doen de kale Git repository in je HTTP document root zetten, en een specifieke <code>post-update</code> hook (haak) instellen en je bent klaar (zie hoofdstuk 7 voor details over Git hooks). Vanaf dat moment kan iedereen die toegang heeft tot de webserver waaronder je de repository gezet hebt ook je repository clonen. Om leestoegang tot je repository over HTTP toe te staan, doe je zoiets als het volgende:</p>
-
-<pre><code>$ cd /var/www/htdocs/
-$ git clone --bare /path/to/git_project gitproject.git
-$ cd gitproject.git
-$ mv hooks/post-update.sample hooks/post-update
-$ chmod a+x hooks/post-update</code></pre>
-
-<p>Dat is alles. De <code>post-update</code> hook, die standaard bij Git zit, voert het noodzakelijke commando uit (<code>git update-server-info</code>) om HTTP fetching en cloning goed werkend te krijgen. Dit commando wordt uitgevoerd als je naar dit repository via SSH pushed; en dan kunnen andere mensen clonen met behulp van zoiets als</p>
-
-<pre><code>$ git clone http://example.com/gitproject.git</code></pre>
-
-<p>In dit geval, gebruiken we het <code>/var/www/htdocs</code> pad wat gebruikelijk is voor Apache opstellingen, maar je kunt iedere statische webserver gebruiken – stop de kale repository in haar pad. De Git data wordt geserveerd als standaard statische bestanden (zie hoofdstuk 9 voor details over hoe het precies geserveerd wordt).</p>
-
-<p>Het ook is mogelijk om Git over HTTP te laten pushen, alhoewel dat geen veelgebruikte techniek is en erom vraagt dat je complexe WebDAV vereisten insteld. Omdat het zelden gebruikt wordt, zullen we het niet in dit boek beschrijven. Als je geinteresseerd bent om de HTTP-push protocollen te gebruiken, dan kun je op <code>http://www.kernel.org/pub/software/scm/git/docs/howto/setup-git-server-over-http.txt</code> lezen hoe je een repository kunt maken. Een fijn ding aan Git laten pushen over HTTP is dat je iedere WebDAV server kunt gebruiken, zonder specifieke Git eigenschappen; dus je kunt deze functionaliteit gebruiken als je web-hosting provider WebDAV ondersteunt voor schrijf vernieuwingen aan je webpagina.</p>
-
-<h4 id='de_voordelen'>De Voordelen</h4>
-
-<p>Het voordeel van het gebruik van het HTTP protocol is dat het eenvoudig in te stellen is. Een handvol benodigde commando&#8217;s uitvoeren zorgt voor een eenvoudige manier om de wereld leestoegang te geven aan je Git repository. Het kost slechts een paar minuten om te doen. Het HTTP protocol is niet erg belastend voor de systeembronnen van je server. Omdat het over het algemeen een statische webserver gebruikt om alle data te serveren, een normale Apache server kan gemiddeld duizenden bestanden serveren per seconde – is het moeilijk om zelfs een kleine server te overbelasten.</p>
-
-<p>Je kunt ook je repositories alleen-lezen serveren via HTTPS, wat betekend dat je het transport kunt versleutelen; of je kunt zelfs zover gaan dat je clients een specifiek gesigneerd SSL certificaat moeten gebruiken. Als je over het algemeen zo ver gaat, dan is het makkelijker om publieke SSH sleutels te gebruiken; maar het kan een betere oplossing in jouw specifieke geval om gesigneerde SSL certificaten of andere HTTP-gebaseerde verificatie methoden te gebruiken voor alleen-lezen toegang via HTTPS.</p>
-
-<p>Een ander fijn ding is dat HTTP zo&#8217;n veel voorkomend protocol is dat bedrijfsfirewalls vaak zo ingesteld zijn dat ze verkeerd via deze poort toelaten.</p>
-
-<h4 id='de_nadelen'>De Nadelen</h4>
-
-<p>Het nadeel van je repository serveren via HTTP is dat het relatief inefficient voor de client is. Over het algemeen duurt het een stuk langer om te clonen en te fetchen van de repository, en je hebt vaak een stuk meer netwerk belasting en transport volume via HTTP dan met elk van de andere netwerk protocollen. Omdat het niet zo ingewikkeld is om alleen de data te versturen die je nodig hebt – er wordt geen dynamisch werk door de server gedaan in deze transacties – wordt vaak naar het HTTP protocol gerefereerd als zijnde een <em>dom</em> protocol. Voor meer informatie over de verschillen in efficientie tussen het HTTP protocol en andere protocollen, zie Hoofdstuk 9.</p>
+<p>Laten we eens kijken waarom je dat zou moeten doen.</p>
 
 <div id='nav'>
 <a href='ch4-0.html'>prev</a> | <a href='ch4-2.html'>next</a>

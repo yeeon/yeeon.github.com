@@ -1,0 +1,212 @@
+---
+layout: translation
+title: Pro Git 4.2 Git&#8217;te Dallanma Dallanma ve Birleştirmenin Temelleri
+---
+<h2 id='dallanma_ve_birletirmenin_temelleri'>Dallanma ve Birleştirmenin Temelleri</h2>
+
+<p>Gelin, basit bir örnekle, gerçek hayatta kullanacağınız bir dallanma ve birleştirme işleyişinin üstünden geçelim. Şu adımları izleyeceksiniz:</p>
+
+<ol>
+<li>Bir web sitesi üzerine çalışıyor olun.</li>
+
+<li>Üzerinde çalıştığınız yeni bir iş parçası için bir dal yaratın.</li>
+
+<li>Çalışmalarınızı bu dalda gerçekleştirin.</li>
+</ol>
+
+<p>Bu noktada, sizden kritik önemde başka sorun üzerinde çalışıp hızlıca bir yama hazırlamanız istensin. Bu durumda şunları yapacaksınız:</p>
+
+<ol>
+<li>Ana dalınıza geri dönün.</li>
+
+<li>Yamayı eklemek için yeni bir dal oluşturun.</li>
+
+<li>Testleri tamamlandıktan sonra yama dalını ana dalla birleştirip yayına verin.</li>
+
+<li>Çalışmakta olduğunuz iş parçası dalına geri dönüp çalışmaya devam edin.</li>
+</ol>
+
+<h3 id='dallanmann_temelleri'>Dallanmanın Temelleri</h3>
+
+<p>Önce, diyelim ki bir projede çalışıyorsunuz ve halihazırda birkaç tane kaydınız var (bkz. Figür 3-10).</p>
+
+<p><center><img src="/figures/ch4/18333fig0310-tn.png"></center><br/> Figür 3-10. Kısa ve basit bir kayıt tarihçesi.</p>
+
+<p>Şirketinizin kullandığı sorun izleme programındaki #53 numaralı sorun üzerinde çalışmaya karar verdiniz. Açıklığa kavuşturmak için söyleyelim: Git herhangi bir sorun izleme programına bağlı değildir; ama #53 numaralı sorun üzerinde çalışmak istediğiniz başı sonu belli bir konu olduğu için, çalışmanızı bir dal üzerinde yapacaksınız. Bir dalı yaratır yaratmaz hemen ona geçiş yapmak için <code>git checout</code> komutunu <code>-b</code> seçeneğiyle birlikte kullanabilirsiniz:</p>
+
+<pre><code>$ git checkout -b iss53
+Switched to a new branch &quot;iss53&quot;</code></pre>
+
+<p>Bu, aşağıdaki iki komutun yerine kullanabileceğiniz bir kısayoldur:</p>
+
+<pre><code>$ git branch iss53
+$ git checkout iss53</code></pre>
+
+<p>Figür 3-11 sonucu resmediyor.</p>
+
+<p><center><img src="/figures/ch4/18333fig0311-tn.png"></center><br/> Figür 3-11. Yeni bir dal imleci yaratmak.</p>
+
+<p>Web sitesi üzerinde çalışıp bazı kayıtlar yapıyorsunuz. Bunu yaptığınızda <code>iss53</code> dalı ilerliyor, çünkü seçtiğiniz dal o (yani <code>HEAD</code> onu gösteriyor; bkz. Figür 3-12).</p>
+
+<pre><code>$ vim index.html
+$ git commit -a -m &#39;added a new footer [issue 53]&#39;</code></pre>
+
+<p><center><img src="/figures/ch4/18333fig0312-tn.png"></center><br/> Figür 3-12. Çalışamız sonucunda iss53 dalı ilerledi.</p>
+
+<p>Şimdi, sizden web sitesindeki bir sorun için acilen bir yama hazırlamanız istensin. Git kullanıyorsanız, yamayı daha önce <code>iss53</code> dalında yaptığınız yaptığınız değişikliklerle birlikte yayına sokmanız gerekmez; yama üzerinde çalışmaya başlamadan önce söz konusu değişiklikleri geri alıp yayındaki web sitesini kaynak koduna ulaşabilmek için fazla çabalamanıza da gerek yok. Tek yapmanız gereken <code>master</code> dalına geri dönmek.</p>
+
+<p>Ama, bunu yapmadan önce şunu belirtmekte yarar var: eğer çalışma klasörünüzde ya da kayda hazırlık alanında seçmek (_checkout_) istediğiniz dalla uyuşmazlık gösteren kaydedilmemiş değişiklikler varsa, Git dal değiştirmenize izin vermeyecektir. Dal değiştirirken çalışma alanınızı temiz olması en iyisidir. Bunun üstesinden gelmek için başvurulabilecek yolları (zulalama ve kayıt değiştirme gibi) daha sonra inceleyeceğiz. Şimdilik, bütün değişikliklerinizi kaydettiniz, dolayısıyla <code>master</code> dalına geçiş yapabilirsiniz.</p>
+
+<pre><code>$ git checkout master
+Switched to branch &quot;master&quot;</code></pre>
+
+<p>Bu noktada, çalışma klasörünüz #53 numaralı sorun üzerinde çalışmaya başlamadan hemen önceki halindedir ve yamayı hazırlamaya odaklanabilirsiniz. Burası önemli: Git, çalışma klasörünüzü seçtiğiniz dalın gösterdiği kaydın bellek kopyasıyla aynı olacak şekilde ayarlar. Dal, son kaydınızda nasıl görünüyorsa çalışma klasörünü o hale getirbilmek için otomatik olarak dosyaları ekler, siler ve değiştirir.</p>
+
+<p>Sırada, hazırlanacak yama var. Şimdi yama üzerinde çalışmak için bir <code>hotfix</code> dalı oluşturalım (bkz. Figür 3-13):</p>
+
+<pre><code>$ git checkout -b &#39;hotfix&#39;
+Switched to a new branch &quot;hotfix&quot;
+$ vim index.html
+$ git commit -a -m &#39;fixed the broken email address&#39;
+[hotfix]: created 3a0874c: &quot;fixed the broken email address&quot;
+ 1 files changed, 0 insertions(+), 1 deletions(-)</code></pre>
+
+<p><center><img src="/figures/ch4/18333fig0313-tn.png"></center><br/> Figür 3-13. hotfix dalı master dalını baz alıyor.</p>
+
+<p>Testlerinizi uygulayabilir, yamanızın istediğiniz gibi olduğundan emin olduktan sonra yayına sokabilmek için <code>master</code> dalıyla birleştirebilirsiniz. Bunun için <code>git merge</code> komutu kullanılır:</p>
+
+<pre><code>$ git checkout master
+$ git merge hotfix
+Updating f42c576..3a0874c
+Fast forward
+ README |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)</code></pre>
+
+<p>Birleştirme çıktısındaki &#8220;Fast forward&#8221; ifadesine dikkat. Birleştirdiğiniz dalın gösterdiği kayıt, üstünde bulunduğunuz dalın doğrudan devamı olduğundan, Git yalnızca imleci ileri alır. Başka bir deyişle, bir kaydı, kendi tarihçesinde geri giderek ulaşılabilecek bir başka kayıtla birleştiriyorsanız, Git ıraksayan ve birleştirilmesi gereken herhangi bir şey olmadığı için işleri kolaylaştırıp imleci ileri alır —buna &#8220;fast forward&#8221; (hızlı ileri alma) denir.</p>
+
+<p>Yaptığınız değişiklik artık <code>master</code> dalı tarafından işaret edilen kaydın bellek kopyasındadır ve yayımlanabilir (bkz. Figür 3-14).</p>
+
+<p><center><img src="/figures/ch4/18333fig0314-tn.png"></center><br/> Figür 3-14. Birleştirmeden sonra master dalınız hotfix dalınızla aynı yeri gösterir.</p>
+
+<p>Bu çok önemli yama yayımlandıktan sonra, kaldığınız yere geri dönebilirsiniz. Fakat önce <code>hotfix</code> dalını sileceksiniz, çünkü artık ona ihtiyacınız kalmadı —<code>master</code> dalı aynı yeri gösteriyor. <code>git branch</code> komutunu <code>-d</code> seçeneğiyle birlikte kullanarak silme işlemini yapabilirsiniz:</p>
+
+<pre><code>$ git branch -d hotfix
+Deleted branch hotfix (3a0874c).</code></pre>
+
+<p>Şimdi kaldığınız yere geri dönebilir ve #53 numaralı sorun üzerinde çalışmaya devam edebilirsiniz (bkz. 3-15).</p>
+
+<pre><code>$ git checkout iss53
+Switched to branch &quot;iss53&quot;
+$ vim index.html
+$ git commit -a -m &#39;finished the new footer [issue 53]&#39;
+[iss53]: created ad82d7a: &quot;finished the new footer [issue 53]&quot;
+ 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
+
+<p><center><img src="/figures/ch4/18333fig0315-tn.png"></center><br/> Figür 3-15. iss53 dalınız bağımsız olarak ilerleyebilir.</p>
+
+<p>Şunu belirtmekte yarar var: <code>hotfix</code> dalında yaptığınız düzeltme <code>iss53</code> dalındaki dosyalarda bulunmuyor. Eğer bu değişikliği çekmek isterseniz, <code>git merge master</code> komutunu çalıştırarak <code>master</code> dalınızı <code>iss53</code> dalınızla birleştirebilirsiniz; alternatif olarak <code>iss53</code> dalındaki değişiklikleri <code>master</code>dalıyla birleştirmeye hazır hale getirene kadar bekleyebilirsiniz.</p>
+
+<h3 id='birletirmenin_temelleri'>Birleştirmenin Temelleri</h3>
+
+<p>Diyelim ki #53 numaralı sorunla ilgili çalışmanızı tamamladınız ve <code>master</code> dalıyla birleştirmeye hazırsınız. Bunu yapabilmek için <code>iss53</code> dalınızı, aynı <code>hotfiz</code> dalını yaptığınız gibi birleştireceksiniz. Bütün yapmanız gereken birleştirmeyi gerçekleştirmek istediğiniz dalı seçmek (_checkout_) ve <code>git merge</code> komutunu çalıştırmak:</p>
+
+<pre><code>$ git checkout master
+$ git merge iss53
+Merge made by recursive.
+ README |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
+
+<p>Bu daha önce yaptığınız <code>hotfix</code> birleştirmesinden biraz farklı görünüyor. Burada, kayıt tarihçeniz daha eski bir noktadan ıraksamıştı. Üzerinde bulunduğunuz dalın gösterdiği kayıt birleştirmekte olduğunuz dalın doğrudan atası olmadığından Git&#8217;in biraz iş yapması gerekiyor. Bu örnekte Git, iki dalın en uç noktası ve ikisinin ortak atasının kullanıldığı üç-taraflı basit bir birleştirme yapıyor. Figür 3-16, bu birleştirmede kullanılan üç farklı bellek kopyasını vurguluyor.</p>
+
+<p><center><img src="/figures/ch4/18333fig0316-tn.png"></center><br/> Figür 3-16. Git, dalları birleştirmek için en uygun ortak atayı buluyor.</p>
+
+<p>Git, yalnızca dal imlecini ileri kaydırmak yerine üç-tarafı birleştirmenin sonucunda ortaya çıkan bellek kopyası için otomatik bir kayıt oluşturuyor (bkz. Figür 3-17). Buna birlleştirme kaydı denir ve özelliği birden çok atasının olmasıdır.</p>
+
+<p>Git&#8217;in en uygun ortak atayı otomatik olarak bulduğunu vurgulamakta yarar var; bu kullanıcının en uygun ortak paydayı bulmak zorunda olduğu CVS ve Subversion&#8217;daki durumdan (1.5 sürümünden önceki haliyle) farklıdır. Bu Git kullanarak birleştirme yapmayı söz konusu diğer sistemlere göre çok daha kolay bir hale getirir.</p>
+
+<p><center><img src="/figures/ch4/18333fig0317-tn.png"></center><br/> Figür 3-17. Git, otomatik olarak, birleştirilmiş çalışmayı içeren yeni bir kayıt nesnesi yaratır.</p>
+
+<p>Çalışmanız birleştirildiğine göre, artık <code>iss53</code> dalına ihtiyacınız kalmadı. Dalı silip, sorun izleme sisteminizdeki sorunu da kapatabilirsiniz:</p>
+
+<pre><code>$ git branch -d iss53</code></pre>
+
+<h3 id='temel_birletirme_uyumazlklar'>Temel Birleştirme Uyuşmazlıkları</h3>
+
+<p>Zaman zaman bu süreç o kadar da pürüzsüz ilerlemez. Eğer aynı dosyanın aynı bölümünü her iki dalda da değiştirmişseniz, Git temiz bir birleştirme yapamaz. #53 numaları sorun için hazırladığınız düzeltme <code>hotfix</code>le aynı yazılım parçasını değiştiriyorsa, şuna benzer bir birleştirme uyuşmazlığıyla karşılaşırsınız:</p>
+
+<pre><code>$ git merge iss53
+Auto-merging index.html
+CONFLICT (content): Merge conflict in index.html
+Automatic merge failed; fix conflicts and then commit the result.</code></pre>
+
+<p>Burada Git otomatik olarak yeni bir birleştirme kaydı oluşturmadı. Sizin uyuşmazlığı çözmenizi beklemek için sürece ara verdi. Bir birleştirme uyuşmazlığından sonra hangi dosyaların birleştirilmemiş olduğunu görmek için <code>git status</code> komutunu çalıştırabilirsiniz.</p>
+
+<pre><code>[master*]$ git status
+index.html: needs merge
+# On branch master
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#   (use &quot;git checkout -- &lt;file&gt;...&quot; to discard changes in working directory)
+#
+#	unmerged:   index.html
+#</code></pre>
+
+<p>Birleştirme uyuşmazlığı henüz çözümlenmemiş her şey <em>unmerged</em> (birleştirilmemiş) olarak gösterilecektir. Git, dosyaları açıp uyuşmazlıkları çözümleyebilmeniz için standartuyuşmazlık-çözümleme işaretçileri koyar. Dosyanızda şuna benzer bir bölümle karşılaşırsınız:</p>
+
+<pre><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD:index.html
+&lt;div id=&quot;footer&quot;&gt;contact : email.support@github.com&lt;/div&gt;
+=======
+&lt;div id=&quot;footer&quot;&gt;
+  please contact us at support@github.com
+&lt;/div&gt;
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; iss53:index.html</code></pre>
+
+<p>Burada , <code>HEAD</code>deki sürüm (ki bu <code>master</code> dalındaki sürümdür çünkü birleştirme komutunu bu daldan çalıştırdınız) üstte, (<code>=======</code> işaretinin üstündeki her şey), <code>iss53</code> dalındaki sürüm ise altta gösterilmektedir. Uyuşmazlığı çözümleyebilmek için bu ikisinden birini seçmeli, ya da birleştirmeyi istediğiniz gibi kendiniz düzenlemelisiniz. Söz gelimi, uyuşmazlığı çözmek için bütün bu kod bloğunun yerine şunu yerleştirebilirsiniz:</p>
+
+<pre><code>&lt;div id=&quot;footer&quot;&gt;
+please contact us at email.support@github.com
+&lt;/div&gt;</code></pre>
+
+<p>Çözümlemede iki taraftan da bir şeyler var ve <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code>, <code>=======</code>, ve <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code> işaretlerini içeren satırlar tamamen silinmiş durumda. Uyuşmazlık olan herbir dosyadaki herbir uyuşmazlık bloğunu çözümledikten sonra herbir dosya üzerinde <code>git add</code> komutunu çalıştırarak, uyuşmazlığın o dosya için çözülmüş olduğunu belirtebilirsiniz. Bir dosyayı ayda hazırlamak o dosyayı uyuşmazlığı çözümlenmiş olarak işaretler. Uyuşmazlıkları çözümlemek için görsel bir araç kullanmak isterseniz <code>git mergetool</code> komutunu çalıştırabilirsiniz; bu komut size tek tek herbir uyuşmazlığı gösterecek uygun bir birleştirme aracını çalıştırır:</p>
+
+<pre><code>$ git mergetool
+merge tool candidates: kdiff3 tkdiff xxdiff meld gvimdiff opendiff emerge vimdiff
+Merging the files: index.html
+
+Normal merge conflict for &#39;index.html&#39;:
+  {local}: modified
+  {remote}: modified
+Hit return to start merge resolution tool (opendiff):</code></pre>
+
+<p>Varsayılan aracın dışında bir araç kullanmak isterseniz (Git, Mac&#8217;te çalıştığım için bu örnekte <code>opendiff</code>&#8216;i seçti), Git&#8217;in desteklediği bütün birleştirme araçlarının listesini en üstte “merge tool candidates” yazısından hemen sonra görebilirsiniz. Kullanmak istediğiniz aracın adını yazın. 7. Bölüm&#8217;de kendi çalışma ortamınız için varsayılan değeri nasıl değiştirebileceğinizi inceleyeceğiz.</p>
+
+<p>Brileştirme aracını kapattıktan sonra, Git size birleştirmenin başarılı olup olmadığını soracaktır. Eğer başarılı olduğunu söylerseniz, sizin yerinize dosyayı kayda hazırlayıp çözümlenmiş olarak işaretler.</p>
+
+<p>Bütün uyuşmazlıkların çözümlendiğinden emin olmak için tekrar <code>git status</code> komutunu çalıştırabilirsiniz:</p>
+
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	modified:   index.html
+#</code></pre>
+
+<p>Durumdan memnunsanız ve uyuşmazlığı olan bütün dosyaların kayda hazırlandığından eminseniz, <code>git commit</code>&#8216;i kullanarak birleştirme kaydını tamamlayabilirsiniz. Öntanımlı kayıt mesajı şöyle görünür:</p>
+
+<pre><code>Merge branch &#39;iss53&#39;
+
+Conflicts:
+  index.html
+#
+# It looks like you may be committing a MERGE.
+# If this is not correct, please remove the file
+# .git/MERGE_HEAD
+# and try again.
+#</code></pre>
+
+<p>İleride bu bürleştirme işlemini inceleyecek olanlar için yararlı olacağını düşünüyorsanız bu kayıt mesajını ayrıntılandırabilirsiniz —eğer aşikâr değilse, birleştirmeyi neden yaptığınızı, ve birleştirmede neler yaptığınızı açıklayabilirsiniz.</p>
+
+<div id='nav'>
+<a href='ch4-1.html'>prev</a> | <a href='ch4-3.html'>next</a>
+</div>

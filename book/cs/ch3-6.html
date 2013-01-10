@@ -1,114 +1,152 @@
 ---
 layout: translation
-title: Pro Git 3.6 Git Branching Rebasing
+title: Pro Git 3.6 Elementární principy systému Git Přenosové protokoly
 ---
-<h2 id='rebasing'>Rebasing</h2>
+<h2 id='penosov_protokoly'>Přenosové protokoly</h2>
 
-<p>In Git, there are two main ways to integrate changes from one branch into another: the <code>merge</code> and the <code>rebase</code>. In this section you’ll learn what rebasing is, how to do it, why it’s a pretty amazing tool, and in what cases you won’t want to use it.</p>
+<p>Git přenáší data mezi dvěma repozitáři dvěma základními způsoby: prostřednictvím protokolu HTTP a prostřednictvím takzvaných chytrých protokolů používaných při přenosu <code>file://</code>,<code>ssh://</code> a <code>git://</code>. Tato část se ve stručnosti zaměří na to, jak tyto dva základní protokoly fungují.</p>
 
-<h3 id='the_basic_rebase'>The Basic Rebase</h3>
+<h3 id='hloup_protokol'>Hloupý protokol</h3>
 
-<p>If you go back to an earlier example from the Merge section (see Figure 3-27), you can see that you diverged your work and made commits on two different branches.</p>
+<p>V souvislosti s přenosem dat systému Git prostřednictvím HTTP se často mluví o hloupém protokolu (dumb protocol), protože během přenosu nevyžaduje na straně serveru žádný specifický kód Git. Proces vyzvednutí dat je sledem požadavků GET, kdy klient dokáže předpokládat rozložení repozitáře Git na serveru. Podívejme se na proces <code>http-fetch</code> pro knihovnu „simplegit“:</p>
 
-<p><center><img src="/figures/ch3/18333fig0327-tn.png"></center><br/> Figure 3-27. Your initial diverged commit history</p>
+<pre><code>$ git clone http://github.com/schacon/simplegit-progit.git</code></pre>
 
-<p>The easiest way to integrate the branches, as we’ve already covered, is the <code>merge</code> command. It performs a three-way merge between the two latest branch snapshots (C3 and C4) and the most recent common ancestor of the two (C2), creating a new snapshot (and commit), as shown in Figure 3-28.</p>
+<p>První věcí, kterou příkaz udělá, je stažení souboru <code>info/refs</code>. Tento soubor se zapisuje příkazem <code>update-server-info</code>. To je také důvod, proč ho je nutné zapnout jako zásuvný modul <code>post-receive</code>, aby přenos dat prostřednictvím protokolu probíhal správně:</p>
 
-<p><center><img src="/figures/ch3/18333fig0328-tn.png"></center><br/> Figure 3-28. Merging a branch to integrate the diverged work history</p>
+<pre><code>=&gt; GET info/refs
+ca82a6dff817ec66f44342007202690a93763949     refs/heads/master</code></pre>
 
-<p>However, there is another way: you can take the patch of the change that was introduced in C3 and reapply it on top of C4. In Git, this is called <em>rebasing</em>. With the <code>rebase</code> command, you can take all the changes that were committed on one branch and replay them on another one.</p>
+<p>Nyní máte k dispozici seznam SHA a referencí na vzdálené repozitáře. Dále budete chtít zjistit, co je referencí HEAD, abyste mohli po dokončení procesu provést checkout.</p>
 
-<p>In this example, you’d run the following:</p>
+<pre><code>=&gt; GET HEAD
+ref: refs/heads/master</code></pre>
 
-<pre><code>$ git checkout experiment
-$ git rebase master
-First, rewinding head to replay your work on top of it...
-Applying: added staged command</code></pre>
+<p>Po dokončení procesu tedy budete muset přepnout na větev <code>master</code>. V tomto okamžiku je vše připraveno a můžete zahájit proces procházení. Protože je vaším výchozím bodem objekt revize <code>ca82a6</code>, jak jste zjistili v souboru <code>info/refs</code>, začnete vyzvednutím tohoto objektu:</p>
 
-<p>It works by going to the common ancestor of the two branches (the one you’re on and the one you’re rebasing onto), getting the diff introduced by each commit of the branch you’re on, saving those diffs to temporary files, resetting the current branch to the same commit as the branch you are rebasing onto, and finally applying each change in turn. Figure 3-29 illustrates this process.</p>
+<pre><code>=&gt; GET objects/ca/82a6dff817ec66f44342007202690a93763949
+(179 bytes of binary data)</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0329-tn.png"></center><br/> Figure 3-29. Rebasing the change introduced in C3 onto C4</p>
+<p>Tímto postupem získáte jeden objekt. Ten je na serveru ve volném formátu a vy jste ho vyzvedli statickým požadavkem GET HTTP. Objekt můžete rozbalit, extrahovat záhlaví a prohlédnout si obsah revize:</p>
 
-<p>At this point, you can go back to the master branch and do a fast-forward merge (see Figure 3-30).</p>
+<pre><code>$ git cat-file -p ca82a6dff817ec66f44342007202690a93763949
+tree cfda3bf379e4f8dba8717dee55aab78aef7f4daf
+parent 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+author Scott Chacon &lt;schacon@gmail.com&gt; 1205815931 -0700
+committer Scott Chacon &lt;schacon@gmail.com&gt; 1240030591 -0700
 
-<p><center><img src="/figures/ch3/18333fig0330-tn.png"></center><br/> Figure 3-30. Fast-forwarding the master branch</p>
+changed the version number</code></pre>
 
-<p>Now, the snapshot pointed to by C3 is exactly the same as the one that was pointed to by C5 in the merge example. There is no difference in the end product of the integration, but rebasing makes for a cleaner history. If you examine the log of a rebased branch, it looks like a linear history: it appears that all the work happened in series, even when it originally happened in parallel.</p>
+<p>Máte však ještě další dva objekty, které potřebujete načíst: <code>cfda3b</code>, což je strom obsahu, na nějž ukazuje revize, kterou jsme právě načetli; druhým objektem je <code>085bb3</code>, což je rodič revize:</p>
 
-<p>Often, you’ll do this to make sure your commits apply cleanly on a remote branch — perhaps in a project to which you’re trying to contribute but that you don’t maintain. In this case, you’d do your work in a branch and then rebase your work onto <code>origin/master</code> when you were ready to submit your patches to the main project. That way, the maintainer doesn’t have to do any integration work — just a fast-forward or a clean apply.</p>
+<pre><code>=&gt; GET objects/08/5bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+(179 bytes of data)</code></pre>
 
-<p>Note that the snapshot pointed to by the final commit you end up with, whether it’s the last of the rebased commits for a rebase or the final merge commit after a merge, is the same snapshot — it’s only the history that is different. Rebasing replays changes from one line of work onto another in the order they were introduced, whereas merging takes the endpoints and merges them together.</p>
+<p>Tím získáte další objekt revize. Načtěte objekt stromu:</p>
 
-<h3 id='more_interesting_rebases'>More Interesting Rebases</h3>
+<pre><code>=&gt; GET objects/cf/da3bf379e4f8dba8717dee55aab78aef7f4daf
+(404 - Not Found)</code></pre>
 
-<p>You can also have your rebase replay on something other than the rebase branch. Take a history like Figure 3-31, for example. You branched a topic branch (<code>server</code>) to add some server-side functionality to your project, and made a commit. Then, you branched off that to make the client-side changes (<code>client</code>) and committed a few times. Finally, you went back to your server branch and did a few more commits.</p>
+<p>Uf, zdá se, že objekt stromu není na serveru ve volném formátu, proto byla vygenerována chyba 404. Chyba má hned několik příčin. Objekt by mohl být v jiném repozitáři nebo by mohl být v tomto repozitáři, avšak v balíčkovém souboru. Git nejprve zjistí, zda jsou k dispozici alternativní repozitáře:</p>
 
-<p><center><img src="/figures/ch3/18333fig0331-tn.png"></center><br/> Figure 3-31. A history with a topic branch off another topic branch</p>
+<pre><code>=&gt; GET objects/info/http-alternates
+(empty file)</code></pre>
 
-<p>Suppose you decide that you want to merge your client-side changes into your mainline for a release, but you want to hold off on the server-side changes until it’s tested further. You can take the changes on client that aren’t on server (C8 and C9) and replay them on your master branch by using the <code>--onto</code> option of <code>git rebase</code>:</p>
+<p>Je-li výsledkem hledání seznam alternativních adres URL, Git se v těchto repozitářích pokusí najít volné a balíčkové soubory. Jedná se o užitečný mechanismus pro projekty, které byly odštěpeny od jiného projektu a sdílejí jeho objekty. Protože však seznam v tomto případě neobsahuje žádné alternativní repozitáře, váš objekt musí být v balíčkovém souboru. Chcete-li zjistit, jaké balíčkové soubory jsou na serveru dostupné, pomůže vám soubor <code>objects/info/packs</code>, který obsahuje jejich seznam (rovněž generován příkazem <code>update-server-info</code>):</p>
 
-<pre><code>$ git rebase --onto master server client</code></pre>
+<pre><code>=&gt; GET objects/info/packs
+P pack-816a9b2334da9953e530f27bcac22082a9f5b835.pack</code></pre>
 
-<p>This basically says, “Check out the client branch, figure out the patches from the common ancestor of the <code>client</code> and <code>server</code> branches, and then replay them onto <code>master</code>.” It’s a bit complex; but the result, shown in Figure 3-32, is pretty cool.</p>
+<p>Na serveru je pouze jeden balíčkový soubor, takže váš objekt musí být evidentně v něm. Pro jistotu se však ještě podíváte do souboru indexu. To je rovněž užitečné, máte-li na serveru více balíčkových souborů. Zjistíte tak, který z nich obsahuje hledaný objekt:</p>
 
-<p><center><img src="/figures/ch3/18333fig0332-tn.png"></center><br/> Figure 3-32. Rebasing a topic branch off another topic branch</p>
+<pre><code>=&gt; GET objects/pack/pack-816a9b2334da9953e530f27bcac22082a9f5b835.idx
+(4k of binary data)</code></pre>
 
-<p>Now you can fast-forward your master branch (see Figure 3-33):</p>
+<p>Nyní, když máte index balíčkového souboru, můžete ověřit, zda se v něm nachází váš objekt. Index uvádí hodnoty SHA všech objektů obsažených v balíčkovém souboru a ofsety k těmto objektům. Váš objekt se v tomto souboru nachází, a proto neváhejte a stáhněte celý balíčkový soubor:</p>
 
-<pre><code>$ git checkout master
-$ git merge client</code></pre>
+<pre><code>=&gt; GET objects/pack/pack-816a9b2334da9953e530f27bcac22082a9f5b835.pack
+(13k of binary data)</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0333-tn.png"></center><br/> Figure 3-33. Fast-forwarding your master branch to include the client branch changes</p>
+<p>Stáhli jste objekt stromu, a můžete tak pokračovat v procházení revizí. Všechny jsou navíc součástí balíčkového souboru, který jste právě stáhli, a proto nebude nutné zadávat serveru žádné další požadavky. Git provede checkout pracovní kopie větve <code>master</code>, na niž ukazovala reference HEAD, kterou jste stáhli na začátku.</p>
 
-<p>Let’s say you decide to pull in your server branch as well. You can rebase the server branch onto the master branch without having to check it out first by running <code>git rebase [basebranch] [topicbranch]</code> — which checks out the topic branch (in this case, <code>server</code>) for you and replays it onto the base branch (<code>master</code>):</p>
+<p>Celý výstup tohoto procesu vypadá následovně:</p>
 
-<pre><code>$ git rebase master server</code></pre>
+<pre><code>$ git clone http://github.com/schacon/simplegit-progit.git
+Initialized empty Git repository in /private/tmp/simplegit-progit/.git/
+got ca82a6dff817ec66f44342007202690a93763949
+walk ca82a6dff817ec66f44342007202690a93763949
+got 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+Getting alternates list for http://github.com/schacon/simplegit-progit.git
+Getting pack list for http://github.com/schacon/simplegit-progit.git
+Getting index for pack 816a9b2334da9953e530f27bcac22082a9f5b835
+Getting pack 816a9b2334da9953e530f27bcac22082a9f5b835
+ which contains cfda3bf379e4f8dba8717dee55aab78aef7f4daf
+walk 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+walk a11bef06a3f659402fe7563abf99ad00de2209e6</code></pre>
 
-<p>This replays your <code>server</code> work on top of your <code>master</code> work, as shown in Figure 3-34.</p>
+<h3 id='chytr_protokol'>Chytrý protokol</h3>
 
-<p><center><img src="/figures/ch3/18333fig0334-tn.png"></center><br/> Figure 3-34. Rebasing your server branch on top of your master branch</p>
+<p>Metoda přenosu HTTP je jednoduchá, avšak málo výkonná. Rozšířenější metodou přenosu dat je použití chytrého protokolu. Tyto protokoly mají na vzdáleném konci proces, který inteligentně spolupracuje se systémem Git. Umí načítat lokální data a zjistí, co klient vlastní a co potřebuje. Podle toho pro něj vygeneruje potřebná data. Existují dvě sady procesů pro přenos dat: jeden pár pro upload dat a jeden pár pro jejich stahování.</p>
 
-<p>Then, you can fast-forward the base branch (<code>master</code>):</p>
+<h4 id='upload_dat'>Upload dat</h4>
 
-<pre><code>$ git checkout master
-$ git merge server</code></pre>
+<p>K uploadu dat do vzdáleného procesu používá Git procesy <code>send-pack</code> a <code>receive-pack</code>. Proces <code>send-pack</code> se spouští na klientovi a připojuje se k procesu <code>receive-pack</code> na straně vzdáleného serveru.</p>
 
-<p>You can remove the <code>client</code> and <code>server</code> branches because all the work is integrated and you don’t need them anymore, leaving your history for this entire process looking like Figure 3-35:</p>
+<p>Řekněme například, že ve svém projektu spustíte příkaz <code>git push origin master</code> a <code>origin</code> je definován jako URL používající protokol SSH. Git spustí proces <code>send-pack</code>, který iniciuje spojení se serverem přes SSH. Na vzdáleném serveru se pokusí spustit příkaz prostřednictvím volání SSH:</p>
 
-<pre><code>$ git branch -d client
-$ git branch -d server</code></pre>
+<pre><code>$ ssh -x git@github.com &quot;git-receive-pack &#39;schacon/simplegit-progit.git&#39;&quot;
+005bca82a6dff817ec66f4437202690a93763949 refs/heads/master report-status delete-refs
+003e085bb3bcb608e1e84b2432f8ecbe6306e7e7 refs/heads/topic
+0000</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0335-tn.png"></center><br/> Figure 3-35. Final commit history</p>
+<p>Příkaz <code>git-receive-pack</code> okamžitě odpoví jedním řádkem pro každou referenci, kterou v danou chvíli obsahuje – v tomto případě je to pouze větev <code>master</code> a její SHA. První řádek uvádí rovněž seznam schopností serveru (zde <code>report-status</code> a <code>delete-refs</code>).</p>
 
-<h3 id='the_perils_of_rebasing'>The Perils of Rebasing</h3>
+<p>Každý řádek začíná 4bytovou hexadecimální hodnotou, která udává, jak dlouhý je zbytek řádku. Váš první řádek začíná hodnotou 005b, tedy 91 v hexadecimální soustavě, což znamená, že na tomto řádku zbývá 91 bytů. Další řádek začíná hodnotou 003e (tedy 62), což znamená dalších 62 bytů. Následující řádek je 0000 – touto kombinací server označuje konec seznamu referencí.</p>
 
-<p>Ahh, but the bliss of rebasing isn’t without its drawbacks, which can be summed up in a single line:</p>
+<p>Nyní, když zná proces <code>send-pack</code> stav serveru, určí, jaké revize má, které přitom nejsou na serveru. Pro každou referenci, která bude tímto odesláním aktualizována, sdělí proces <code>send-pack</code> tuto informaci procesu <code>receive-pack</code>. Pokud například aktualizujete větev <code>master</code> a přidáváte větev <code>experiment</code>, odpověď procesu <code>send-pack</code> může mít následující podobu:</p>
 
-<p><strong>Do not rebase commits that you have pushed to a public repository.</strong></p>
+<pre><code>0085ca82a6dff817ec66f44342007202690a93763949  15027957951b64cf874c3557a0f3547bd83b3ff6 refs/heads/master report-status
+00670000000000000000000000000000000000000000 cdfdb42577e2506715f8cfeacdbabc092bf63e8d refs/heads/experiment
+0000</code></pre>
 
-<p>If you follow that guideline, you’ll be fine. If you don’t, people will hate you, and you’ll be scorned by friends and family.</p>
+<p>Hodnota SHA-1 ze samých nul znamená, že na tomto místě předtím nic nebylo, protože přidáváte větev „experiment“. Pokud byste mazali referenci, viděli byste pravý opak: samé nuly na pravé straně.</p>
 
-<p>When you rebase stuff, you’re abandoning existing commits and creating new ones that are similar but different. If you push commits somewhere and others pull them down and base work on them, and then you rewrite those commits with <code>git rebase</code> and push them up again, your collaborators will have to re-merge their work and things will get messy when you try to pull their work back into yours.</p>
+<p>Git odešle jeden řádek pro každou referenci, kterou aktualizujete. Řádek obsahuje starou hodnotu SHA, novou hodnotu SHA a referenci, která je aktualizována. První řádek navíc obsahuje schopnosti klienta. Jako další krok nahraje klient balíčkový soubor se všemi třemi objekty, které na serveru dosud nejsou. Na závěr procesu server oznámí, zda se akce zdařila, nebo nezdařila:</p>
 
-<p>Let’s look at an example of how rebasing work that you’ve made public can cause problems. Suppose you clone from a central server and then do some work off that. Your commit history looks like Figure 3-36.</p>
+<pre><code>000Aunpack ok</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0336-tn.png"></center><br/> Figure 3-36. Clone a repository, and base some work on it.</p>
+<h4 id='stahovn_dat'>Stahování dat</h4>
 
-<p>Now, someone else does more work that includes a merge, and pushes that work to the central server. You fetch them and merge the new remote branch into your work, making your history look something like Figure 3-37.</p>
+<p>Do stahování dat se zapojují procesy <code>fetch-pack</code> a <code>upload-pack</code>. Klient iniciuje proces <code>fetch-pack</code>, který vytvoří připojení k procesu <code>upload-pack</code> na straně vzdáleného serveru a dojedná, která data budou stažena.</p>
 
-<p><center><img src="/figures/ch3/18333fig0337-tn.png"></center><br/> Figure 3-37. Fetch more commits, and merge them into your work.</p>
+<p>Existují i jiné způsoby, jak iniciovat proces <code>upload-pack</code> ve vzdáleném repozitáři. Můžete ho spustit prostřednictvím SSH stejným způsobem jako proces <code>receive-pack</code>. Proces můžete iniciovat také prostřednictvím démona Git, který na serveru standardně naslouchá portu 9418. Proces <code>fetch-pack</code> pošle démonovi po připojení data, která mají následující podobu:</p>
 
-<p>Next, the person who pushed the merged work decides to go back and rebase their work instead; they do a <code>git push --force</code> to overwrite the history on the server. You then fetch from that server, bringing down the new commits.</p>
+<pre><code>003fgit-upload-pack schacon/simplegit-progit.git\0host=myserver.com\0</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0338-tn.png"></center><br/> Figure 3-38. Someone pushes rebased commits, abandoning commits you’ve based your work on.</p>
+<p>Informace začínají 4 byty, které uvádějí, jaké množství dat následuje; po nich následuje příkaz, který má být spuštěn, nulový byte, název hostitelského serveru a na závěr další nulový byte. Démon Git zkontroluje, zda je příkaz skutečně možné spustit, zda existuje daný repozitář a zda jsou oprávnění k němu veřejná. Je-li vše v pořádku, spustí démon Git proces <code>upload-pack</code> a předá mu svůj požadavek.</p>
 
-<p>At this point, you have to merge this work in again, even though you’ve already done so. Rebasing changes the SHA-1 hashes of these commits so to Git they look like new commits, when in fact you already have the C4 work in your history (see Figure 3-39).</p>
+<p>Vyzvedáváte-li data přes SSH, spustí místo toho proces <code>fetch-pack</code> následující:</p>
 
-<p><center><img src="/figures/ch3/18333fig0339-tn.png"></center><br/> Figure 3-39. You merge in the same work again into a new merge commit.</p>
+<pre><code>$ ssh -x git@github.com &quot;git-upload-pack &#39;schacon/simplegit-progit.git&#39;&quot;</code></pre>
 
-<p>You have to merge that work in at some point so you can keep up with the other developer in the future. After you do that, your commit history will contain both the C4 and C4&#8217; commits, which have different SHA-1 hashes but introduce the same work and have the same commit message. If you run a <code>git log</code> when your history looks like this, you’ll see two commits that have the same author date and message, which will be confusing. Furthermore, if you push this history back up to the server, you’ll reintroduce all those rebased commits to the central server, which can further confuse people.</p>
+<p>V obou případech zašle po připojení procesu <code>fetch-pack</code> proces <code>upload-pack</code> zpět následující informace:</p>
 
-<p>If you treat rebasing as a way to clean up and work with commits before you push them, and if you only rebase commits that have never been available publicly, then you’ll be fine. If you rebase commits that have already been pushed publicly, and people may have based work on those commits, then you may be in for some frustrating trouble.</p>
+<pre><code>0088ca82a6dff817ec66f44342007202690a93763949 HEAD\0multi_ack thin-pack \
+  side-band side-band-64k ofs-delta shallow no-progress include-tag
+003fca82a6dff817ec66f44342007202690a93763949 refs/heads/master
+003e085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7 refs/heads/topic
+0000</code></pre>
+
+<p>Informace se nápadně podobají těm, jimiž odpovídá proces <code>receive-pack</code>, liší se však schopnosti. Kromě toho pošle proces zpět referenci HEAD, aby klient v případě, že se jedná o klonování, věděl, kam přepnout.</p>
+
+<p>V tomto okamžiku proces <code>fetch-pack</code> zjistí, jaké objekty má, a vytvoří odpověď s objekty, které potřebuje. Odpověď má tvar „want“ (chci) a SHA požadovaných objektů. Naopak objekty, které už vlastní, uvádí kombinací výrazu „have“ (mám) a hodnoty SHA. Výpis je ukončen výrazem „done“, který iniciuje odeslání požadovaného balíčkového souboru nebo dat procesem <code>upload-pack</code>:</p>
+
+<pre><code>0054want ca82a6dff817ec66f44342007202690a93763949 ofs-delta
+0032have 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+0000
+0009done</code></pre>
+
+<p>Toto jsou pouze základní případy přenosových protokolů. Ve složitějších případech podporuje klient schopnosti <code>multi_ack</code> nebo <code>side-band</code>. Uvedený příklad ale dobře ilustruje základní komunikaci tam a zpět, jak ji používají procesy chytrých protokolů.</p>
 
 <div id='nav'>
 <a href='ch3-5.html'>prev</a> | <a href='ch3-7.html'>next</a>

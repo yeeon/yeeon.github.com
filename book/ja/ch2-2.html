@@ -1,372 +1,501 @@
 ---
 layout: translation
-title: Pro Git 2.2 Git の基本 変更内容のリポジトリへの記録
+title: Pro Git 2.2 Git での分散作業 プロジェクトへの貢献
 ---
-<h2 id='id24'>変更内容のリポジトリへの記録</h2>
+<h2 id='id411'>プロジェクトへの貢献</h2>
 
-<p>これで、れっきとした Git リポジトリを準備して、そのプロジェクト内のファイルの作業コピーを取得することができました。次は、そのコピーに対して何らかの変更を行い、適当な時点で変更内容のスナップショットをリポジトリにコミットすることになります。</p>
+<p>さまざまなワークフローの概要について説明しました。また、すでにみなさんは Git の基本的な使い方を身につけています。このセクションでは、何らかのプロジェクトに貢献する際のよくあるパターンについて学びましょう。</p>
 
-<p>作業コピー内の各ファイルには「追跡されている(tracked)」ものと「追跡されてない(untracked)」ものの二通りがあることを知っておきましょう。追跡されているファイルとは、直近のスナップショットに存在したファイルのことです。これらのファイルについては「変更されていない(unmodified)」「変更されている(modified)」「ステージされている(staged)」の三つの状態があります。追跡されていないファイルは、そのどれでもありません。直近のスナップショットには存在せず、ステージングエリアにも存在しないファイルのことです。最初にプロジェクトをクローンした時点では、すべてのファイルは「追跡されている」かつ「変更されていない」状態となります。チェックアウトしただけで何も編集していない状態だからです。</p>
-
-<p>ファイルを編集すると、Git はそれを「変更された」とみなします。直近のコミットの後で変更が加えられたからです。変更されたファイルをステージし、それをコミットする。この繰り返しです。ここまでの流れを図 2-1 にまとめました。</p>
-
-<p><center><img src="/figures/ch2/18333fig0201-tn.png"></center><br/> 図 2-1. ファイルの状態の流れ</p>
-
-<h3 id='id25'>ファイルの状態の確認</h3>
+<p>これは非常に説明しづらい内容です。というのも、ほんとうにいろいろなパターンがあるからです。Git は柔軟なシステムなので、いろいろな方法で共同作業をすることができます。そのせいもあり、どのプロジェクトをとってみても微妙に他とは異なる方式を使っているのです。違いが出てくる原因としては、アクティブな貢献者の数やプロジェクトで使用しているワークフロー、あなたのコミット権、そして外部からの貢献を受け入れる際の方式などがあります。</p>
 
-<p>どのファイルがどの状態にあるのかを知るために主に使うツールが git status コマンドです。このコマンドをクローン直後に実行すると、このような結果となるでしょう。</p>
+<p>最初の要素はアクティブな貢献者の数です。そのプロジェクトに対してアクティブにコードを提供している開発者はどれくらいいるのか、そして彼らはどれくらいの頻度で提供しているのか。よくあるのは、数名の開発者が一日数回のコミットを行うというものです。休眠状態のプロジェクトなら、もう少し頻度が低くなるでしょう。大企業や大規模なプロジェクトでは、開発者の数が数千人になることもあります。数十から下手したら百を超えるようなパッチが毎日やってきます。開発者の数が増えれば増えるほど、あなたのコードをきちんと適用したり他のコードをマージしたりするのが難しくなります。あなたが手元で作業をしている間に他の変更が入って、手元で変更した内容が無意味になってしまったりあるいは他の変更を壊してしまう羽目になったり。そのせいで、手元の変更を適用してもらうための待ち時間が発生したり。手元のコードを常に最新の状態にし、正しいパッチを作るにはどうしたらいいのでしょうか。</p>
 
-<pre><code>$ git status
-# On branch master
-nothing to commit (working directory clean)</code></pre>
+<p>次に考えるのは、プロジェクトが採用しているワークフローです。中央管理型で、すべての開発者がコードに対して同等の書き込みアクセス権を持っている状態? 特定のメンテナーや統合マネージャーがすべてのパッチをチェックしている? パッチを適用する前にピアレビューをしている? あなたはパッチをチェックしたりピアレビューに参加したりしている人? 若頭型のワークフローを使っており、まず彼らにコードを渡さなければならない?</p>
 
-<p>これは、クリーンな作業コピーである (つまり、追跡されているファイルの中に変更されているものがない) ことを意味します。また、追跡されていないファイルも存在しません (もし追跡されていないファイルがあれば、Git はそれを表示します)。最後に、このコマンドを実行するとあなたが今どのブランチにいるのかを知ることができます。現時点では常に master となります。これはデフォルトであり、ここでは特に気にする必要はありません。ブランチについては次の章で詳しく説明します。</p>
+<p>次の問題は、あなたのコミット権です。あなたがプロジェクトへの書き込みアクセス権限を持っている場合は、プロジェクトに貢献するための作業の流れが変わってきます。書き込み権限がない場合、そのプロジェクトではどのような形式での貢献を推奨していますか? 何かポリシーのようなものはありますか? 一度にどれくらいの作業を貢献することになりますか? また、どれくらいの頻度で貢献することになりますか?</p>
 
-<p>ではここで、新しいファイルをプロジェクトに追加してみましょう。シンプルに、README ファイルを追加してみます。それ以前に README ファイルがなかった場合、<code>git status</code> を実行すると次のように表示されます。</p>
+<p>これらの点を考慮して、あなたがどんな流れでどのようにプロジェクトに貢献していくのかが決まります。単純なものから複雑なものまで、実際の例を見ながら考えていきましょう。これらの例を参考に、あなたなりのワークフローを見つけてください。</p>
 
-<pre><code>$ vim README
-$ git status
-# On branch master
-# Untracked files:
-#   (use &quot;git add &lt;file&gt;...&quot; to include in what will be committed)
-#
-#	README
-nothing added to commit but untracked files present (use &quot;git add&quot; to track)</code></pre>
+<h3 id='id412'>コミットの指針</h3>
 
-<p>出力結果の “Untracked files” 欄に README ファイルがあることから、このファイルが追跡されていないということがわかります。これは、Git が「前回のスナップショット (コミット) にはこのファイルが存在しなかった」とみなしたということです。明示的に指示しない限り、Git はコミット時にこのファイルを含めることはありません。自動生成されたバイナリファイルなど、コミットしたくないファイルを間違えてコミットしてしまう心配はないということです。今回は README をコミットに含めたいわけですから、まずファイルを追跡対象に含めるようにしましょう。</p>
+<p>個々の例を見る前に、コミットメッセージについてのちょっとした注意点をお話しておきましょう。コミットに関する指針をきちんと定めてそれを守るようにすると、Git での共同作業がよりうまく進むようになります。Git プロジェクトでは、パッチの投稿用のコミットを作成するときのヒントをまとめたドキュメントを用意しています。Git のソースの中にある <code>Documentation/SubmittingPatches</code> をごらんください。</p>
 
-<h3 id='id26'>新しいファイルの追跡</h3>
+<p>まず、余計な空白文字を含めてしまわないように注意が必要です。Git には、余計な空白文字をチェックするための簡単な仕組みがあります。コミットする前に <code>git diff --check</code> を実行してみましょう。おそらく意図したものではないと思われる空白文字を探し、それを教えてくれます。例を示しましょう。端末上では赤で表示される箇所を <code>X</code> で置き換えています。</p>
 
-<p>新しいファイルの追跡を開始するには <code>git add</code> コマンドを使用します。README ファイルの追跡を開始する場合はこのようになります。</p>
+<pre><code>$ git diff --check
+lib/simplegit.rb:5: trailing whitespace.
++    @git_dir = File.expand_path(git_dir)XX
+lib/simplegit.rb:7: trailing whitespace.
++ XXXXXXXXXXX
+lib/simplegit.rb:26: trailing whitespace.
++    def command(git_cmd)XXXX</code></pre>
 
-<pre><code>$ git add README</code></pre>
+<p>コミットの前にこのコマンドを実行すれば、余計な空白文字をコミットしてしまって他の開発者に嫌がられることもなくなるでしょう。</p>
 
-<p>再び status コマンドを実行すると、README ファイルが追跡対象となり、ステージされていることがわかるでしょう。</p>
+<p>次に、コミットの単位が論理的に独立した変更となるようにしましょう。つまり、個々の変更内容を把握しやすくするということです。週末に五つの問題点を修正した大規模な変更を、月曜日にまとめてコミットするなどということは避けましょう。仮に週末の間にコミットできなかったとしても、ステージングエリアを活用して月曜日にコミット内容を調整することができます。修正した問題ごとにコミットを分割し、それぞれに適切なコメントをつければいいのです。もし別々の問題の修正で同じファイルを変更しているのなら、<code>git add --patch</code> を使ってその一部だけをステージすることもできます (詳しくは第 6 章で説明します)。すべての変更を同時に追加しさえすれば、一度にコミットしようが五つのコミットに分割しようがブランチの先端は同じ状態になります。あとから変更内容をレビューする他のメンバーのことも考えて、できるだけレビューしやすい状態でコミットするようにしましょう。こうしておけば、あとからその変更の一部だけを取り消したりするのにも便利です。第 6 章では、Git を使って歴史を書き換えたり対話的にファイルをステージしたりする方法を説明します。第 6 章で説明する方法を使えば、きれいでわかりやすい歴史を作り上げることができます。</p>
 
-<pre><code>$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#	new file:   README
-#</code></pre>
+<p>最後に注意しておきたいのが、コミットメッセージです。よりよいコミットメッセージを書く習慣を身に着けておくと、Git を使った共同作業をより簡単に行えるようになります。一般的な規則として、メッセージの最初には変更の概要を一行 (50 文字以内) にまとめた説明をつけるようにします。その後に空行をひとつ置いてからより詳しい説明を続けます。Git プロジェクトでは、その変更の動機やこれまでの実装との違いなどのできるだけ詳しい説明をつけることを推奨しています。参考にするとよいでしょう。また、メッセージでは命令形、現在形を使うようにしています。つまり &#8220;私は○○のテストを追加しました (I added tests for)&#8221; とか &#8220;○○のテストを追加します (Adding tests for,)&#8221; ではなく &#8220;○○のテストを追加 (Add tests for.)&#8221; 形式にするということです。Tim Pope が tpope.net で書いたテンプレート (の日本語訳) を以下に示します。</p>
 
-<p>ステージされていると判断できるのは、“Changes to be committed” 欄に表示されているからです。ここでコミットを行うと、git add した時点の状態のファイルがスナップショットとして歴史に書き込まれます。先ほど git init をしたときに、ディレクトリ内のファイルを追跡するためにその後 git add したことを思い出すことでしょう。git add コマンドには、ファイルあるいはディレクトリのパスを指定します。ディレクトリを指定した場合は、そのディレクトリ以下にあるすべてのファイルを再起的に追加します。</p>
+<pre><code>短い (50 文字以下での) 変更内容のまとめ
 
-<h3 id='id27'>変更したファイルのステージング</h3>
+必要に応じた、より詳細な説明。72文字程度で折り返します。最初の
+行がメールの件名、残りの部分がメールの本文だと考えてもよいでしょ
+う。最初の行と詳細な説明の間には、必ず空行を入れなければなりま
+せん (詳細説明がまったくない場合は空行は不要です)。空行がないと、
+rebase などがうまく動作しません。
 
-<p>すでに追跡対象となっているファイルを変更してみましょう。たとえば、すでに追跡対象となっているファイル <code>benchmarks.rb</code> を変更して <code>status</code> コマンドを実行すると、結果はこのようになります。</p>
+空行を置いて、さらに段落を続けることもできます。
 
-<pre><code>$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#	new file:   README
-#
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#
-#	modified:   benchmarks.rb
-#</code></pre>
+ - 箇条書きも可能
 
-<p>benchmarks.rb ファイルは “Changed but not updated” という欄に表示されます。これは、追跡対象のファイルが作業ディレクトリ内で変更されたけれどもまだステージされていないという意味です。ステージするには <code>git add</code> コマンドを実行します (このコマンドにはいろんな意味合いがあり、新しいファイルの追跡開始・ファイルのステージング・マージ時に衝突が発生したファイルに対する「解決済み」マーク付けなどで使用します)。では、<code>git add</code> で benchmarks.rb をステージしてもういちど <code>git status</code> を実行してみましょう。</p>
-
-<pre><code>$ git add benchmarks.rb
-$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#	new file:   README
-#	modified:   benchmarks.rb
-#</code></pre>
+ - 箇条書きの記号としては、主にハイフンやアスタリスクを使います。
+   箇条書き記号の前にはひとつ空白を入れ、各項目の間には空行を入
+   れます。しかし、これ以外の流儀もいろいろあります。</code></pre>
 
-<p>両方のファイルがステージされました。これで、次回のコミットに両方のファイルが含まれるようになります。ここで、さらに benchmarks.rb にちょっとした変更を加えてからコミットしたくなったとしましょう。ファイルを開いて変更を終え、コミットの準備が整いました。しかし、<code>git status</code> を実行してみると何か変です。</p>
-
-<pre><code>$ vim benchmarks.rb 
-$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#	new file:   README
-#	modified:   benchmarks.rb
-#
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#
-#	modified:   benchmarks.rb
-#</code></pre>
-
-<p>これはどういうことでしょう? benchmarks.rb が、ステージされているほうにもステージされていないほうにも登場しています。こんなことってありえるんでしょうか? 要するに、Git は「git add コマンドを実行した時点の状態のファイル」をステージするということです。ここでコミットをすると、実際にコミットされるのは git add を実行した時点の benchmarks.rb であり、git commit した時点の作業ディレクトリにある内容とは違うものになります。<code>git add</code> した後にファイルを変更した場合に、最新版のファイルをステージしなおすにはもう一度 <code>git add</code> を実行します。</p>
-
-<pre><code>$ git add benchmarks.rb
-$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#	new file:   README
-#	modified:   benchmarks.rb
-#</code></pre>
-
-<h3 id='id28'>ファイルの無視</h3>
-
-<p>ある種のファイルについては、Git で自動的に追加してほしくないしそもそも「追跡されていない」と表示されるのも気になる。そんなことがよくあります。たとえば、ログファイルやビルドシステムが生成するファイルなどの自動生成されるファイルがそれにあたるでしょう。そんな場合は、無視させたいファイルのパターンを並べた .gitignore というファイルを作成します。.gitignore ファイルは、たとえばこのようになります。</p>
-
-<pre><code>$ cat .gitignore
-*.[oa]
-*~</code></pre>
-
-<p>最初の行は .o あるいは .a で終わる名前のファイル (コードをビルドする際にできるであろうオブジェクトファイルとアーカイブファイル) を無視するよう Git に伝えています。次の行で Git に無視させているのは、チルダ (<code>~</code>) で終わる名前のファイルです。Emacs をはじめとする多くのエディタが、この形式の一時ファイルを作成します。これ以外には、たとえば log、tmp、pid といった名前のディレクトリや自動生成されるドキュメントなどもここに含めることになるでしょう。実際に作業を始める前に .gitignore ファイルを準備しておくことをお勧めします。そうすれば、予期せぬファイルを間違って Git リポジトリにコミットしてしまう事故を防げます。</p>
-
-<p>.gitignore ファイルに記述するパターンの規則は、次のようになります。</p>
-
-<p>* 空行あるいは # で始まる行は無視される * 標準の glob パターンを使用可能 * ディレクトリを指定するには、パターンの最後にスラッシュ (<code>/</code>) をつける * パターンを逆転させるには、最初に感嘆符 (<code>!</code>) をつける</p>
-
-<p>glob パターンとは、シェルで用いる簡易正規表現のようなものです。アスタリスク (<code>*</code>) は、ゼロ個以上の文字にマッチします。<code>[abc]</code> は、角括弧内の任意の文字 (この場合は a、b あるいは c) にマッチします。疑問符 (<code>?</code>) は一文字にマッチします。また、ハイフン区切りの文字を角括弧で囲んだ形式 (<code>[0-9]</code>) は、ふたつの文字の間の任意の文字 (この場合は 0 から 9 までの間の文字) にマッチします。</p>
-
-<p>では、.gitignore ファイルの例をもうひとつ見てみましょう。</p>
-
-<pre><code># コメント。これは無視されます
-*.a       # .a ファイルは無視
-!lib.a    # しかし、lib.a ファイルだけは .a であっても追跡対象とします
-/TODO     # ルートディレクトリの TODO ファイルだけを無視し、サブディレクトリの TODO は無視しません
-build/    # build/ ディレクトリのすべてのファイルを無視します
-doc/*.txt # doc/notes.txt は無視しますが、doc/server/arch.txt は無視しません</code></pre>
-
-<h3 id='__'>ステージされている変更 / されていない変更の閲覧</h3>
-
-<p><code>git status</code> コマンドだけではよくわからない (どのファイルが変更されたのかだけではなく、実際にどのように変わったのかが知りたい) という場合は <code>git diff</code> コマンドを使用します。<code>git diff</code> コマンドについては後で詳しく解説します。おそらく、最もよく使う場面としては次の二つの問いに答えるときになるでしょう。「変更したけどまだステージしていない変更は?」「コミット対象としてステージした変更は?」もちろん <code>git status</code> でもこれらの質問に対するおおまかな答えは得られますが、<code>git diff</code> の場合は追加したり削除したりした正確な行をパッチ形式で表示します。</p>
-
-<p>先ほどの続きで、ふたたび README ファイルを編集してステージし、一方 benchmarks.rb ファイルは編集だけしてステージしない状態にあると仮定しましょう。ここで <code>status</code> コマンドを実行すると、次のような結果となります。</p>
-
-<pre><code>$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#	new file:   README
-#
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#
-#	modified:   benchmarks.rb
-#</code></pre>
-
-<p>変更したけれどもまだステージしていない内容を見るには、引数なしで <code>git diff</code> を実行します。</p>
-
-<pre><code>$ git diff
-diff --git a/benchmarks.rb b/benchmarks.rb
-index 3cb747f..da65585 100644
---- a/benchmarks.rb
-+++ b/benchmarks.rb
-@@ -36,6 +36,10 @@ def main
-           @commit.parents[0].parents[0].parents[0]
-         end
-
-+        run_code(x, &#39;commits 1&#39;) do
-+          git.commits.size
-+        end
-+
-         run_code(x, &#39;commits 2&#39;) do
-           log = git.commits(&#39;master&#39;, 15)
-           log.size</code></pre>
-
-<p>このコマンドは、作業ディレクトリの内容とステージングエリアの内容を比較します。この結果を見れば、あなたが変更した内容のうちまだステージされていないものを知ることができます。</p>
-
-<p>次のコミットに含めるべくステージされた内容を知りたい場合は、<code>git diff –-cached</code> を使用します (Git バージョン 1.6.1 以降では <code>git diff –-staged</code> も使えます。こちらのほうが覚えやすいでしょう)。このコマンドは、ステージされている変更と直近のコミットの内容を比較します。</p>
-
-<pre><code>$ git diff --cached
-diff --git a/README b/README
-new file mode 100644
-index 0000000..03902a1
---- /dev/null
-+++ b/README2
-@@ -0,0 +1,5 @@
-+grit
-+ by Tom Preston-Werner, Chris Wanstrath
-+ http://github.com/mojombo/grit
-+
-+Grit is a Ruby library for extracting information from a Git repository</code></pre>
-
-<p><code>git diff</code> 自体は、直近のコミット以降のすべての変更を表示するわけではないことに注意しましょう。あくまでもステージされていない変更だけの表示となります。これにはすこし戸惑うかもしれません。変更内容をすべてステージしてしまえば <code>git diff</code> は何も出力しなくなるわけですから。</p>
-
-<p>もうひとつの例を見てみましょう。benchmarks.rb ファイルをいったんステージした後に編集してみましょう。<code>git diff</code> を使用すると、ステージされたファイルの変更とまだステージされていないファイルの変更を見ることができます。</p>
-
-<pre><code>$ git add benchmarks.rb
-$ echo &#39;# test line&#39; &gt;&gt; benchmarks.rb
-$ git status
-# On branch master
-#
-# Changes to be committed:
-#
-#	modified:   benchmarks.rb
-#
-# Changed but not updated:
-#
-#	modified:   benchmarks.rb
-#</code></pre>
-
-<p>ここで <code>git diff</code> を使うと、まだステージされていない内容を知ることができます。</p>
-
-<pre><code>$ git diff 
-diff --git a/benchmarks.rb b/benchmarks.rb
-index e445e28..86b2f7c 100644
---- a/benchmarks.rb
-+++ b/benchmarks.rb
-@@ -127,3 +127,4 @@ end
- main()
-
- ##pp Grit::GitRuby.cache_client.stats 
-+# test line</code></pre>
-
-<p>そして <code>git diff --cached</code> を使うと、これまでにステージした内容を知ることができます。</p>
-
-<pre><code>$ git diff --cached
-diff --git a/benchmarks.rb b/benchmarks.rb
-index 3cb747f..e445e28 100644
---- a/benchmarks.rb
-+++ b/benchmarks.rb
-@@ -36,6 +36,10 @@ def main
-          @commit.parents[0].parents[0].parents[0]
-        end
-
-+        run_code(x, &#39;commits 1&#39;) do
-+          git.commits.size
-+        end
-+              
-        run_code(x, &#39;commits 2&#39;) do
-          log = git.commits(&#39;master&#39;, 15)
-          log.size</code></pre>
-
-<h3 id='id29'>変更のコミット</h3>
-
-<p>ステージングエリアの準備ができたら、変更内容をコミットすることができます。コミットの対象となるのはステージされたものだけ、つまり追加したり変更したりしただけでまだ <code>git add</code> を実行していないファイルはコミットされないことを覚えておきましょう。そういったファイルは、変更されたままの状態でディスク上に残ります。今回の場合は、最後に <code>git status</code> を実行したときにすべてがステージされていることを確認しています。つまり、変更をコミットする準備ができた状態です。コミットするための最もシンプルな方法は <code>git commit</code> と打ち込むことです。</p>
-
-<pre><code>$ git commit</code></pre>
-
-<p>これを実行すると、指定したエディタが立ち上がります (シェルの <code>$EDITOR</code> 環境変数で設定されているエディタ。通常は vim あるいは emacs でしょう。しかし、それ以外にも第 1 章で説明した <code>git config --global core.editor</code> コマンドでお好みのエディタを指定することもできます)。</p>
-
-<p>エディタには次のようなテキストが表示されています (これは Vim の画面の例です)。</p>
-
-<pre><code># Please enter the commit message for your changes. Lines starting
-# with &#39;#&#39; will be ignored, and an empty message aborts the commit.
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#       new file:   README
-#       modified:   benchmarks.rb 
-~
-~
-~
-&quot;.git/COMMIT_EDITMSG&quot; 10L, 283C</code></pre>
-
-<p>デフォルトのコミットメッセージとして、直近の <code>git status</code> コマンドの結果がコメントアウトして表示され、先頭に空行があることがわかるでしょう。このコメントを消して自分でコミットメッセージを書き入れていくこともできますし、何をコミットしようとしているのかの確認のためにそのまま残しておいてもかまいません (何を変更したのかをより明確に知りたい場合は、<code>git commit</code> に <code>-v</code> オプションを指定します。そうすると、diff の内容がエディタに表示されるので何を行ったのかが正確にわかるようになります)。エディタを終了させると、Git はそのメッセージつきのコミットを作成します (コメントおよび diff は削除されます)。</p>
-
-<p>あるいは、コミットメッセージをインラインで記述することもできます。その場合は、<code>commit</code> コマンドの後で -m フラグに続けて次のように記述します。</p>
-
-<pre><code>$ git commit -m &quot;Story 182: Fix benchmarks for speed&quot;
-[master]: created 463dc4f: &quot;Fix benchmarks for speed&quot;
- 2 files changed, 3 insertions(+), 0 deletions(-)
- create mode 100644 README</code></pre>
-
-<p>これではじめてのコミットができました! 今回のコミットについて、「どのブランチにコミットしたのか (master)」「そのコミットの SHA-1 チェックサム (<code>463dc4f</code>)」「変更されたファイルの数」「そのコミットで追加されたり削除されたりした行数」といった情報が表示されているのがわかるでしょう。</p>
-
-<p>コミットが記録するのは、ステージングエリアのスナップショットであることを覚えておきましょう。ステージしていない情報については変更された状態のまま残っています。別のコミットで歴史にそれを書き加えるには、改めて add する必要があります。コミットするたびにプロジェクトのスナップショットが記録され、あとからそれを取り消したり参照したりできるようになります。</p>
-
-<h3 id='id30'>ステージングエリアの省略</h3>
-
-<p>コミットの内容を思い通りに作り上げることができるという点でステージングエリアは非常に便利なのですが、普段の作業においては必要以上に複雑に感じられることもあるでしょう。ステージングエリアを省略したい場合のために、Git ではシンプルなショートカットを用意しています。<code>git commit</code> コマンドに <code>-a</code> オプションを指定すると、追跡対象となっているファイルを自動的にステージしてからコミットを行います。つまり <code>git add</code> を省略できるというわけです。</p>
-
-<pre><code>$ git status
-# On branch master
-#
-# Changed but not updated:
-#
-#	modified:   benchmarks.rb
-#
-$ git commit -a -m &#39;added new benchmarks&#39;
-[master 83e38c7] added new benchmarks
+<p>すべてのコミットメッセージがこのようになっていれば、他の開発者との作業が非常に進めやすくなるでしょう。Git プロジェクトでは、このようにきれいに整形されたコミットメッセージを使っています。<code>git log --no-merges</code> を実行すれば、きれいに整形されたプロジェクトの歴史がどのように見えるかがわかります。</p>
+
+<p>これ以降の例を含めて本書では、説明を簡潔にするためにこのような整形を省略します。そのかわりに <code>git commit</code> の <code>-m</code> オプションを使います。本書での私のやり方をまねするのではなく、ここで説明した方式を使いましょう。</p>
+
+<h3 id='id413'>非公開な小規模のチーム</h3>
+
+<p>実際に遭遇するであろう環境のうち最も小規模なのは、非公開のプロジェクトで開発者が数名といったものです。ここでいう「非公開」とは、クローズドソースであるということ。つまり、チームのメンバー以外は見られないということです。チーム内のメンバーは全員、リポジトリへのプッシュ権限を持っています。</p>
+
+<p>こういった環境では、今まで Subversion やその他の中央管理型システムを使っていたときとほぼ同じワークフローで作業を進めることができます。オフラインでコミットできたりブランチやマージが楽だったりといった Git ならではの利点はいかせますが、作業の流れ自体は今までとほぼ同じです。最大の違いは、マージが (コミット時にサーバー側で行われるのではなく) クライアント側で行われるということです。二人の開発者が共有リポジトリで開発を始めるときにどうなるかを見ていきましょう。最初の開発者 John が、リポジトリをクローンして変更を加え、それをローカルでコミットします (これ以降のメッセージでは、プロトコル関連のメッセージを <code>...</code> で省略しています)。</p>
+
+<pre><code># John のマシン
+$ git clone john@githost:simplegit.git
+Initialized empty Git repository in /home/john/simplegit/.git/
+...
+$ cd simplegit/
+$ vim lib/simplegit.rb 
+$ git commit -am &#39;removed invalid default value&#39;
+[master 738ee87] removed invalid default value
+ 1 files changed, 1 insertions(+), 1 deletions(-)</code></pre>
+
+<p>もう一人の開発者 Jessica も同様に、リポジトリをクローンして変更をコミットしました。</p>
+
+<pre><code># Jessica のマシン
+$ git clone jessica@githost:simplegit.git
+Initialized empty Git repository in /home/jessica/simplegit/.git/
+...
+$ cd simplegit/
+$ vim TODO 
+$ git commit -am &#39;add reset task&#39;
+[master fbff5bc] add reset task
+ 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
+
+<p>Jessica が作業内容をサーバーにプッシュします。</p>
+
+<pre><code># Jessica のマシン
+$ git push origin master
+...
+To jessica@githost:simplegit.git
+   1edee6b..fbff5bc  master -&gt; master</code></pre>
+
+<p>John も同様にプッシュしようとしました。</p>
+
+<pre><code># John のマシン
+$ git push origin master
+To john@githost:simplegit.git
+ ! [rejected]        master -&gt; master (non-fast forward)
+error: failed to push some refs to &#39;john@githost:simplegit.git&#39;</code></pre>
+
+<p>John はプッシュできませんでした。Jessica が先にプッシュを済ませていたからです。Subversion になじみのある人には特に注目してほしいのですが、ここで John と Jessica が編集していたのは別々のファイルです。Subversion ならこのような場合はサーバー側で自動的にマージを行いますが、Git の場合はローカルでマージしなければなりません。John は、まず Jessica の変更内容を取得してマージしてからでないと、自分の変更をプッシュできないのです。</p>
+
+<pre><code>$ git fetch origin
+...
+From john@githost:simplegit
+ + 049d078...fbff5bc master     -&gt; origin/master</code></pre>
+
+<p>この時点で、John のローカルリポジトリは図 5-4 のようになっています。</p>
+
+<p><center><img src="/figures/ch2/18333fig0504-tn.png"></center><br/> 図 5-4. John のリポジトリ</p>
+
+<p>John の手元に Jessica がプッシュした内容が届きましたが、さらにそれを彼自身の作業にマージしてからでないとプッシュできません。</p>
+
+<pre><code>$ git merge origin/master
+Merge made by recursive.
+ TODO |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
+
+<p>マージがうまくいきました。John のコミット履歴は図 5-5 のようになります。</p>
+
+<p><center><img src="/figures/ch2/18333fig0505-tn.png"></center><br/> 図 5-5. origin/master をマージした後の John のリポジトリ</p>
+
+<p>自分のコードが正しく動作することを確認した John は、変更内容をサーバーにプッシュします。</p>
+
+<pre><code>$ git push origin master
+...
+To john@githost:simplegit.git
+   fbff5bc..72bbc59  master -&gt; master</code></pre>
+
+<p>最終的に、John のコミット履歴は図 5-6 のようになりました。</p>
+
+<p><center><img src="/figures/ch2/18333fig0506-tn.png"></center><br/> 図 5-6. origin サーバーにプッシュした後の John の履歴</p>
+
+<p>一方そのころ、Jessica はトピックブランチで作業を進めていました。<code>issue54</code> というトピックブランチを作成した彼女は、そこで 3 回コミットをしました。彼女はまだ John の変更を取得していません。したがって、彼女のコミット履歴は図 5-7 のような状態です。</p>
+
+<p><center><img src="/figures/ch2/18333fig0507-tn.png"></center><br/> 図 5-7. Jessica のコミット履歴</p>
+
+<p>Jessica は John の作業を取り込もうとしました。</p>
+
+<pre><code># Jessica のマシン
+$ git fetch origin
+...
+From jessica@githost:simplegit
+   fbff5bc..72bbc59  master     -&gt; origin/master</code></pre>
+
+<p>これで、さきほど John がプッシュした内容が取り込まれました。Jessica の履歴は図 5-8 のようになります。</p>
+
+<p><center><img src="/figures/ch2/18333fig0508-tn.png"></center><br/> 図 5-8. John の変更を取り込んだ後の Jessica の履歴</p>
+
+<p>Jessica のトピックブランチ上での作業が完了しました。プッシュする前にどんな作業をマージしなければならないのかを知るため、彼女は <code>git log</code> コマンドを実行しました。</p>
+
+<pre><code>$ git log --no-merges origin/master ^issue54
+commit 738ee872852dfaa9d6634e0dea7a324040193016
+Author: John Smith &lt;jsmith@example.com&gt;
+Date:   Fri May 29 16:01:27 2009 -0700
+
+    removed invalid default value</code></pre>
+
+<p>Jessica はトピックブランチの内容を自分の master ブランチにマージし、同じく John の作業 (<code>origin/master</code>) も自分の <code>master</code> ブランチにマージして再び変更をサーバーにプッシュすることになります。まずは master ブランチに戻り、これまでの作業を統合できるようにします。</p>
+
+<pre><code>$ git checkout master
+Switched to branch &quot;master&quot;
+Your branch is behind &#39;origin/master&#39; by 2 commits, and can be fast-forwarded.</code></pre>
+
+<p><code>origin/master</code> と <code>issue54</code> のどちらからマージしてもかまいません。どちらも上流にあるので、マージする順序が変わっても結果は同じなのです。どちらの順でマージしても、最終的なスナップショットはまったく同じものになります。ただそこにいたる歴史が微妙に変わってくるだけです。彼女はまず <code>issue54</code> からマージすることにしました。</p>
+
+<pre><code>$ git merge issue54
+Updating fbff5bc..4af4298
+Fast forward
+ README           |    1 +
+ lib/simplegit.rb |    6 +++++-
+ 2 files changed, 6 insertions(+), 1 deletions(-)</code></pre>
+
+<p>何も問題は発生しません。ご覧の通り、単なる fast-forward です。次に Jessica は John の作業 (<code>origin/master</code>) をマージします。</p>
+
+<pre><code>$ git merge origin/master
+Auto-merging lib/simplegit.rb
+Merge made by recursive.
+ lib/simplegit.rb |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)</code></pre>
+
+<p>こちらもうまく完了しました。Jessica の履歴は図 5-9 のようになります。</p>
+
+<p><center><img src="/figures/ch2/18333fig0509-tn.png"></center><br/> 図 5-9. John の変更をマージした後の Jessica の履歴</p>
+
+<p>これで、Jessica の <code>master</code> ブランチから <code>origin/master</code> に到達可能となります。これで自分の変更をプッシュできるようになりました (この作業の間に John は何もプッシュしていなかったものとします)。</p>
+
+<pre><code>$ git push origin master
+...
+To jessica@githost:simplegit.git
+   72bbc59..8059c15  master -&gt; master</code></pre>
+
+<p>各開発者が何度かコミットし、お互いの作業のマージも無事できました。図 5-10 をごらんください。</p>
+
+<p><center><img src="/figures/ch2/18333fig0510-tn.png"></center><br/> 図 5-10. すべての変更をサーバーに書き戻した後の Jessica の履歴</p>
+
+<p>これがもっとも単純なワークフローです。トピックブランチでしばらく作業を進め、統合できる状態になれば自分の master ブランチにマージする。他の開発者の作業を取り込む場合は、<code>origin/master</code> を取得してもし変更があればマージする。そして最終的にそれをサーバーの <code>master</code> ブランチにプッシュする。全体的な流れは図 5-11 のようになります。</p>
+
+<p><center><img src="/figures/ch2/18333fig0511-tn.png"></center><br/> 図 5-11. 複数開発者での Git を使ったシンプルな開発作業のイベントシーケンス</p>
+
+<h3 id='id414'>非公開で管理されているチーム</h3>
+
+<p>次に扱うシナリオは、大規模な非公開のグループに貢献するものです。機能単位の小規模なグループで共同作業した結果を別のグループと統合するような環境での作業の進め方を学びましょう。</p>
+
+<p>John と Jessica が共同でとある機能を実装しており、Jessica はそれとは別の件で Josie とも作業をしているものとします。彼らの勤務先は統合マネージャー型のワークフローを採用しており、各グループの作業を統合する担当者が決まっています。メインリポジトリの <code>master</code> ブランチを更新できるのは統合担当者だけです。この場合、すべての作業はチームごとのブランチで行われ、後で統合担当者がまとめることになります。</p>
+
+<p>では、Jessica の作業の流れを追っていきましょう。彼女は二つの機能を同時に実装しており、それぞれ別の開発者と共同作業をしています。すでに自分用のリポジトリをクローンしている彼女は、まず <code>featureA</code> の作業を始めることにしました。この機能用に新しいブランチを作成し、そこで作業を進めます。</p>
+
+<pre><code># Jessica のマシン
+$ git checkout -b featureA
+Switched to a new branch &quot;featureA&quot;
+$ vim lib/simplegit.rb
+$ git commit -am &#39;add limit to log function&#39;
+[featureA 3300904] add limit to log function
+ 1 files changed, 1 insertions(+), 1 deletions(-)</code></pre>
+
+<p>自分の作業内容を John に渡すため、彼女は <code>featureA</code> ブランチへのコミットをサーバーにプッシュしました。Jessica には <code>master</code> ブランチへのプッシュをする権限はありません。そこにプッシュできるのは統合担当者だけなのです。そこで、John との共同作業用の別のブランチにプッシュします。</p>
+
+<pre><code>$ git push origin featureA
+...
+To jessica@githost:simplegit.git
+ * [new branch]      featureA -&gt; featureA</code></pre>
+
+<p>Jessica は John に「私の作業を <code>featureA</code> というブランチにプッシュしておいたので、見てね」というメールを送りました。John からの返事を待つ間、Jessica はもう一方の <code>featureB</code> の作業を Josie とはじめます。まず最初に、この機能用の新しいブランチをサーバーの <code>master</code> ブランチから作ります。</p>
+
+<pre><code># Jessica のマシン
+$ git fetch origin
+$ git checkout -b featureB origin/master
+Switched to a new branch &quot;featureB&quot;</code></pre>
+
+<p>そして Jessica は、<code>featureB</code> ブランチに何度かコミットしました。</p>
+
+<pre><code>$ vim lib/simplegit.rb
+$ git commit -am &#39;made the ls-tree function recursive&#39;
+[featureB e5b0fdc] made the ls-tree function recursive
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+$ vim lib/simplegit.rb
+$ git commit -am &#39;add ls-files&#39;
+[featureB 8512791] add ls-files
  1 files changed, 5 insertions(+), 0 deletions(-)</code></pre>
 
-<p>この場合、コミットする前に benchmarks.rb を <code>git add</code> する必要がないことに注意しましょう。</p>
+<p>Jessica のリポジトリは図 5-12 のようになっています。</p>
 
-<h3 id='id31'>ファイルの削除</h3>
+<p><center><img src="/figures/ch2/18333fig0512-tn.png"></center><br/> 図 5-12. Jessica のコミット履歴</p>
 
-<p>ファイルを Git から削除するには、追跡対象からはずし (より正確に言うとステージングエリアから削除し)、そしてコミットします。<code>git rm</code> コマンドは、この作業を行い、そして作業ディレクトリからファイルを削除します。つまり、追跡されていないファイルとして残り続けることはありません。</p>
+<p>この変更をプッシュしようと思ったそのときに、Josie から「私の作業を <code>featureBee</code> というブランチにプッシュしておいたので、見てね」というメールがやってきました。Jessica はまずこの変更をマージしてからでないとサーバーにプッシュすることはできません。そこで、まず Josie の変更を <code>git fetch</code> で取得しました。</p>
 
-<p>単に作業ディレクトリからファイルを削除しただけの場合は、<code>git status</code> の出力の中では “Changed but not updated” (つまり <em>ステージされていない</em>) 欄に表示されます。</p>
+<pre><code>$ git fetch origin
+...
+From jessica@githost:simplegit
+ * [new branch]      featureBee -&gt; origin/featureBee</code></pre>
 
-<pre><code>$ rm grit.gemspec
-$ git status
-# On branch master
-#
-# Changed but not updated:
-#   (use &quot;git add/rm &lt;file&gt;...&quot; to update what will be committed)
-#
-#       deleted:    grit.gemspec
-#</code></pre>
+<p>次に、<code>git merge</code> でこの内容を自分の作業にマージします。</p>
 
-<p><code>git rm</code> を実行すると、ファイルの削除がステージされます。</p>
+<pre><code>$ git merge origin/featureBee
+Auto-merging lib/simplegit.rb
+Merge made by recursive.
+ lib/simplegit.rb |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)</code></pre>
 
-<pre><code>$ git rm grit.gemspec
-rm &#39;grit.gemspec&#39;
-$ git status
-# On branch master
-#
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#       deleted:    grit.gemspec
-#</code></pre>
+<p>ここでちょっとした問題が発生しました。彼女は、手元の <code>featureB</code> ブランチの内容をサーバーの <code>featureBee</code> ブランチにプッシュしなければなりません。このような場合は、<code>git push</code> コマンドでローカルブランチ名に続けてコロン (:) を書き、その後にリモートブランチ名を指定します。</p>
 
-<p>次にコミットするときにファイルが削除され、追跡対象外となります。変更したファイルをすでにステージしている場合は、<code>-f</code> オプションで強制的に削除しなければなりません。まだスナップショットに記録されていないファイルを誤って削除してしまうと Git で復旧することができなくなってしまうので、それを防ぐための安全装置です。</p>
+<pre><code>$ git push origin featureB:featureBee
+...
+To jessica@githost:simplegit.git
+   fba9af8..cd685d1  featureB -&gt; featureBee</code></pre>
 
-<p>ほかに「こんなことできたらいいな」と思われるであろう機能として、ファイル自体は作業ツリーに残しつつステージングエリアからの削除だけを行うこともできます。つまり、ハードディスク上にはファイルを残しておきたいけれど、もう Git では追跡させたくないというような場合のことです。これが特に便利なのは、<code>.gitignore</code> ファイルに書き足すのを忘れたために巨大なログファイルや大量の <code>.a</code> ファイルが追加されてしまったなどというときです。そんな場合は <code>--cached</code> オプションを使用します。</p>
+<p>これは <em>refspec</em> と呼ばれます。第 9 章で、Git の refspec の詳細とそれで何ができるのかを説明します。</p>
 
-<pre><code>$ git rm --cached readme.txt</code></pre>
+<p>さて、John からメールが返ってきました。「私の変更も <code>featureA</code> ブランチにプッシュしておいたので、確認よろしく」とのことです。彼女は <code>git fetch</code> でその変更を取り込みます。</p>
 
-<p>ファイル名やディレクトリ名、そしてファイル glob パターンを <code>git rm</code> コマンドに渡すことができます。つまり、このようなこともできるということです。</p>
+<pre><code>$ git fetch origin
+...
+From jessica@githost:simplegit
+   3300904..aad881d  featureA   -&gt; origin/featureA</code></pre>
 
-<pre><code>$ git rm log/\*.log</code></pre>
+<p>そして、<code>git log</code> で何が変わったのかを確認します。</p>
 
-<p><code>*</code> の前にバックスラッシュ (<code>\</code>) があることに注意しましょう。これが必要なのは、シェルによるファイル名の展開だけでなく Git が自前でファイル名の展開を行うからです。このコマンドは、<code>log/</code> ディレクトリにある拡張子 <code>.log</code> のファイルをすべて削除します。あるいは、このような書き方もできます。</p>
+<pre><code>$ git log origin/featureA ^featureA
+commit aad881d154acdaeb2b6b18ea0e827ed8a6d671e6
+Author: John Smith &lt;jsmith@example.com&gt;
+Date:   Fri May 29 19:57:33 2009 -0700
 
-<pre><code>$ git rm \*~</code></pre>
+    changed log output to 30 from 25</code></pre>
 
-<p>このコマンドは、<code>~</code> で終わるファイル名のファイルをすべて削除します。</p>
+<p>確認を終えた彼女は、John の作業を自分の <code>featureA</code> ブランチにマージしました。</p>
 
-<h3 id='id32'>ファイルの移動</h3>
+<pre><code>$ git checkout featureA
+Switched to branch &quot;featureA&quot;
+$ git merge origin/featureA
+Updating 3300904..aad881d
+Fast forward
+ lib/simplegit.rb |   10 +++++++++-
+1 files changed, 9 insertions(+), 1 deletions(-)</code></pre>
 
-<p>他の多くの VCS とは異なり、Git はファイルの移動を明示的に追跡することはありません。Git の中でファイル名を変更しても、「ファイル名を変更した」というメタデータは Git には保存されないのです。しかし Git は賢いので、ファイル名が変わったことを知ることができます。ファイルの移動を検出する仕組みについては後ほど説明します。</p>
+<p>Jessica はもう少し手を入れたいところがあったので、再びコミットしてそれをサーバーにプッシュします。</p>
 
-<p>しかし Git には <code>mv</code> コマンドがあります。ちょっと混乱するかもしれませんね。Git の中でファイル名を変更したい場合は次のようなコマンドを実行します。</p>
+<pre><code>$ git commit -am &#39;small tweak&#39;
+[featureA ed774b3] small tweak
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+$ git push origin featureA
+...
+To jessica@githost:simplegit.git
+   3300904..ed774b3  featureA -&gt; featureA</code></pre>
 
-<pre><code>$ git mv file_from file_to</code></pre>
+<p>Jessica のコミット履歴は、この時点で図 5-13 のようになります。</p>
 
-<p>このようなコマンドを実行してから status を確認すると、Git はそれをファイル名が変更されたと解釈していることがわかるでしょう。</p>
+<p><center><img src="/figures/ch2/18333fig0513-tn.png"></center><br/> 図 5-13. Jessica がブランチにコミットした後のコミット履歴</p>
 
-<pre><code>$ git mv README.txt README
-$ git status
-# On branch master
-# Your branch is ahead of &#39;origin/master&#39; by 1 commit.
-#
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#       renamed:    README.txt -&gt; README
-#</code></pre>
+<p>Jessica、Josie そして John は、統合担当者に「<code>featureA</code> ブランチと <code>featureBee</code> ブランチは本流に統合できる状態になりました」と報告しました。これらのブランチが本流に統合された後で本流を取得すると、マージコミットが新たに追加されて図 5-14 のような状態になります。</p>
 
-<p>しかし、実際のところこれは、次のようなコマンドを実行するのと同じ意味となります。</p>
+<p><center><img src="/figures/ch2/18333fig0514-tn.png"></center><br/> 図 5-14. Jessica が両方のトピックブランチをマージしたあとのコミット履歴</p>
 
-<pre><code>$ mv README.txt README
-$ git rm README.txt
-$ git add README</code></pre>
+<p>Git へ移行するグループが続出しているのも、この「複数チームの作業を並行して進め、後で統合できる」という機能のおかげです。小さなグループ単位でリモートブランチを使った共同作業ができ、しかもそれがチーム全体の作業を妨げることがない。これは Git の大きな利点です。ここで見たワークフローをまとめると、図 5-15 のようになります。</p>
 
-<p>Git はこれが暗黙的なファイル名の変更であると理解するので、この方法であろうが <code>mv</code> コマンドを使おうがどちらでもかまいません。唯一の違いは、この方法だと 3 つのコマンドが必要になるかわりに <code>mv</code> だとひとつのコマンドだけで実行できるという点です。より重要なのは、ファイル名の変更は何でもお好みのツールで行えるということです。あとでコミットする前に add/rm を指示してやればいいのです。</p>
+<p><center><img src="/figures/ch2/18333fig0515-tn.png"></center><br/> 図 5-15. 管理されたチームでのワークフローの基本的な流れ</p>
+
+<h3 id='id415'>小規模な公開プロジェクト</h3>
+
+<p>公開プロジェクトに貢献するとなると、また少し話が変わってきます。そのプロジェクトのブランチを直接更新できる権限はないでしょうから、何か別の方法でメンテナに接触する必要があります。最初の例では、フォークをサポートしている Git ホスティングサービスでフォークを使って貢献する方法を説明します。repo.or.cz と GitHub はどちらもフォークに対応しており、多くのメンテナはこの方式での協力を期待しています。そしてこの次のセクションでは、メールでパッチを送る形式での貢献について説明します。</p>
+
+<p>まずはメインリポジトリをクローンしましょう。そしてパッチ用のトピックブランチを作り、そこで作業を進めます。このような流れになります。</p>
+
+<pre><code>$ git clone (url)
+$ cd project
+$ git checkout -b featureA
+$ (作業)
+$ git commit
+$ (作業)
+$ git commit</code></pre>
+
+<p><code>rebase -i</code> を使ってすべての作業をひとつのコミットにまとめたり、メンテナがレビューしやすいようにコミット内容を整理したりといったことも行うかもしれません。対話的なリベースの方法については第 6 章で詳しく説明します。</p>
+
+<p>ブランチでの作業を終えてメンテナに渡せる状態になったら、プロジェクトのページに行って &#8220;Fork&#8221; ボタンを押し、自分用に書き込み可能なフォークを作成します。このリポジトリの URL をリモートとして追加しなければなりません。ここでは <code>myfork</code> という名前にしました。</p>
+
+<pre><code>$ git remote add myfork (url)</code></pre>
+
+<p>自分の作業内容は、ここにプッシュすることになります。変更を master ブランチにマージしてからそれをプッシュするよりも、今作業中の内容をそのままリモートブランチにプッシュするほうが簡単でしょう。もしその変更が受け入れられなかったり一部だけが取り込まれたりした場合に、master ブランチを巻き戻す必要がなくなるからです。メンテナがあなたの作業をマージするかリベースするかあるいは一部だけ取り込むか、いずれにせよあなたはその結果をリポジトリから再度取り込むことになります。</p>
+
+<pre><code>$ git push myfork featureA</code></pre>
+
+<p>自分用のフォークに作業内容をプッシュし終えたら、それをメンテナに伝えましょう。これは、よく「プルリクエスト」と呼ばれるもので、ウェブサイトから実行する (GutHub には &#8220;pull request&#8221; ボタンがあり、メンテナに自動的にメッセージを送ってくれます) こともできれば <code>git request-pull</code> コマンドの出力をプロジェクトのメンテナにメールで送ることもできます。</p>
+
+<p><code>request-pull</code> コマンドには、トピックブランチをプルしてもらいたい先のブランチとその Git リポジトリの URL を指定します。すると、プルしてもらいたい変更の概要が出力されます。たとえば Jessica が John にプルリクエストを送ろうとしたとしましょう。彼女はすでにトピックブランチ上で 2 回のコミットを済ませています。</p>
+
+<pre><code>$ git request-pull origin/master myfork
+The following changes since commit 1edee6b1d61823a2de3b09c160d7080b8d1b3a40:
+  John Smith (1):
+        added a new function
+
+are available in the git repository at:
+
+  git://githost/simplegit.git featureA
+
+Jessica Smith (2):
+      add limit to log function
+      change log output to 30 from 25
+
+ lib/simplegit.rb |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)</code></pre>
+
+<p>この出力をメンテナに送れば「どのブランチからフォークしたのか、どういったコミットをしたのか、そしてそれをどこにプルしてほしいのか」を伝えることができます。</p>
+
+<p>自分がメンテナになっていないプロジェクトで作業をする場合は、<code>master</code> ブランチでは常に <code>origin/master</code> を追いかけるようにし、自分の作業はトピックブランチで進めていくほうが楽です。そうすれば、パッチが拒否されたときも簡単にそれを捨てることができます。また、作業内容ごとにトピックブランチを分離しておけば、本流のリポジトリが更新されてパッチがうまく適用できなくなったとしても簡単にリベースできるようになります。たとえば、さきほどのプロジェクトに対して別の作業をすることになったとしましょう。その場合は、先ほどプッシュしたトピックブランチを使うのではなく、メインリポジトリの <code>master</code> ブランチから新たなトピックブランチを作成します。</p>
+
+<pre><code>$ git checkout -b featureB origin/master
+$ (作業)
+$ git commit
+$ git push myfork featureB
+$ (メンテナにメールを送る)
+$ git fetch origin</code></pre>
+
+<p>これで、それぞれのトピックがサイロに入った状態になりました。お互いのトピックが邪魔しあったり依存しあったりすることなく、それぞれ個別に書き換えやリベースが可能となります。図 5-16 を参照ください。</p>
+
+<p><center><img src="/figures/ch2/18333fig0516-tn.png"></center><br/> 図 5-16. featureB に関する作業のコミット履歴</p>
+
+<p>プロジェクトのメンテナが、他の大量のパッチを適用したあとであなたの最初のパッチを適用しようとしました。しかしその時点でパッチはすでにそのままでは適用できなくなっています。こんな場合は、そのブランチを <code>origin/master</code> の先端にリベースして衝突を解決させ、あらためて変更内容をメンテナに送ります。</p>
+
+<pre><code>$ git checkout featureA
+$ git rebase origin/master
+$ git push –f myfork featureA</code></pre>
+
+<p>これで、あなたの歴史は図 5-17 のように書き換えられました。</p>
+
+<p><center><img src="/figures/ch2/18333fig0517-tn.png"></center><br/> 図 5-17. featureA の作業を終えた後のコミット履歴</p>
+
+<p>ブランチをリベースしたので、プッシュする際には <code>–f</code> を指定しなければなりません。これは、サーバー上の <code>featureA</code> ブランチをその直系の子孫以外のコミットで上書きするためです。別のやり方として、今回の作業を別のブランチ (<code>featureAv2</code> など) にプッシュすることもできます。</p>
+
+<p>もうひとつ別のシナリオを考えてみましょう。あなたの二番目のブランチを見たメンテナが、その考え方は気に入ったものの細かい実装をちょっと変更してほしいと連絡してきました。この場合も、プロジェクトの <code>master</code> ブランチから作業を進めます。現在の <code>origin/master</code> から新たにブランチを作成し、そこに <code>featureB</code> ブランチの変更を押し込み、もし衝突があればそれを解決し、実装をちょっと変更してからそれを新しいブランチとしてプッシュします。</p>
+
+<pre><code>$ git checkout -b featureBv2 origin/master
+$ git merge --no-commit --squash featureB
+$ (実装をちょっと変更する)
+$ git commit
+$ git push myfork featureBv2</code></pre>
+
+<p><code>--squash</code> オプションは、マージしたいブランチでのすべての作業をひとつのコミットにまとめ、それを現在のブランチの先頭にマージします。<code>--no-commit</code> オプションは、自動的にコミットを記録しないよう Git に指示しています。こうすれば、別のブランチのすべての変更を取り込んでさらに手元で変更を加えたものを新しいコミットとして記録できるのです。</p>
+
+<p>そして、メンテナに「言われたとおりのちょっとした変更をしたものが <code>featureBv2</code> ブランチにあるよ」と連絡します (図 5-18 を参照ください)。</p>
+
+<p><center><img src="/figures/ch2/18333fig0518-tn.png"></center><br/> 図 5-18. featureBv2 の作業を終えた後のコミット履歴</p>
+
+<h3 id='id416'>大規模な公開プロジェクト</h3>
+
+<p>多くの大規模プロジェクトでは、パッチを受け付ける手続きが確立されています。プロジェクトによっていろいろ異なるので、まずはそのプロジェクト固有のルールがないかどうか確認しましょう。しかし、大規模なプロジェクトの多くは開発者用メーリングリストへのパッチの投稿を受け付けています。そこで、ここではそれを例にとって話を進めます。</p>
+
+<p>実際の作業の流れは先ほどとほぼ同じで、作業する内容ごとにトピックブランチを作成することになります。違うのは、パッチをプロジェクトに提供する方法です。プロジェクトをフォークし、自分用のリポジトリにプッシュするのではなく、個々のコミットについてメールを作成し、それを開発者用メーリングリストに投稿します。</p>
+
+<pre><code>$ git checkout -b topicA
+$ (作業)
+$ git commit
+$ (作業)
+$ git commit</code></pre>
+
+<p>これで二つのコミットができあがりました。これらをメーリングリストに投稿します。<code>git format-patch</code> を使うと mbox 形式のファイルが作成されるので、これをメーリングリストに送ることができます。このコマンドは、コミットメッセージの一行目を件名、残りのコミットメッセージとコミット内容のパッチを本文に書いたメールを作成します。これのよいところは、<code>format-patch</code> で作成したメールからパッチを適用すると、すべてのコミット情報が適切に維持されるというところです。次のセクションで実際にパッチを適用するところになれば、よりはっきりと実感するでしょう。</p>
+
+<pre><code>$ git format-patch -M origin/master
+0001-add-limit-to-log-function.patch
+0002-changed-log-output-to-30-from-25.patch</code></pre>
+
+<p><code>format-patch</code> コマンドは、できあがったパッチファイルの名前を出力します。<code>-M</code> スイッチは、名前が変わったことを検出するためのものです。できあがったファイルは次のようになります。</p>
+
+<pre><code>$ cat 0001-add-limit-to-log-function.patch 
+From 330090432754092d704da8e76ca5c05c198e71a8 Mon Sep 17 00:00:00 2001
+From: Jessica Smith &lt;jessica@example.com&gt;
+Date: Sun, 6 Apr 2008 10:17:23 -0700
+Subject: [PATCH 1/2] add limit to log function
+
+Limit log functionality to the first 20
+
+---
+ lib/simplegit.rb |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/lib/simplegit.rb b/lib/simplegit.rb
+index 76f47bc..f9815f1 100644
+--- a/lib/simplegit.rb
++++ b/lib/simplegit.rb
+@@ -14,7 +14,7 @@ class SimpleGit
+   end
+
+   def log(treeish = &#39;master&#39;)
+-    command(&quot;git log #{treeish}&quot;)
++    command(&quot;git log -n 20 #{treeish}&quot;)
+   end
+
+   def ls_tree(treeish = &#39;master&#39;)
+-- 
+1.6.2.rc1.20.g8c5b.dirty</code></pre>
+
+<p>このファイルを編集して、コミットメッセージには書けなかったような情報をメーリングリスト用に追加することもできます。<code>--</code> の行とパッチの開始位置 (<code>lib/simplegit.rb</code> の行) の間にメッセージを書くと、メールを受信した人はそれを読むことができますが、パッチからは除外されます。</p>
+
+<p>これをメーリングリストに投稿するには、メールソフトにファイルの内容を貼り付けるか、あるいはコマンドラインのプログラムを使います。ファイルの内容をコピーして貼り付けると「かしこい」メールソフトが勝手に改行の位置を変えてしまうなどの問題が起こりがちです。ありがたいことに Git には、きちんとしたフォーマットのパッチを IMAP で送ることを支援するツールが用意されています。これを使うと便利です。ここでは、パッチを Gmail で送る方法を説明しましょう。というのも、たまたま私が使ってるメールソフトが Gmail だからです。さまざまなメールソフトでの詳細なメール送信方法が、Git ソースコードにある <code>Documentation/SubmittingPatches</code> の最後に載っています。</p>
+
+<p>まず。<code>~/.gitconfig</code> ファイルの imap セクションを設定します。それぞれの値を <code>git config</code> コマンドで順に設定してもかまいませんし、このファイルに手で書き加えてもかまいません。最終的に、設定ファイルは次のようになります。</p>
+
+<pre><code>[imap]
+  folder = &quot;[Gmail]/Drafts&quot;
+  host = imaps://imap.gmail.com
+  user = user@gmail.com
+  pass = p4ssw0rd
+  port = 993
+  sslverify = false</code></pre>
+
+<p>IMAP サーバーで SSL を使っていない場合は、最後の二行はおそらく不要でしょう。そして host のところが <code>imaps://</code> ではなく <code>imap://</code> となります。ここまでの設定が終われば、<code>git send-email</code> を実行して IMAP サーバーの Drafts フォルダにパッチを置くことができるようになります。</p>
+
+<pre><code>$ git send-email *.patch
+0001-added-limit-to-log-function.patch
+0002-changed-log-output-to-30-from-25.patch
+Who should the emails appear to be from? [Jessica Smith &lt;jessica@example.com&gt;] 
+Emails will be sent from: Jessica Smith &lt;jessica@example.com&gt;
+Who should the emails be sent to? jessica@example.com
+Message-ID to be used as In-Reply-To for the first email? y</code></pre>
+
+<p>Git はその後、各パッチについてこのようなログ情報をはき出すはずです。</p>
+
+<pre><code>(mbox) Adding cc: Jessica Smith &lt;jessica@example.com&gt; from 
+  \line &#39;From: Jessica Smith &lt;jessica@example.com&gt;&#39;
+OK. Log says:
+Sendmail: /usr/sbin/sendmail -i jessica@example.com
+From: Jessica Smith &lt;jessica@example.com&gt;
+To: jessica@example.com
+Subject: [PATCH 1/2] added limit to log function
+Date: Sat, 30 May 2009 13:29:15 -0700
+Message-Id: &lt;1243715356-61726-1-git-send-email-jessica@example.com&gt;
+X-Mailer: git-send-email 1.6.2.rc1.20.g8c5b.dirty
+In-Reply-To: &lt;y&gt;
+References: &lt;y&gt;
+
+Result: OK</code></pre>
+
+<p>あとは、Drafts フォルダに移動して To フィールドをメーリングリストのアドレスに変更し (おそらく CC には担当メンテなのアドレスを入れ)、送信できるようになりました。</p>
+
+<h3 id='id417'>まとめ</h3>
+
+<p>このセクションでは、今後みなさんが遭遇するであろうさまざまな形式の Git プロジェクトについて、関わっていくための作業手順を説明しました。そして、その際に使える新兵器もいくつか紹介しました。次はもう一方の側、つまり Git プロジェクトを運営する側について見ていきましょう。慈悲深い独裁者、あるいは統合マネージャーとしての作業手順を説明します。</p>
 
 <div id='nav'>
 <a href='ch2-1.html'>prev</a> | <a href='ch2-3.html'>next</a>

@@ -1,9 +1,89 @@
 ---
 layout: translation
-title: Pro Git 5.4 Distributed Git Summary
+title: Pro Git 5.4 Základy práce se systémem Git Rušení změn
 ---
-<h2 id='summary'>Summary</h2>
+<h2 id='ruen_zmn'>Rušení změn</h2>
 
-<p>You should feel fairly comfortable contributing to a project in Git as well as maintaining your own project or integrating other users’ contributions. Congratulations on being an effective Git developer! In the next chapter, you’ll learn more powerful tools and tips for dealing with complex situations, which will truly make you a Git master.</p><div id='nav'>
-<a href='ch5-3.html'>prev</a> | <a href='ch6-0.html'>next</a>
+<p>Kdykoli si můžete přát zrušit nějakou provedenou změnu. Podívejme se proto, jaké základní nástroje se nám tu nabízejí. Ale buďte opatrní! Ne všechny zrušené změny se dají vrátit. Je to jedna z mála oblastí v systému Git, kdy při neuváženém postupu riskujete, že přijdete o část své práce.</p>
+
+<h3 id='zmna_posledn_revize'>Změna poslední revize</h3>
+
+<p>Jedním z nejčastějších rušení úprav je situace, kdy zapíšete revizi příliš brzy a ještě jste např. zapomněli přidat některé soubory nebo byste rádi změnili zprávu k revizi. Chcete-li opravit poslední revizi, můžete spustit příkaz commit s parametrem <code>--amend</code>:</p>
+
+<pre><code>$ git commit --amend</code></pre>
+
+<p>Tento příkaz vezme vaši oblast připravených změn a použije ji k vytvoření revize. Pokud jste od poslední revize neprovedli žádné změny (například spustíte tento příkaz bezprostředně po předchozí revizi), bude snímek vypadat úplně stejně a jediné, co změníte, je zpráva k revizi.</p>
+
+<p>Spustí se stejný editor pro editaci zpráv k revizím, ale tentokrát už obsahuje zprávu z vaší předchozí revize. Zprávu můžete editovat stejným způsobem jako vždy. Zpráva přepíše předchozí revizi.</p>
+
+<p>Pokud například zapíšete revizi a potom si uvědomíte, že jste zapomněli připravit k zapsání změny v souboru, který jste chtěli do této revize přidat, můžete provést následující:</p>
+
+<pre><code>$ git commit -m &#39;initial commit&#39;
+$ git add forgotten_file
+$ git commit --amend</code></pre>
+
+<p>Tyto tři příkazy vytvoří jedinou revizi – třetí příkaz nahradí výsledky prvního.</p>
+
+<h3 id='nvrat_souboru_z_oblasti_pipravench_zmn'>Návrat souboru z oblasti připravených změn</h3>
+
+<p>Následující dvě části popisují, jak vrátit změny provedené v oblasti připravených změn a v pracovním adresáři. Je příjemné, že příkaz, jímž se zjišťuje stav těchto dvou oblastí, zároveň připomíná, jak v nich zrušit nežádoucí změny. Řekněme například, že jste změnili dva soubory a chcete je zapsat jako dvě oddělené změny, jenže omylem jste zadali příkaz <code>git add *</code> a oba soubory jste tím připravili k zapsání. Jak lze tyto dva soubory vrátit z oblasti připravených změn? Připomene vám to příkaz <code>git status</code>:</p>
+
+<pre><code>$ git add .
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#       modified:   README.txt
+#       modified:   benchmarks.rb
+#</code></pre>
+
+<p>Přímo pod nadpisem „Changes to be committed“ (Změny k zapsání) se říká: pro návrat z oblasti připravených změn použijte příkaz <code>git reset HEAD &lt;soubor&gt;...</code> Budeme se tedy řídit touto radou a vrátíme soubor <code>benchmarks.rb</code> z oblasti připravených změn:</p>
+
+<pre><code>$ git reset HEAD benchmarks.rb
+benchmarks.rb: locally modified
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#       modified:   README.txt
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#   (use &quot;git checkout -- &lt;file&gt;...&quot; to discard changes in working directory)
+#
+#       modified:   benchmarks.rb
+#</code></pre>
+
+<p>Příkaz je sice trochu zvláštní, ale funguje. Soubor <code>benchmarks.rb</code> má stav „změněn“, ale už se nenachází v oblasti připravených změn.</p>
+
+<h3 id='ruen_zmn_ve_zmnnch_souborech'>Rušení změn ve změněných souborech</h3>
+
+<p>A co když zjistíte, že nechcete zachovat změny, které jste provedli v souboru <code>benchmarks.rb</code>? Jak je můžete snadno zrušit a vrátit soubor zpět do podoby při poslední revizi (nebo při prvním klonování nebo v jakémkoli okamžiku, kdy jste ho zaznamenali v pracovním adresáři)? Příkaz <code>git status</code> vám naštěstí řekne, co dělat. U posledního příkladu vypadá oblast připravených změn takto:</p>
+
+<pre><code># Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#   (use &quot;git checkout -- &lt;file&gt;...&quot; to discard changes in working directory)
+#
+#       modified:   benchmarks.rb
+#</code></pre>
+
+<p>Výpis vám sděluje, jak zahodit změny (discard changes), které jste provedli (přinejmenším tak činí novější verze systému Git, od verze 1.6.1; pokud máte starší verzi, doporučujeme ji aktualizovat, čímž získáte některé z těchto vylepšených funkcí). Uděláme, co nám výpis radí:</p>
+
+<pre><code>$ git checkout -- benchmarks.rb
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#       modified:   README.txt
+#</code></pre>
+
+<p>Jak vidíte, změny byly zahozeny. Všimněte si také, že se jedná o nebezpečný příkaz. Veškeré změny, které jste v souboru provedli, jsou ztraceny, soubor jste právě překopírovali jiným souborem. Nikdy tento příkaz nepoužívejte, pokud si nejste zcela jisti, že už daný soubor nebudete potřebovat. Pokud potřebujete pouze odstranit soubor z cesty, podívejte se na odkládání a větvení v následující kapitole. Tyto postupy většinou bývají vhodnější.</p>
+
+<p>Vše, co je zapsáno v systému Git, lze téměř vždy obnovit. Obnovit lze dokonce i revize na odstraněných větvích nebo revize, které byly přepsány revizí <code>--amend</code> (o obnovování dat viz kapitola 9). Pokud však dojde ke ztrátě dat, která dosud nebyla součástí žádné revize, bude tato ztráta patrně nevratná.</p>
+
+<div id='nav'>
+<a href='ch5-3.html'>prev</a> | <a href='ch5-5.html'>next</a>
 </div>

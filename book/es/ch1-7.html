@@ -1,9 +1,70 @@
 ---
 layout: translation
-title: Pro Git 1.7 Empezando Resumen
+title: Pro Git 1.7 Las herramientas de Git Fusión de subárboles
 ---
-<h2 id='resumen'>Resumen</h2>
+<h2 id='fusin_de_subrboles'>Fusión de subárboles</h2>
 
-<p>Deberías tener un conocimiento básico de qué es Git y en qué se diferencia del CVCS que puedes haber estado utilizando. También deberías tener funcionando en tu sistema una versión de Git configurada con tu identidad. Es el momento de aprender algunos fundamentos de Git.</p><div id='nav'>
-<a href='ch1-6.html'>prev</a> | <a href='ch2-0.html'>next</a>
+<p>Ahora que se han visto las dificultades que se pueden presentar utilizando el sistema de submódulos, es momento de hechar un vistazo a una vía alternativa de atacar esa misma problemática. Cuando Git realiza una fusión, suele revisar lo que ha de fusiónar entre sí y, tras ese análisis, elige la estratégia mas adecuada para hacerlo. Si se están fusionando dos ramas, Git suele utilizar la <em>estategia</em>recursiva_ (_recursive_ strategy). Si se están fusionando más de dos ramas, Git suele escoger la <em>estrategia</em>del_pulpo_ (_octopus_ strategy). Estas son las estrategias escogidas por defecto, ya que la estrategia recursiva puede manejar complejas fusiones-de-tres-vias &#8211;por ejemplo, con más de un antecesor común&#8211; pero tan solo puede fusionar dos ramas. La fusión-tipo-pulpo puede manejar multiples ramas, pero es mucho mas cuidadosa para evitar incurrir en complejos conflictos; y es por eso que se utiliza en los intentos de fusionar más de dos ramas.</p>
+
+<p>Pero existen también otras estratégias que se pueden escoger según se necesiten. Una de ellas, la <em>fusión</em>subárbol_ (_subtree_ merge), es precisamente la más adecuada para tratar con subproyectos. En este caso se va a mostrar cómo se haria el mismo empotramiento del módulo rack tomado como ejemplo anteriormente, pero utilizando fusiones de subarbol en lugar de submódulos.</p>
+
+<p>La idea subyacente tras toda fusión subarborea es la de que se tienen dos proyectos; y uno de ellos está relacionado con una subcarpeta en el otro, y viceversa. Cuando se solicita una fusión subarborea, Git es lo suficientemente inteligente como para imaginarse por si solo que uno de los proyectos es un subárbol del otro y obrar en consecuencia. Es realmente sorprendente.</p>
+
+<p>Se comienza añadiendo la aplicación Rack al proyecto. Se añade como una referencia remota en el propio proyecto, y luego se extrae (checkout) en su propia rama:</p>
+
+<pre><code>$ git remote add rack_remote git@github.com:schacon/rack.git
+$ git fetch rack_remote
+warning: no common commits
+remote: Counting objects: 3184, done.
+remote: Compressing objects: 100% (1465/1465), done.remote: Compressing objects: 100% (1465/1465), done.
+remote: Total 3184 (delta 1952), reused 2770 (delta 1675)
+Receiving objects: 100% (3184/3184), 677.42 KiB | 4 KiB/s, done.
+Resolving deltas: 100% (1952/1952), done.Resolving deltas: 100% (1952/1952), done.Resolving deltas: 100% (1952/1952), done.
+From git@github.com:schacon/rack
+ * [new branch]      build      -&gt; rack_remote/build
+ * [new branch]      master     -&gt; rack_remote/master
+ * [new branch]      rack-0.4   -&gt; rack_remote/rack-0.4
+ * [new branch]      rack-0.9   -&gt; rack_remote/rack-0.9
+$ git checkout -b rack_branch rack_remote/master
+Branch rack_branch set up to track remote branch refs/remotes/rack_remote/master.
+Switched to a new branch &quot;rack_branch&quot;</code></pre>
+
+<p>En este punto, se tiene la raiz del proyecto Rack en la rama <code>rack_branch</code> y la del propio proyecto padre en la rama <code>master</code>. Si se comprueban una o la otra, se puede observar que ambos proyectos tienen distintas raices:</p>
+
+<pre><code>$ ls
+AUTHORS	       KNOWN-ISSUES   Rakefile      contrib	       lib
+COPYING	       README         bin           example	       test
+$ git checkout master
+Switched to branch &quot;master&quot;
+$ ls
+README</code></pre>
+
+<p>Si se desea situar el proyecto Rack como una subcarpeta del proyecto <code>master</code>. Se ha de lanzar el comando <code>git read-tree</code>. Se verá más en detalle el comando <code>read-tree</code> y sus acompañantes en el capítulo 9. Pero por ahora, basta con saber que este comando se encarga de leer el árbol raiz de una rama en el área de preparación (staging area) y carpeta de trabajo (working directory) actuales. Con ello, se retorna sobre la rama <code>master</code> y se recupera (pull) la rama <code>rack_branch</code> en la subcarpeta <code>rack</code> de la rama <code>master</code> del proyecto principal:</p>
+
+<pre><code>$ git read-tree --prefix=rack/ -u rack_branch</code></pre>
+
+<p>Cuando se confirman estos cambios, es como si se tuvieran todos los archivos Rack bajo esa carpeta &#8211;como si se hubieran copiado desde un archivo comprimido tarball&#8211; Lo que hace interesante este método es la posibilidad que brinda de fusionar cambios de una rama sobre la otra de forma sencilla. De tal forma que, si se actualiza el proyecto Rack, se pueden integrar los cambios aguas arriba simplemente cambiando a esa rama y recuperando:</p>
+
+<pre><code>$ git checkout rack_branch
+$ git pull</code></pre>
+
+<p>Tras lo cual, es posible fusionar esos cambios de vuelta a la rama &#8216;master&#8217;. Utilizando el comando <code>git merge -s subtree</code>, que funciona correctamente; pero fusionando también los historiales entre sí. Un efecto secundario que posiblemente no interese. Para recuperar los cambios y rellenar el mensaje de la confirmación, se pueden emplear las opciones <code>--squash</code> y <code>--no-commit</code>, junto con la opción de estrategia <code>-s subtree</code>:</p>
+
+<pre><code>$ git checkout master
+$ git merge --squash -s subtree --no-commit rack_branch
+Squash commit -- not updating HEAD
+Automatic merge went well; stopped before committing as requested</code></pre>
+
+<p>Con esto, todos los cambios en el proyecto Rack se encontrarán fusionados y listos para ser confirmados localmente. También es posible hacer el camino contrario: realizar los cambios en la subcarpeta <code>rack</code> de la rama &#8216;master&#8217;, para posteriormente fusionarlos en la rama <code>rack_branch</code> y remitirlos a los encargados del mantenimiento o enviarlos aguas arriba.</p>
+
+<p>Para ver las diferencias entre el contenido de la subcarpeta <code>rack</code> y el código en la rama <code>rack_branch</code> &#8211;para comprobar si es necesario fusionarlas&#8211;, no se puede emplear el comando <code>diff</code> habitual. En su lugar, se ha de emplear el comando <code>git diff-tree</code> con la rama que se desea comparar:</p>
+
+<pre><code>$ git diff-tree -p rack_branch</code></pre>
+
+<p>O, otro ejemplo: para comparar el contenido de la subcarpeta <code>rack</code> con la rama <code>master</code> en el servidor:</p>
+
+<pre><code>$ git diff-tree -p rack_remote/master</code></pre>
+
+<div id='nav'>
+<a href='ch1-6.html'>prev</a> | <a href='ch1-8.html'>next</a>
 </div>

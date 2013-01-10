@@ -64,13 +64,13 @@ nothing added to commit but untracked files present (use &quot;git add&quot; to 
 #
 #	new file:   README
 #
-# Changed but not updated:
+# Changes not staged for commit:
 #   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
 #
 #	modified:   benchmarks.rb
 #</code></pre>
 
-<p>Berkas benchmarks.rb terlihat di bawah bagian yang bernama &#8220;Changed but not updated&#8221; - yang berarti bahwa sebuah berkas terpantau telah berubah di dalam direktori kerja namun belum masuk ke area stage. Untuk memasukkannya ke area stage, Anda menjalankan perintah <code>git add</code> (perintah ini adalah perintah multiguna - Anda menggunakannya untuk mulai memantau berkas baru, untuk memasukkannya ke area stage, dan untuk melakukan hal lain seperti menandai berkas terkonflik menjadi terpecahkan). Mari kita sekarang jalankan <code>git add</code> untuk memasukkan berkas benchmarks.rb ke dalam area stage, dan jalankan <code>git status</code> lagi:</p>
+<p>Berkas benchmarks.rb terlihat di bawah bagian yang bernama &#8220;Changes not staged for commit&#8221; - yang berarti bahwa sebuah berkas terpantau telah berubah di dalam direktori kerja namun belum masuk ke area stage. Untuk memasukkannya ke area stage, Anda menjalankan perintah <code>git add</code> (perintah ini adalah perintah multiguna - Anda menggunakannya untuk mulai memantau berkas baru, untuk memasukkannya ke area stage, dan untuk melakukan hal lain seperti menandai berkas terkonflik menjadi terpecahkan). Mari kita sekarang jalankan <code>git add</code> untuk memasukkan berkas benchmarks.rb ke dalam area stage, dan jalankan <code>git status</code> lagi:</p>
 
 <pre><code>$ git add benchmarks.rb
 $ git status
@@ -93,7 +93,7 @@ $ git status
 #	new file:   README
 #	modified:   benchmarks.rb
 #
-# Changed but not updated:
+# Changes not staged for commit:
 #   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
 #
 #	modified:   benchmarks.rb
@@ -157,7 +157,7 @@ doc/*.txt # abaikan doc/notes.txt, tapi bukan doc/server/arch.txt</code></pre>
 #
 #	new file:   README
 #
-# Changed but not updated:
+# Changes not staged for commit:
 #   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
 #
 #	modified:   benchmarks.rb
@@ -212,7 +212,7 @@ $ git status
 #
 #	modified:   benchmarks.rb
 #
-# Changed but not updated:
+# Changes not staged for commit:
 #
 #	modified:   benchmarks.rb
 #</code></pre>
@@ -292,7 +292,7 @@ index 3cb747f..e445e28 100644
 <pre><code>$ git status
 # On branch master
 #
-# Changed but not updated:
+# Changes not staged for commit:
 #
 #	modified:   benchmarks.rb
 #
@@ -306,13 +306,13 @@ $ git commit -a -m &#39;added new benchmarks&#39;
 
 <p>Untuk menghapus sebuah berkas dari Git, Anda harus menghapusnya dari berkas terpantau (lebih tepatnya, mengpus dari area stage) dan kemudian commit. Perintah <code>git rm</code> melakukan hal tadi dan juga menghapus berkas tersebut dari direktori kerja Anda sehingga Anda tidak melihatnya sebagai berkas yang tak terpantau nantinya.</p>
 
-<p>Jika Anda hanya menghapus berkas dari direktori kerja Anda, berkas tersebut akan muncul di bagian &#8220;Changed but not updated&#8221; (yaitu, di luar area stage) dari keluaran <code>git status</code> Anda:</p>
+<p>Jika Anda hanya menghapus berkas dari direktori kerja Anda, berkas tersebut akan muncul di bagian &#8220;Changes not staged for commit&#8221; (yaitu, di luar area stage) dari keluaran <code>git status</code> Anda:</p>
 
 <pre><code>$ rm grit.gemspec
 $ git status
 # On branch master
 #
-# Changed but not updated:
+# Changes not staged for commit:
 #   (use &quot;git add/rm &lt;file&gt;...&quot; to update what will be committed)
 #
 #       deleted:    grit.gemspec

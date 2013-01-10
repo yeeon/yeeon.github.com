@@ -1,233 +1,154 @@
 ---
 layout: translation
-title: Pro Git 9.12 Git Internals Transfer Protokolle
+title: Pro Git 9.12 Git on the Server Gitosis
 ---
-<h2 id='transfer_protokolle'>Transfer Protokolle</h2>
+<h2 id='gitosis'>Gitosis</h2>
 
-<p>Git can transfer data between two repositories in two major ways: over HTTP and via the so-called smart protocols used in the <code>file://</code>, <code>ssh://</code>, and <code>git://</code> transports. This section will quickly cover how these two main protocols operate.</p>
+<p>Keeping all users’ public keys in the <code>authorized_keys</code> file for access works well only for a while. When you have hundreds of users, it’s much more of a pain to manage that process. You have to shell onto the server each time, and there is no access control — everyone in the file has read and write access to every project.</p>
 
-<p>Git kann Daten zwischen zwei Repositories im wesentlichen auf zwei Arten transportieren: über HTTP und über sogenannte smarte Protokolle, die mit <code>file://</code>, <code>ssh://</code> und <code>git://</code> verwendet werden. Die folgende Sektion gibt einen kurzen Überblick über diese Protokolle und wie sie funktionieren.</p>
+<p>At this point, you may want to turn to a widely used software project called Gitosis. Gitosis is basically a set of scripts that help you manage the <code>authorized_keys</code> file as well as implement some simple access controls. The really interesting part is that the UI for this tool for adding people and determining access isn’t a web interface but a special Git repository. You set up the information in that project; and when you push it, Gitosis reconfigures the server based on that, which is cool.</p>
 
-<h3 id='the_dumb_protocol'>The Dumb Protocol</h3>
+<p>Installing Gitosis isn’t the simplest task ever, but it’s not too difficult. It’s easiest to use a Linux server for it — these examples use a stock Ubuntu 8.10 server.</p>
 
-<h3 id='das_dumme_protokoll'>Das dumme Protokoll</h3>
+<p>Gitosis requires some Python tools, so first you have to install the Python setuptools package, which Ubuntu provides as python-setuptools:</p>
 
-<p>Git transport over HTTP is often referred to as the dumb protocol because it requires no Git-specific code on the server side during the transport process. The fetch process is a series of GET requests, where the client can assume the layout of the Git repository on the server. Let’s follow the <code>http-fetch</code> process for the simplegit library:</p>
+<pre><code>$ apt-get install python-setuptools</code></pre>
 
-<p>Git&#8217;s HTTP Transfer Protokoll wird oft auch als &#8220;dummes&#8221; Protokoll bezeichnet, weil es auf der Server Seite keinen Git-spezifischen Code benötigt. Der <code>fetch</code> Prozeß besteht aus einer Reihe von GET Requests, für die der Client Vorannahmen über das Layout des Git Repositories auf dem Server machen kann. Schauen wir uns den <code>http-fetch</code> Prozeß der <code>simplegit</code> Bibliothek an:</p>
+<p>Next, you clone and install Gitosis from the project’s main site:</p>
 
-<pre><code>$ git clone http://github.com/schacon/simplegit-progit.git</code></pre>
+<pre><code>$ git clone git://eagain.net/gitosis.git
+$ cd gitosis
+$ sudo python setup.py install</code></pre>
 
-<p>The first thing this command does is pull down the <code>info/refs</code> file. This file is written by the <code>update-server-info</code> command, which is why you need to enable that as a <code>post-receive</code> hook in order for the HTTP transport to work properly:</p>
+<p>That installs a couple of executables that Gitosis will use. Next, Gitosis wants to put its repositories under <code>/home/git</code>, which is fine. But you have already set up your repositories in <code>/opt/git</code>, so instead of reconfiguring everything, you create a symlink:</p>
 
-<p>Der Befehl lädt zunächst die <code>info/refs</code> Datei herunter. Diese Datei wird vom <code>update-server-info</code> Befehl geschrieben, den man als einen <code>post-receive</code> Hook einrichten muß, damit das HTTP Protokoll richtig funktionieren kann.</p>
+<pre><code>$ ln -s /opt/git /home/git/repositories</code></pre>
 
-<pre><code>=&gt; GET info/refs
-ca82a6dff817ec66f44342007202690a93763949     refs/heads/master</code></pre>
+<p>Gitosis is going to manage your keys for you, so you need to remove the current file, re-add the keys later, and let Gitosis control the <code>authorized_keys</code> file automatically. For now, move the <code>authorized_keys</code> file out of the way:</p>
 
-<p>Now you have a list of the remote references and SHAs. Next, you look for what the HEAD reference is so you know what to check out when you’re finished:</p>
+<pre><code>$ mv /home/git/.ssh/authorized_keys /home/git/.ssh/ak.bak</code></pre>
 
-<p>Jetzt hat man eine Liste aller Referenzen und SHAs in diesem Repository. Als nächstes schaut man die HEAD Referenz nach, um zu wissen, was ausgecheckt werden muß:</p>
+<p>Next you need to turn your shell back on for the &#8216;git&#8217; user, if you changed it to the <code>git-shell</code> command. People still won’t be able to log in, but Gitosis will control that for you. So, let’s change this line in your <code>/etc/passwd</code> file</p>
 
-<pre><code>=&gt; GET HEAD
-ref: refs/heads/master</code></pre>
+<pre><code>git:x:1000:1000::/home/git:/usr/bin/git-shell</code></pre>
 
-<p>You need to check out the <code>master</code> branch when you’ve completed the process.</p>
+<p>back to this:</p>
 
-<p>D.h., wenn wir mit dem Prozeß fertig sind, wir müssen den <code>master</code> Branch auschecken.</p>
+<pre><code>git:x:1000:1000::/home/git:/bin/sh</code></pre>
 
-<p>At this point, you’re ready to start the walking process. Because your starting point is the <code>ca82a6</code> commit object you saw in the <code>info/refs</code> file, you start by fetching that:</p>
+<p>Now it’s time to initialize Gitosis. You do this by running the <code>gitosis-init</code> command with your personal public key. If your public key isn’t on the server, you’ll have to copy it there:</p>
 
-<p>Wir können jetzt loslegen. Weil wir in der <code>info/refs</code> Datei der Commit <code>ca82a6</code> angegeben ist, fangen wir damit an, dieses Objekt herunter zu laden:</p>
+<pre><code>$ sudo -H -u git gitosis-init &lt; /tmp/id_dsa.pub
+Initialized empty Git repository in /opt/git/gitosis-admin.git/
+Reinitialized existing Git repository in /opt/git/gitosis-admin.git/</code></pre>
 
-<pre><code>=&gt; GET objects/ca/82a6dff817ec66f44342007202690a93763949
-(179 bytes of binary data)</code></pre>
+<p>This lets the user with that key modify the main Git repository that controls the Gitosis setup. Next, you have to manually set the execute bit on the <code>post-update</code> script for your new control repository.</p>
 
-<p>You get an object back — that object is in loose format on the server, and you fetched it over a static HTTP GET request. You can zlib-uncompress it, strip off the header, and look at the commit content:</p>
+<pre><code>$ sudo chmod 755 /opt/git/gitosis-admin.git/hooks/post-update</code></pre>
 
-<p>Wir erhalten also ein Objekt zurück. Dieses Objekt ist im losen Format auf dem Server gespeichert, und wir haben es über einen statischen HTTP GET Request herunter geladen. Jetzt können wir es mit zlib dekomprimieren, den Header entfernen und den Inhalt des Commits durchsehen:</p>
+<p>You’re ready to roll. If you’re set up correctly, you can try to SSH into your server as the user for which you added the public key to initialize Gitosis. You should see something like this:</p>
 
-<pre><code>$ git cat-file -p ca82a6dff817ec66f44342007202690a93763949
-tree cfda3bf379e4f8dba8717dee55aab78aef7f4daf
-parent 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
-author Scott Chacon &lt;schacon@gmail.com&gt; 1205815931 -0700
-committer Scott Chacon &lt;schacon@gmail.com&gt; 1240030591 -0700
+<pre><code>$ ssh git@gitserver
+PTY allocation request failed on channel 0
+fatal: unrecognized command &#39;gitosis-serve schacon@quaternion&#39;
+  Connection to gitserver closed.</code></pre>
 
-changed the version number</code></pre>
+<p>That means Gitosis recognized you but shut you out because you’re not trying to do any Git commands. So, let’s do an actual Git command — you’ll clone the Gitosis control repository:</p>
 
-<p>Next, you have two more objects to retrieve — <code>cfda3b</code>, which is the tree of content that the commit we just retrieved points to; and <code>085bb3</code>, which is the parent commit:</p>
+<pre><code># on your local computer
+$ git clone git@gitserver:gitosis-admin.git</code></pre>
 
-<p>Als nächstes brauchen wir also zwei weitere Objekte: <code>cfda3b</code>, welches der Tree der Inhalte dieses Commits ist, und <code>085bb3</code>, den Commit Parent:</p>
+<p>Now you have a directory named <code>gitosis-admin</code>, which has two major parts:</p>
 
-<pre><code>=&gt; GET objects/08/5bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
-(179 bytes of data)</code></pre>
+<pre><code>$ cd gitosis-admin
+$ find .
+./gitosis.conf
+./keydir
+./keydir/scott.pub</code></pre>
 
-<p>That gives you your next commit object. Grab the tree object:</p>
+<p>The <code>gitosis.conf</code> file is the control file you use to specify users, repositories, and permissions. The <code>keydir</code> directory is where you store the public keys of all the users who have any sort of access to your repositories — one file per user. The name of the file in <code>keydir</code> (in the previous example, <code>scott.pub</code>) will be different for you — Gitosis takes that name from the description at the end of the public key that was imported with the <code>gitosis-init</code> script.</p>
 
-<p>Das gibt uns das nächste Commit Objekt. Versuchen wir, das Tree Objekt zu holen:</p>
+<p>If you look at the <code>gitosis.conf</code> file, it should only specify information about the <code>gitosis-admin</code> project that you just cloned:</p>
 
-<pre><code>=&gt; GET objects/cf/da3bf379e4f8dba8717dee55aab78aef7f4daf
-(404 - Not Found)</code></pre>
+<pre><code>$ cat gitosis.conf 
+[gitosis]
 
-<p>Oops — it looks like that tree object isn’t in loose format on the server, so you get a 404 response back. There are a couple of reasons for this — the object could be in an alternate repository, or it could be in a packfile in this repository. Git checks for any listed alternates first:</p>
+[group gitosis-admin]
+writable = gitosis-admin
+members = scott</code></pre>
 
-<p>Huch. Es sieht so aus als ob der Tree nicht im losen Format auf dem Server gespeichert ist, weshalb wir einen 404 Response (&#8220;Not found&#8221;) erhalten. Dafür kann es verschiedene Gründe geben. Das Objekt könnte in einem anderen, alternativen Repository liegen, oder es könnte sich in einem Packfile befinden. Git sucht deshalb zunächst nach alternativen Repositories:</p>
+<p>It shows you that the &#8216;scott&#8217; user — the user with whose public key you initialized Gitosis — is the only one who has access to the <code>gitosis-admin</code> project.</p>
 
-<pre><code>=&gt; GET objects/info/http-alternates
-(empty file)
+<p>Now, let’s add a new project for you. You’ll add a new section called <code>mobile</code> where you’ll list the developers on your mobile team and projects that those developers need access to. Because &#8216;scott&#8217; is the only user in the system right now, you’ll add him as the only member, and you’ll create a new project called <code>iphone_project</code> to start on:</p>
 
-=&gt; GET objects/info/http-alternates
-(leere Datei)</code></pre>
+<pre><code>[group mobile]
+writable = iphone_project
+members = scott</code></pre>
 
-<p>If this comes back with a list of alternate URLs, Git checks for loose files and packfiles there — this is a nice mechanism for projects that are forks of one another to share objects on disk. However, because no alternates are listed in this case, your object must be in a packfile. To see what packfiles are available on this server, you need to get the <code>objects/info/packs</code> file, which contains a listing of them (also generated by <code>update-server-info</code>):</p>
+<p>Whenever you make changes to the <code>gitosis-admin</code> project, you have to commit the changes and push them back up to the server in order for them to take effect:</p>
 
-<p>Wenn wir hier eine Liste alternativer URLs erhalten, schaut Git dort nach losen Dateien und Packfiles. Auf diese Weise können Repositories, die Forks von anderen Repositories sind, mit diesen Objekte im Dateisystem teilen. In unserem Fall sind allerdings keine Alternativen vorhanden, weshalb sich das gesuchte Objekt in einem Packfile befinden muß. Um die vorhandenen Packfiles nachzuschlagen, holt Git die <code>objects/info/packs</code> Datei, die eine entsprechende Auflistung enthält (und ebenfalls mit <code>update-server-info</code> erzeugt wird)</p>
+<pre><code>$ git commit -am &#39;add iphone_project and mobile group&#39;
+[master]: created 8962da8: &quot;changed name&quot;
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+$ git push
+Counting objects: 5, done.
+Compressing objects: 100% (2/2), done.
+Writing objects: 100% (3/3), 272 bytes, done.
+Total 3 (delta 1), reused 0 (delta 0)
+To git@gitserver:/opt/git/gitosis-admin.git
+   fb27aec..8962da8  master -&gt; master</code></pre>
 
-<pre><code>=&gt; GET objects/info/packs
-P pack-816a9b2334da9953e530f27bcac22082a9f5b835.pack</code></pre>
+<p>You can make your first push to the new <code>iphone_project</code> project by adding your server as a remote to your local version of the project and pushing. You no longer have to manually create a bare repository for new projects on the server — Gitosis creates them automatically when it sees the first push:</p>
 
-<p>There is only one packfile on the server, so your object is obviously in there, but you’ll check the index file to make sure. This is also useful if you have multiple packfiles on the server, so you can see which packfile contains the object you need:</p>
+<pre><code>$ git remote add origin git@gitserver:iphone_project.git
+$ git push origin master
+Initialized empty Git repository in /opt/git/iphone_project.git/
+Counting objects: 3, done.
+Writing objects: 100% (3/3), 230 bytes, done.
+Total 3 (delta 0), reused 0 (delta 0)
+To git@gitserver:iphone_project.git
+ * [new branch]      master -&gt; master</code></pre>
 
-<p>Es gibt nur ein einziges Packfile auf dem Server, weshalb sich unser Objekt darin befinden muß. Aber wir prüfen die Index Datei, um sicher zu sein. Gäbe es mehrere Packfiles auf dem Server, könnten wir auf diese Weise herausfinden, welches Packfile das gesuchte Objekt enthält:</p>
+<p>Notice that you don’t need to specify the path (in fact, doing so won’t work), just a colon and then the name of the project — Gitosis finds it for you.</p>
 
-<pre><code>=&gt; GET objects/pack/pack-816a9b2334da9953e530f27bcac22082a9f5b835.idx
-(4k of binary data)
+<p>You want to work on this project with your friends, so you’ll have to re-add their public keys. But instead of appending them manually to the <code>~/.ssh/authorized_keys</code> file on your server, you’ll add them, one key per file, into the <code>keydir</code> directory. How you name the keys determines how you refer to the users in the <code>gitosis.conf</code> file. Let’s re-add the public keys for John, Josie, and Jessica:</p>
 
-=&gt; GET objects/pack/pack-816a9b2334da9953e530f27bcac22082a9f5b835.idx
-(4k binäre Daten)</code></pre>
+<pre><code>$ cp /tmp/id_rsa.john.pub keydir/john.pub
+$ cp /tmp/id_rsa.josie.pub keydir/josie.pub
+$ cp /tmp/id_rsa.jessica.pub keydir/jessica.pub</code></pre>
 
-<p>Now that you have the packfile index, you can see if your object is in it — because the index lists the SHAs of the objects contained in the packfile and the offsets to those objects. Your object is there, so go ahead and get the whole packfile:</p>
+<p>Now you can add them all to your &#8216;mobile&#8217; team so they have read and write access to <code>iphone_project</code>:</p>
 
-<p>Nachdem wir jetzt den Packfile Index haben, können wir prüfen, ob sich unser Objekt darin befindet: der Index enthält eine Liste der SHA Hashes der Objekte, die sich im Packfile befinden und die jeweiligen Offsets dieser Objekte. Unser Objekt ist vorhanden, also laden wir das Packfile herunter:</p>
+<pre><code>[group mobile]
+writable = iphone_project
+members = scott john josie jessica</code></pre>
 
-<pre><code>=&gt; GET objects/pack/pack-816a9b2334da9953e530f27bcac22082a9f5b835.pack
-(13k of binary data)
+<p>After you commit and push that change, all four users will be able to read from and write to that project.</p>
 
-=&gt; GET objects/pack/pack-816a9b2334da9953e530f27bcac22082a9f5b835.pack
-(13k binäre Daten)</code></pre>
+<p>Gitosis has simple access controls as well. If you want John to have only read access to this project, you can do this instead:</p>
 
-<p>You have your tree object, so you continue walking your commits. They’re all also within the packfile you just downloaded, so you don’t have to do any more requests to your server. Git checks out a working copy of the <code>master</code> branch that was pointed to by the HEAD reference you downloaded at the beginning.</p>
+<pre><code>[group mobile]
+writable = iphone_project
+members = scott josie jessica
 
-<p>Du hast jetzt das Tree Objekt, also kannst du jetzt damit fortfahren, über die Commits zu iterieren. Sie sind in unserem Fall allesamt in dem Packfile enthalten, das du gerade heruntergeladen hast.</p>
+[group mobile_ro]
+readonly = iphone_project
+members = john</code></pre>
 
-<p>The entire output of this process looks like this:</p>
+<p>Now John can clone the project and get updates, but Gitosis won’t allow him to push back up to the project. You can create as many of these groups as you want, each containing different users and projects. You can also specify another group as one of the members (using <code>@</code> as prefix), to inherit all of its members automatically:</p>
 
-<p>Die Ausgabe des ganzen Vorgangs sieht dann in etwa so aus:</p>
+<pre><code>[group mobile_committers]
+members = scott josie jessica
 
-<pre><code>$ git clone http://github.com/schacon/simplegit-progit.git
-Initialized empty Git repository in /private/tmp/simplegit-progit/.git/
-got ca82a6dff817ec66f44342007202690a93763949
-walk ca82a6dff817ec66f44342007202690a93763949
-got 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
-Getting alternates list for http://github.com/schacon/simplegit-progit.git
-Getting pack list for http://github.com/schacon/simplegit-progit.git
-Getting index for pack 816a9b2334da9953e530f27bcac22082a9f5b835
-Getting pack 816a9b2334da9953e530f27bcac22082a9f5b835
- which contains cfda3bf379e4f8dba8717dee55aab78aef7f4daf
-walk 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
-walk a11bef06a3f659402fe7563abf99ad00de2209e6</code></pre>
+[group mobile]
+writable  = iphone_project
+members   = @mobile_committers
 
-<h3 id='the_smart_protocol'>The Smart Protocol</h3>
+[group mobile_2]
+writable  = another_iphone_project
+members   = @mobile_committers john</code></pre>
 
-<h3 id='das_smart_protokoll_xxx'>Das Smart Protokoll (xxx)</h3>
-
-<p>The HTTP method is simple but a bit inefficient. Using smart protocols is a more common method of transferring data. These protocols have a process on the remote end that is intelligent about Git — it can read local data and figure out what the client has or needs and generate custom data for it. There are two sets of processes for transferring data: a pair for uploading data and a pair for downloading data.</p>
-
-<p>Die HTTP Methode ist simpel, aber sie ist auch ein bißchen ineffizient. Deshalb ist es üblicher, ein smartes Protokoll für den Datentransfer zu verwenden. Diese Protokolle umfassen serverseitige Prozesse, die Wissen über Git besitzen. Sie können lokale Daten lesen und herausfinden, was auf dem Client schon vorhanden ist oder fehlt und darauf zugeschnitten Daten generieren. Es gibt zwei Sets von Prozessen für den Datentransfer: ein Paar für den Upload und ein Paar für den Download von Daten.</p>
-
-<h4 id='uploading_data'>Uploading Data</h4>
-
-<h4 id='daten_hochladen'>Daten hochladen</h4>
-
-<p>To upload data to a remote process, Git uses the <code>send-pack</code> and <code>receive-pack</code> processes. The <code>send-pack</code> process runs on the client and connects to a <code>receive-pack</code> process on the remote side.</p>
-
-<p>Um Daten an einen serverseitigen Prozeß zu schicken, verwendet Git die <code>send-pack</code> und <code>receive-pack</code> Prozesse. Der <code>send-pack</code> Prozeß läuft auf dem Client und verbindet sich mit einem <code>receive-pack</code> Prozeß auf dem Server.</p>
-
-<p>For example, say you run <code>git push origin master</code> in your project, and <code>origin</code> is defined as a URL that uses the SSH protocol. Git fires up the <code>send-pack</code> process, which initiates a connection over SSH to your server. It tries to run a command on the remote server via an SSH call that looks something like this:</p>
-
-<p>Nehmen wir z.B. an du führst <code>git push origin master</code> in deinem Projekt aus und <code>origin</code> ist als eine URL mit SSH Protokoll definiert. Git startet dann einen <code>send-pack</code> Prozeß, der eine SSH Verbindung zum Server initiiert. Dieser versucht, via SSH auf dem Server einen Befehl wie den folgenden auszuführen:</p>
-
-<pre><code>$ ssh -x git@github.com &quot;git-receive-pack &#39;schacon/simplegit-progit.git&#39;&quot;
-005bca82a6dff817ec66f4437202690a93763949 refs/heads/master report-status delete-refs
-003e085bb3bcb608e1e84b2432f8ecbe6306e7e7 refs/heads/topic
-0000</code></pre>
-
-<p>The <code>git-receive-pack</code> command immediately responds with one line for each reference it currently has — in this case, just the <code>master</code> branch and its SHA. The first line also has a list of the server’s capabilities (here, <code>report-status</code> and <code>delete-refs</code>).</p>
-
-<p>Der <code>git-receive-pack</code> Befehl antwortet dann mit jeweils einer Zeile pro Referenz, die er kennt - in diesem Fall sind das lediglich der <code>master</code> Branch und dessen SHA. Die erste Zeile listet außerdem Features, die der Server beherrscht (in unserem Fall <code>report-status</code> und <code>delete-refs</code>).</p>
-
-<p>Each line starts with a 4-byte hex value specifying how long the rest of the line is. Your first line starts with 005b, which is 91 in hex, meaning that 91 bytes remain on that line. The next line starts with 003e, which is 62, so you read the remaining 62 bytes. The next line is 0000, meaning the server is done with its references listing.</p>
-
-<p>Jede Zeile beginnt mit einem 4 Byte Hexadezimalzahl Wert, der angibt, wie lang der Rest der Zeile ist. Die erste Zeile beginnt mit 005b, d.h. dezimal 91. ALso ist der Rest der Zeile 91 Zeichen lang. Die nächste Zeile fängt mit 003e an, also dezimal 62. Die letzte Zeile ist 0000, was das Ende der Liste anzeigt.</p>
-
-<p>Now that it knows the server’s state, your <code>send-pack</code> process determines what commits it has that the server doesn’t. For each reference that this push will update, the <code>send-pack</code> process tells the <code>receive-pack</code> process that information. For instance, if you’re updating the <code>master</code> branch and adding an <code>experiment</code> branch, the <code>send-pack</code> response may look something like this:</p>
-
-<p>Nachdem dein <code>send-pack</code> Prozeß jetzt den Zustand des Servers kennt, kann er als nächstes evaluieren, welche Commits lokal, aber nicht auf dem Server vorhanden sind. der <code>send-pack</code> Prozeß schickt diese Information für jede Referenz, auf die sich der <code>push</code> Befehl bezieht, an den <code>receive-pack</code> Prozeß. Wenn du beispielsweise den <code>master</code> Branch aktualisierst und einen <code>experiment</code> Branch hinzufügst, dann könnte die Antwort auf <code>send-pack</code> so aussehen:</p>
-
-<pre><code>0085ca82a6dff817ec66f44342007202690a93763949  15027957951b64cf874c3557a0f3547bd83b3ff6 refs/heads/master report-status
-00670000000000000000000000000000000000000000 cdfdb42577e2506715f8cfeacdbabc092bf63e8d refs/heads/experiment
-0000</code></pre>
-
-<p>The SHA-1 value of all &#8216;0&#8217;s means that nothing was there before — because you’re adding the experiment reference. If you were deleting a reference, you would see the opposite: all &#8216;0&#8217;s on the right side.</p>
-
-<p>Der SHA-1 Wert, der nur aus Nullen besteht, heißt, daß dort zuvor nichts war: du fügst die <code>experiment</code> Referenz ja neu hinzu. Würdest du eine Referenz löschen, würdest du das Gegenteil sehen: nur Nullen auf der rechten Seite (xxx hu? wo ist die rechte seite? xxx)</p>
-
-<p>Git sends a line for each reference you’re updating with the old SHA, the new SHA, and the reference that is being updated. The first line also has the client’s capabilities. Next, the client uploads a packfile of all the objects the server doesn’t have yet. Finally, the server responds with a success (or failure) indication:</p>
-
-<p>Pro Referenz, die du aktualisierst, schickt Git eine Zeile mit dem alten SHA, dem neuen SHA und der jeweiligen Referenz, die aktualisiert wird. Die erste Zeile listet zudem die Server Features. Als nächstes lädt der Client ein Packfile aller Objekte hoch, die der Server noch nicht kennt. Abschließend antwortet der Server mit einer Erfolgs- oder Fehlermeldung:</p>
-
-<pre><code>000Aunpack ok</code></pre>
-
-<h4 id='downloading_data'>Downloading Data</h4>
-
-<h4 id='downloading_data'>Downloading Data</h4>
-
-<p>When you download data, the <code>fetch-pack</code> and <code>upload-pack</code> processes are involved. The client initiates a <code>fetch-pack</code> process that connects to an <code>upload-pack</code> process on the remote side to negotiate what data will be transferred down.</p>
-
-<p>Wenn du Daten herunterlädst, sind daran die <code>fetch-pack</code> und <code>upload-pack</code> Prozesse beteiligt. Der Client startet einen <code>fetch-pack</code> Prozeß, der sich mit einem <code>upload-pack</code> Prozeß auf dem Server verbindet, um auszuhandeln, welche Daten heruntergeladen werden sollen.</p>
-
-<p>There are different ways to initiate the <code>upload-pack</code> process on the remote repository. You can run via SSH in the same manner as the <code>receive-pack</code> process. You can also initiate the process via the Git daemon, which listens on a server on port 9418 by default. The <code>fetch-pack</code> process sends data that looks like this to the daemon after connecting:</p>
-
-<p>Es gibt verschiedene Möglichkeiten, den <code>upload-pack</code> Prozeß auf dem Server zu starten: einerseits via SSH auf die gleiche Weise wie den <code>receive-pack</code> Prozeß. Und adnererseits über den Git Daemon, der standardmäßig auf dem Server auf dem Port 9418 läuft. Der <code>fetch-pack</code> Prozeß schickt etwa folgendes an den Daemon:</p>
-
-<pre><code>003fgit-upload-pack schacon/simplegit-progit.git\0host=myserver.com\0</code></pre>
-
-<p>It starts with the 4 bytes specifying how much data is following, then the command to run followed by a null byte, and then the server’s hostname followed by a final null byte. The Git daemon checks that the command can be run and that the repository exists and has public permissions. If everything is cool, it fires up the <code>upload-pack</code> process and hands off the request to it.</p>
-
-<p>Diese Zeile beginnt wiederum mit 4 Bytes, die angeben, wieviel Daten folgen. Dann kommt der auszuführende Befehl und ein Null Byte, und schließlich der Hostname des Servers und ein weiteres Null Byte. Der Git Daemon prüft, ob der Befehl ausgeführt werden kann, das Repository existiert und Schreibzugriff erlaubt. Wenn alles stimmt, startet er den <code>upload-pack</code> Prozeß und gibt den Request dorthin weiter.</p>
-
-<p>If you’re doing the fetch over SSH, <code>fetch-pack</code> instead runs something like this:</p>
-
-<p>Wenn du den <code>fetch</code> Befehl über SSH verwendest, führt <code>fetch-pack</code> statt dessen etwas aus wie:</p>
-
-<pre><code>$ ssh -x git@github.com &quot;git-upload-pack &#39;schacon/simplegit-progit.git&#39;&quot;</code></pre>
-
-<p>In either case, after <code>fetch-pack</code> connects, <code>upload-pack</code> sends back something like this:</p>
-
-<p>In beiden Fällen wird, nachdem <code>fetch-pack</code> verbunden ist, <code>upload-pack</code> eine Antwort wie die folgende zurück schicken:</p>
-
-<pre><code>0088ca82a6dff817ec66f44342007202690a93763949 HEAD\0multi_ack thin-pack \
-  side-band side-band-64k ofs-delta shallow no-progress include-tag
-003fca82a6dff817ec66f44342007202690a93763949 refs/heads/master
-003e085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7 refs/heads/topic
-0000</code></pre>
-
-<p>This is very similar to what <code>receive-pack</code> responds with, but the capabilities are different. In addition, it sends back the HEAD reference so the client knows what to check out if this is a clone.</p>
-
-<p>Die Antwort ähnelt der, mit der <code>receive-pack</code> antwortet, aber die aufgelisteten Features sind andere. Zusätzlich wird die HEAD Referenz mitgeschickt, so daß der Client weiß, was er auschecken muß, falls es sich um einen Clone handelt.</p>
-
-<p>At this point, the <code>fetch-pack</code> process looks at what objects it has and responds with the objects that it needs by sending &#8220;want&#8221; and then the SHA it wants. It sends all the objects it already has with &#8220;have&#8221; and then the SHA. At the end of this list, it writes &#8220;done&#8221; to initiate the <code>upload-pack</code> process to begin sending the packfile of the data it needs:</p>
-
-<p>Der <code>fetch-pack</code> Prozeß inspiziert jetzt die vorhandenen Objekte und antwortet mit einer Liste von Objekten, wobei er das Schlüsselwort &#8220;want&#8221; für Objekte verwendet, die benötigt werden, und &#8220;have&#8221; für Objekte, die bereits vorhanden sind. Am Ende der Liste folgt das Schlüsselwort &#8220;done&#8221;. Der <code>upload-pack</code> Prozeß schickt dann ein Packfile mit allen benötigten Objekten:</p>
-
-<pre><code>0054want ca82a6dff817ec66f44342007202690a93763949 ofs-delta
-0032have 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
-0000
-0009done</code></pre>
-
-<p>That is a very basic case of the transfer protocols. In more complex cases, the client supports <code>multi_ack</code> or <code>side-band</code> capabilities; but this example shows you the basic back and forth used by the smart protocol processes.</p>
-
-<p>Das ist ein sehr einfaches Beispiel. In komplexeren Fällen unterstützt der Client die <code>multi_ack</code> oder <code>side-band</code> Features. Aber obiges Beispiel verdeutlicht den grundlegenden Request-Response Zyklus der Smart Protokoll Prozesse.</p>
+<p>If you have any issues, it may be useful to add <code>loglevel=DEBUG</code> under the <code>[gitosis]</code> section. If you’ve lost push access by pushing a messed-up configuration, you can manually fix the file on the server under <code>/home/git/.gitosis.conf</code> — the file from which Gitosis reads its info. A push to the project takes the <code>gitosis.conf</code> file you just pushed up and sticks it there. If you edit that file manually, it remains like that until the next successful push to the <code>gitosis-admin</code> project.</p>
 
 <div id='nav'>
 <a href='ch9-11.html'>prev</a> | <a href='ch9-13.html'>next</a>

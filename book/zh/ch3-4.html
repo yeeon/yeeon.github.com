@@ -1,42 +1,118 @@
 ---
 layout: translation
-title: Pro Git 3.4 Git 分支 利用分支进行开发的工作流程
+title: Pro Git 3.4 Git 内部原理 Packfiles
 ---
-<h2 id='id313'>利用分支进行开发的工作流程</h2>
+<h2 id='packfiles'>Packfiles</h2>
 
-<p>现在我们已经学会了新建分支和合并分支，可以（或应该）用它来做点什么呢？在本节，我们会介绍一些利用分支进行开发的工作流程。而正是由于分支管理的便捷，才衍生出了这类典型的工作模式，你可以根据项目的实际情况选择一种用用看。</p>
+<p>我们再来看一下 test Git 仓库。目前为止，有 11 个对象 ── 4 个 blob，3 个 tree，3 个 commit 以及一个 tag：</p>
 
-<h3 id='id314'>长期分支</h3>
+<pre><code>$ find .git/objects -type f
+.git/objects/01/55eb4229851634a0f03eb265b69f5a2d56f341 # tree 2
+.git/objects/1a/410efbd13591db07496601ebc7a059dd55cfe9 # commit 3
+.git/objects/1f/7a7a472abf3dd9643fd615f6da379c4acb3e3a # test.txt v2
+.git/objects/3c/4e9cd789d88d8d89c1073707c3585e41b0e614 # tree 3
+.git/objects/83/baae61804e65cc73a7201a7252750c76066a30 # test.txt v1
+.git/objects/95/85191f37f7b0fb9444f35a9bf50de191beadc2 # tag
+.git/objects/ca/c0cab538b970a37ea1e769cbbde608743bc96d # commit 2
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4 # &#39;test content&#39;
+.git/objects/d8/329fc1cc938780ffdd9f94e0d364e0ea74f579 # tree 1
+.git/objects/fa/49b077972391ad58037050f2a75f74e3671e92 # new.txt
+.git/objects/fd/f4fc3344e67ab068f836878b6c4951e3b15f3d # commit 1</code></pre>
 
-<p>由于 Git 使用简单的三方合并，所以就算在较长一段时间内，反复多次把某个分支合并到另一分支，也不是什么难事。也就是说，你可以同时拥有多个开放的分支，每个分支用于完成特定的任务，随着开发的推进，你可以随时把某个特性分支的成果并到其他分支中。</p>
+<p>Git 用 zlib 压缩文件内容，因此这些文件并没有占用太多空间，所有文件加起来总共仅用了 925 字节。接下去你会添加一些大文件以演示 Git 的一个很有意思的功能。将你之前用到过的 Grit 库中的 repo.rb 文件加进去 ── 这个源代码文件大小约为 12K：</p>
 
-<p>许多使用 Git 的开发者都喜欢用这种方式来开展工作，比如仅在 <code>master</code> 分支中保留完全稳定的代码，即已经发布或即将发布的代码。与此同时，他们还有一个名为 <code>develop</code> 或 <code>next</code> 的平行分支，专门用于后续的开发，或仅用于稳定性测试 — 当然并不是说一定要绝对稳定，不过一旦进入某种稳定状态，便可以把它合并到 <code>master</code> 里。这样，在确保这些已完成的特性分支（短期分支，比如之前的 <code>iss53</code> 分支）能够通过所有测试，并且不会引入更多错误之后，就可以并到主干分支中，等待下一次的发布。</p>
+<pre><code>$ curl http://github.com/mojombo/grit/raw/master/lib/grit/repo.rb &gt; repo.rb
+$ git add repo.rb
+$ git commit -m &#39;added repo.rb&#39;
+[master 484a592] added repo.rb
+ 3 files changed, 459 insertions(+), 2 deletions(-)
+ delete mode 100644 bak/test.txt
+ create mode 100644 repo.rb
+ rewrite test.txt (100%)</code></pre>
 
-<p>本质上我们刚才谈论的，是随着提交对象不断右移的指针。稳定分支的指针总是在提交历史中落后一大截，而前沿分支总是比较靠前（见图 3-18）。</p>
+<p>如果查看一下生成的 tree，可以看到 repo.rb 文件的 blob 对象的 SHA-1 值：</p>
 
-<p><center><img src="/figures/ch3/18333fig0318-tn.png"></center><br/> 图 3-18. 稳定分支总是比较老旧。</p>
+<pre><code>$ git cat-file -p master^{tree}
+100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
+100644 blob 9bc1dc421dcd51b4ac296e3e5b6e2a99cf44391e      repo.rb
+100644 blob e3f094f522629ae358806b17daf78246c27c007b      test.txt</code></pre>
 
-<p>或者把它们想象成工作流水线，或许更好理解一些，经过测试的提交对象集合被遴选到更稳定的流水线（见图 3-19）。</p>
+<p>然后可以用 <code>git cat-file</code> 命令查看这个对象有多大：</p>
 
-<p><center><img src="/figures/ch3/18333fig0319-tn.png"></center><br/> 图 3-19. 想象成流水线可能会容易点。</p>
+<pre><code>$ git cat-file -s 9bc1dc421dcd51b4ac296e3e5b6e2a99cf44391e
+12898</code></pre>
 
-<p>你可以用这招维护不同层次的稳定性。某些大项目还会有个 <code>proposed</code>（建议）或 <code>pu</code>（proposed updates，建议更新）分支，它包含着那些可能还没有成熟到进入 <code>next</code> 或 <code>master</code> 的内容。这么做的目的是拥有不同层次的稳定性：当这些分支进入到更稳定的水平时，再把它们合并到更高层分支中去。再次说明下，使用多个长期分支的做法并非必需，不过一般来说，对于特大型项目或特复杂的项目，这么做确实更容易管理。</p>
+<p>稍微修改一下些文件，看会发生些什么：</p>
 
-<h3 id='id315'>特性分支</h3>
+<pre><code>$ echo &#39;# testing&#39; &gt;&gt; repo.rb
+$ git commit -am &#39;modified repo a bit&#39;
+[master ab1afef] modified repo a bit
+ 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
 
-<p>在任何规模的项目中都可以使用特性（Topic）分支。一个特性分支是指一个短期的，用来实现单一特性或与其相关工作的分支。可能你在以前的版本控制系统里从未做过类似这样的事情，因为通常创建与合并分支消耗太大。然而在 Git 中，一天之内建立、使用、合并再删除多个分支是常见的事。</p>
+<p>查看这个 commit 生成的 tree，可以看到一些有趣的东西：</p>
 
-<p>我们在上节的例子里已经见过这种用法了。我们创建了 <code>iss53</code> 和 <code>hotfix</code> 这两个特性分支，在提交了若干更新后，把它们合并到主干分支，然后删除。该技术允许你迅速且完全的进行语境切换 — 因为你的工作分散在不同的流水线里，每个分支里的改变都和它的目标特性相关，浏览代码之类的事情因而变得更简单了。你可以把作出的改变保持在特性分支中几分钟，几天甚至几个月，等它们成熟以后再合并，而不用在乎它们建立的顺序或者进度。</p>
+<pre><code>$ git cat-file -p master^{tree}
+100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
+100644 blob 05408d195263d853f09dca71d55116663690c27c      repo.rb
+100644 blob e3f094f522629ae358806b17daf78246c27c007b      test.txt</code></pre>
 
-<p>现在我们来看一个实际的例子。请看图 3-20，由下往上，起先我们在 <code>master</code> 工作到 C1，然后开始一个新分支 <code>iss91</code> 尝试修复 91 号缺陷，提交到 C6 的时候，又冒出一个解决该问题的新办法，于是从之前 C4 的地方又分出一个分支 <code>iss91v2</code>，干到 C8 的时候，又回到主干 <code>master</code> 中提交了 C9 和 C10，再回到 <code>iss91v2</code> 继续工作，提交 C11，接着，又冒出个不太确定的想法，从 <code>master</code> 的最新提交 C10 处开了个新的分支 <code>dumbidea</code> 做些试验。</p>
+<p>blob 对象与之前的已经不同了。这说明虽然只是往一个 400 行的文件最后加入了一行内容，Git 却用一个全新的对象来保存新的文件内容：</p>
 
-<p><center><img src="/figures/ch3/18333fig0320-tn.png"></center><br/> 图 3-20. 拥有多个特性分支的提交历史。</p>
+<pre><code>$ git cat-file -s 05408d195263d853f09dca71d55116663690c27c
+12908</code></pre>
 
-<p>现在，假定两件事情：我们最终决定使用第二个解决方案，即 <code>iss91v2</code> 中的办法；另外，我们把 <code>dumbidea</code> 分支拿给同事们看了以后，发现它竟然是个天才之作。所以接下来，我们准备抛弃原来的 <code>iss91</code> 分支（实际上会丢弃 C5 和 C6），直接在主干中并入另外两个分支。最终的提交历史将变成图 3-21 这样：</p>
+<p>你的磁盘上有了两个几乎完全相同的 12K 的对象。如果 Git 只完整保存其中一个，并保存另一个对象的差异内容，岂不更好？</p>
 
-<p><center><img src="/figures/ch3/18333fig0321-tn.png"></center><br/> 图 3-21. 合并了 dumbidea 和 iss91v2 后的分支历史。</p>
+<p>事实上 Git 可以那样做。Git 往磁盘保存对象时默认使用的格式叫松散对象 (loose object) 格式。Git 时不时地将这些对象打包至一个叫 packfile 的二进制文件以节省空间并提高效率。当仓库中有太多的松散对象，或是手工调用 <code>git gc</code> 命令，或推送至远程服务器时，Git 都会这样做。手工调用 <code>git gc</code> 命令让 Git 将库中对象打包并看会发生些什么：</p>
 
-<p>请务必牢记这些分支全部都是本地分支，这一点很重要。当你在使用分支及合并的时候，一切都是在你自己的 Git 仓库中进行的 — 完全不涉及与服务器的交互。</p>
+<pre><code>$ git gc
+Counting objects: 17, done.
+Delta compression using 2 threads.
+Compressing objects: 100% (13/13), done.
+Writing objects: 100% (17/17), done.
+Total 17 (delta 1), reused 10 (delta 0)</code></pre>
+
+<p>查看一下 objects 目录，会发现大部分对象都不在了，与此同时出现了两个新文件：</p>
+
+<pre><code>$ find .git/objects -type f
+.git/objects/71/08f7ecb345ee9d0084193f147cdad4d2998293
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4
+.git/objects/info/packs
+.git/objects/pack/pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.idx
+.git/objects/pack/pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.pack</code></pre>
+
+<p>仍保留着的几个对象是未被任何 commit 引用的 blob ── 在此例中是你之前创建的 &#8220;what is up, doc?&#8221; 和 &#8220;test content&#8221; 这两个示例 blob。你从没将他们添加至任何 commit，所以 Git 认为它们是 &#8220;悬空&#8221; 的，不会将它们打包进 packfile 。</p>
+
+<p>剩下的文件是新创建的 packfile 以及一个索引。packfile 文件包含了刚才从文件系统中移除的所有对象。索引文件包含了 packfile 的偏移信息，这样就可以快速定位任意一个指定对象。有意思的是运行 <code>gc</code> 命令前磁盘上的对象大小约为 12K ，而这个新生成的 packfile 仅为 6K 大小。通过打包对象减少了一半磁盘使用空间。</p>
+
+<p>Git 是如何做到这点的？Git 打包对象时，会查找命名及尺寸相近的文件，并只保存文件不同版本之间的差异内容。可以查看一下 packfile ，观察它是如何节省空间的。<code>git verify-pack</code> 命令用于显示已打包的内容：</p>
+
+<pre><code>$ git verify-pack -v \
+  .git/objects/pack/pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.idx
+0155eb4229851634a0f03eb265b69f5a2d56f341 tree   71 76 5400
+05408d195263d853f09dca71d55116663690c27c blob   12908 3478 874
+09f01cea547666f58d6a8d809583841a7c6f0130 tree   106 107 5086
+1a410efbd13591db07496601ebc7a059dd55cfe9 commit 225 151 322
+1f7a7a472abf3dd9643fd615f6da379c4acb3e3a blob   10 19 5381
+3c4e9cd789d88d8d89c1073707c3585e41b0e614 tree   101 105 5211
+484a59275031909e19aadb7c92262719cfcdf19a commit 226 153 169
+83baae61804e65cc73a7201a7252750c76066a30 blob   10 19 5362
+9585191f37f7b0fb9444f35a9bf50de191beadc2 tag    136 127 5476
+9bc1dc421dcd51b4ac296e3e5b6e2a99cf44391e blob   7 18 5193 1 \
+  05408d195263d853f09dca71d55116663690c27c
+ab1afef80fac8e34258ff41fc1b867c702daa24b commit 232 157 12
+cac0cab538b970a37ea1e769cbbde608743bc96d commit 226 154 473
+d8329fc1cc938780ffdd9f94e0d364e0ea74f579 tree   36 46 5316
+e3f094f522629ae358806b17daf78246c27c007b blob   1486 734 4352
+f8f51d7d8a1760462eca26eebafde32087499533 tree   106 107 749
+fa49b077972391ad58037050f2a75f74e3671e92 blob   9 18 856
+fdf4fc3344e67ab068f836878b6c4951e3b15f3d commit 177 122 627
+chain length = 1: 1 object
+pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.pack: ok</code></pre>
+
+<p>如果你还记得的话, <code>9bc1d</code> 这个 blob 是 repo.rb 文件的第一个版本，这个 blob 引用了 <code>05408</code> 这个 blob，即该文件的第二个版本。命令输出内容的第三列显示的是对象大小，可以看到 <code>05408</code> 占用了 12K 空间，而 <code>9bc1d</code> 仅为 7 字节。非常有趣的是第二个版本才是完整保存文件内容的对象，而第一个版本是以差异方式保存的 ── 这是因为大部分情况下需要快速访问文件的最新版本。</p>
+
+<p>最妙的是可以随时进行重新打包。Git 自动定期对仓库进行重新打包以节省空间。当然也可以手工运行 <code>git gc</code> 命令来这么做。</p>
 
 <div id='nav'>
 <a href='ch3-3.html'>prev</a> | <a href='ch3-5.html'>next</a>

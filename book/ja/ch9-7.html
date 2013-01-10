@@ -1,216 +1,154 @@
 ---
 layout: translation
-title: Pro Git 9.7 Gitの内側 メインテナンスとデータリカバリ
+title: Pro Git 9.7 Git サーバー Gitosis
 ---
-<h2 id='id200'>メインテナンスとデータリカバリ</h2>
+<h2 id='gitosis'>Gitosis</h2>
 
-<p>時々、幾らかのお掃除をする必要があるかもしれません。つまり、レポジトリをよりコンパクトにすること、インポートしたリポジトリをクリーンアップすること、あるいは失った作業をもとに戻すことです。このセクションではこれらのシナリオの幾つかをカバーします。</p>
+<p>ユーザーの公開鍵を <code>authorized_keys</code> にまとめてアクセス管理する方法は、しばらくの間はうまくいくでしょう。しかし、何百人ものユーザーを管理する段階になると、この方式はとても面倒になります。サーバーのシェルでの操作が毎回発生するわけですし、またアクセス制御が皆無な状態、つまり公開鍵を登録した人はすべてのプロジェクトのすべてのファイルを読み書きできる状態になってしまいます。</p>
 
-<h3 id='id201'>メインテナンス</h3>
+<p>ここで、よく使われている Gitosis というソフトウェアについて紹介しましょう。Gitosis は、<code>authorized_keys</code> ファイルを管理したりちょっとしたアクセス制御を行ったりするためのスクリプト群です。ユーザーを追加したりアクセス権を定義したりするための UI に、ウェブではなく独自の Git リポジトリを採用しているというのが興味深い点です。プロジェクトに関する情報を準備してそれをプッシュすると、その情報に基づいて Gitosis がサーバーを設定するというクールな仕組みになっています。</p>
 
-<p>Git は時々 &#8221;<code>auto gc</code>&#8221; と呼ばれるコマンドを自動的に実行します。大抵の場合、このコマンドは何もしません。もし沢山の緩いオブジェクト（パックファイルの中にないオブジェクト）があったり、あまりに多くのパックファイルがあると、Git は完全な（full-fledged）<code>git gc</code> コマンドを開始します。<code>gc</code> はガベージコレクト（garbage collect）を意味します。このコマンドは幾つものことを行います。まず、すべての緩いオブジェクトを集めてそれらをパックファイルの中に入れます。複数のパックファイルをひとつの大きなパックファイルに統合します。どのコミットからも到達が不可能なオブジェクトや数ヶ月の間何も更新がないオブジェクトを削除します。</p>
+<p>Gitosis のインストールは簡単だとはいえませんが、それほど難しくもありません。Linux サーバー上で運用するのがいちばん簡単でしょう。今回の例では、ごく平凡な Ubuntu 8.10 サーバーを使います。</p>
 
-<p>次のように手動で <code>auto gc</code> を実行することができます。</p>
+<p>Gitosis は Python のツールを使います。まずは Python の setuptools パッケージをインストールしなければなりません。Ubuntu なら python-setuptools というパッケージがあります。</p>
 
-<pre><code>$ git gc --auto</code></pre>
+<pre><code>$ apt-get install python-setuptools</code></pre>
 
-<p>繰り返しますが、これは通常は何も行いません。約 7,000個もの緩いオブジェクトがあるか、または50以上のパックファイルがないと、Gitは実際に gc コマンドを開始しません。これらのリミットは設定ファイルの <code>gc.auto</code> と <code>gc.autopacklimit</code> によってそれぞれ変更することができます。</p>
+<p>次に、プロジェクトのメインサイトから Gitosis をクローンしてインストールします。</p>
 
-<p>他にも <code>gc</code> が行うこととしては、あなたが持つ参照を1つのファイルにまとめて入れることが挙げられます。あなたのレポジトリには、次のようなブランチとタグが含まれているとしましょう。</p>
+<pre><code>$ git clone git://eagain.net/gitosis.git
+$ cd gitosis
+$ sudo python setup.py install</code></pre>
 
-<pre><code>$ find .git/refs -type f
-.git/refs/heads/experiment
-.git/refs/heads/master
-.git/refs/tags/v1.0
-.git/refs/tags/v1.1</code></pre>
+<p>これで、Gitosis が使う実行ファイル群がインストールされました。Gitosis は、リポジトリが <code>/home/git</code> にあることが前提となっています。しかしここではすでに <code>/opt/git</code> にリポジトリが存在するので、いろいろ設定しなおすのではなくシンボリックリンクを作ってしまいましょう。</p>
 
-<p><code>git gc</code> を実行すると、<code>refs</code> ディレクトリにはこれらのファイルはもはや存在しなくなります。効率性のために Git はそれらを、以下のような <code>.git/packed-refs</code> という名前のファイルに移します。</p>
+<pre><code>$ ln -s /opt/git /home/git/repositories</code></pre>
 
-<pre><code>$ cat .git/packed-refs
-# pack-refs with: peeled
-cac0cab538b970a37ea1e769cbbde608743bc96d refs/heads/experiment
-ab1afef80fac8e34258ff41fc1b867c702daa24b refs/heads/master
-cac0cab538b970a37ea1e769cbbde608743bc96d refs/tags/v1.0
-9585191f37f7b0fb9444f35a9bf50de191beadc2 refs/tags/v1.1
-^1a410efbd13591db07496601ebc7a059dd55cfe9</code></pre>
+<p>Gitosis は鍵の管理も行うので、まず現在の鍵ファイルを削除してあとでもう一度鍵を追加し、Gitosis に <code>authorized_keys</code> を自動管理させなければなりません。ここではまず <code>authorized_keys</code> を別の場所に移動します。</p>
 
-<p>もし参照を更新すると、Git はこのファイルを編集せず、その代わりに <code>refs/heads</code> に新しいファイルを書き込みます。与えられた参照に対する適切な SHA1ハッシュを得るために、Git は <code>refs</code> ディレクトリ内でその参照をチェックし、それから予備（fallback）として <code>packed-refs</code> ファイルをチェックします。ところがもし <code>refs</code> ディレクトリ内で参照が見つけられない場合は、それはおそらく <code>packed-refs</code> ファイル内にあります。</p>
+<pre><code>$ mv /home/git/.ssh/authorized_keys /home/git/.ssh/ak.bak</code></pre>
 
-<p>ファイルの最後の行に注意してください。それは <code>^</code> という文字で始まっています。これはタグを意味し、そのすぐ上にあるのはアノテートタグ（annotated tag）であり、その行はアノテートタグがポイントするコミットです。</p>
+<p>次は &#8216;git&#8217; ユーザーのシェルをもし <code>git-shell</code> コマンドに変更していたのなら、元に戻さなければなりません。人にログインさせるのではなく、かわりに Gitosis に管理してもらうのです。<code>/etc/passwd</code> ファイルにある</p>
 
-<h3 id='id202'>データリカバリ</h3>
+<pre><code>git:x:1000:1000::/home/git:/usr/bin/git-shell</code></pre>
 
-<p>Git を使っていく過程のある時点で、誤ってコミットを失ってしまうことがあるかもしれません。これが起こるのは一般的には、作業後のブランチを <code>force-delete</code> して、その後結局そのブランチが必要になったとき、あるいはブランチを <code>hard-reset</code> したために、そこから何か必要とするコミットが破棄されるときです。これが起きたとしたら、あなたはどうやってコミットを元に戻しますか?</p>
+<p>の行を、次のように戻しましょう。</p>
 
-<p>こちらの例では、あなたの test リポジトリ内の master ブランチを古いコミットに hard-reset して、それから失ったコミットを復元します。まず、ここであなたのレポジトリがどこにあるのか調べてみましょう。</p>
+<pre><code>git:x:1000:1000::/home/git:/bin/sh</code></pre>
 
-<pre><code>$ git log --pretty=oneline
-ab1afef80fac8e34258ff41fc1b867c702daa24b modified repo a bit
-484a59275031909e19aadb7c92262719cfcdf19a added repo.rb
-1a410efbd13591db07496601ebc7a059dd55cfe9 third commit
-cac0cab538b970a37ea1e769cbbde608743bc96d second commit
-fdf4fc3344e67ab068f836878b6c4951e3b15f3d first commit</code></pre>
+<p>いよいよ Gitosis の初期設定です。自分の秘密鍵を使って <code>gitosis-init</code> コマンドを実行します。サーバー上に自分の公開鍵をおいていない場合は、まず公開鍵をコピーしましょう。</p>
 
-<p>ここで、<code>master</code> ブランチを移動させて、中間のコミットに戻します。</p>
+<pre><code>$ sudo -H -u git gitosis-init &lt; /tmp/id_dsa.pub
+Initialized empty Git repository in /opt/git/gitosis-admin.git/
+Reinitialized existing Git repository in /opt/git/gitosis-admin.git/</code></pre>
 
-<pre><code>$ git reset --hard 1a410efbd13591db07496601ebc7a059dd55cfe9
-HEAD is now at 1a410ef third commit
-$ git log --pretty=oneline
-1a410efbd13591db07496601ebc7a059dd55cfe9 third commit
-cac0cab538b970a37ea1e769cbbde608743bc96d second commit
-fdf4fc3344e67ab068f836878b6c4951e3b15f3d first commit</code></pre>
+<p>これで、指定した鍵を持つユーザーが Gitosis 用の Git リポジトリを変更できるようになりました。次に、新しいリポジトリの <code>post-update</code> スクリプトに実行ビットを設定します。</p>
 
-<p>あなたはトップにある二つのコミットを手際よく失いました。それらのコミットからはどのブランチからも到達され得ません。最後のコミットの SHA1ハッシュを見つけて、それにポイントするブランチを追加する必要があります。その最後のコミットの SHA1ハッシュを見つけるコツは、記憶しておくことではないですよね？</p>
+<pre><code>$ sudo chmod 755 /opt/git/gitosis-admin.git/hooks/post-update</code></pre>
 
-<p>大抵の場合、最も手っ取り早いのは、<code>git reflog</code> と呼ばれるツールを使う方法です。あなたが作業をしているとき、変更する度に Git は HEAD が何であるかを黙って記録します。ブランチをコミットまたは変更する度に <code>reflog</code> は更新されます。<code>reflog</code> はまた <code>git update-ref</code> コマンドによっても更新されます。このチャプターの前の &#8220;Gitの参照&#8221; のセクションでカバーしましたが、これは、<code>ref</code> ファイルに SHA1ハッシュ値を直に書くのではなくコマンドを使用する別の理由です。<code>git reflog</code> を実行することで自分がどこにいたのかをいつでも知ることができます。</p>
+<p>これで準備完了です。きちんと設定できていれば、Gitosis の初期設定時に登録した公開鍵を使って SSH でサーバーにログインできるはずです。結果はこのようになります。</p>
 
-<pre><code>$ git reflog
-1a410ef HEAD@{0}: 1a410efbd13591db07496601ebc7a059dd55cfe9: updating HEAD
-ab1afef HEAD@{1}: ab1afef80fac8e34258ff41fc1b867c702daa24b: updating HEAD</code></pre>
+<pre><code>$ ssh git@gitserver
+PTY allocation request failed on channel 0
+fatal: unrecognized command &#39;gitosis-serve schacon@quaternion&#39;
+  Connection to gitserver closed.</code></pre>
 
-<p>ここでチェックアウトした2つのコミットを見つけることができますが、ここに多くの情報はありません。もっと有効な方法で同じ情報を見るためには、<code>git log -g</code> を実行することができます。これは reflog に対する通常のログ出力を提供してくれます。</p>
+<p>これは「何も Git のコマンドを実行していないので、接続を拒否した」というメッセージです。では、実際に何か Git のコマンドを実行してみましょう。Gitosis 管理リポジトリをクローンします。</p>
 
-<pre><code>$ git log -g
-commit 1a410efbd13591db07496601ebc7a059dd55cfe9
-Reflog: HEAD@{0} (Scott Chacon &lt;schacon@gmail.com&gt;)
-Reflog message: updating HEAD
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Fri May 22 18:22:37 2009 -0700
+<pre><code># on your local computer
+$ git clone git@gitserver:gitosis-admin.git</code></pre>
 
-    third commit
+<p><code>gitosis-admin</code> というディレクトリができました。次のような内容になっています。</p>
 
-commit ab1afef80fac8e34258ff41fc1b867c702daa24b
-Reflog: HEAD@{1} (Scott Chacon &lt;schacon@gmail.com&gt;)
-Reflog message: updating HEAD
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Fri May 22 18:15:24 2009 -0700
+<pre><code>$ cd gitosis-admin
+$ find .
+./gitosis.conf
+./keydir
+./keydir/scott.pub</code></pre>
 
-     modified repo a bit</code></pre>
+<p><code>gitosis.conf</code> が、ユーザーやリポジトリそしてパーミッションを指定するためのファイルです。<code>keydir</code> ディレクトリには、リポジトリへの何らかのアクセス権を持つ全ユーザーの公開鍵ファイルを格納します。ユーザーごとにひとつのファイルとなります。<code>keydir</code> ディレクトリ内のファイル名 (この例では <code>scott.pub</code>) は人によって異なるでしょう。これは、<code>gitosis-init</code> スクリプトでインポートした公開鍵の最後にある説明をもとにして Gitosis がつけた名前です。</p>
 
-<p>一番下にあるコミットがあなたが失ったコミットのようです。そのコミットの新しいブランチを作成することでそれを復元することができます。例えば、そのコミット（ab1afef）から <code>recover-branch</code> という名前でブランチを開始することができます。</p>
+<p><code>gitosis.conf</code> ファイルを見ると、今のところは先ほどクローンした <code>gitosis-admin</code> プロジェクトについての情報しか書かれていません。</p>
 
-<pre><code>$ git branch recover-branch ab1afef
-$ git log --pretty=oneline recover-branch
-ab1afef80fac8e34258ff41fc1b867c702daa24b modified repo a bit
-484a59275031909e19aadb7c92262719cfcdf19a added repo.rb
-1a410efbd13591db07496601ebc7a059dd55cfe9 third commit
-cac0cab538b970a37ea1e769cbbde608743bc96d second commit
-fdf4fc3344e67ab068f836878b6c4951e3b15f3d first commit</code></pre>
+<pre><code>$ cat gitosis.conf 
+[gitosis]
 
-<p>素晴らしい。<code>master</code> ブランチがかつて存在した場所に、最初の二つのコミットを再び到達可能にして、あなたはいま <code>recover-branch</code> という名前のブランチを持っています。次に、損失の原因は reflog の中にはないある理由によるものだったと想定しましょう。<code>recover-branch</code> を取り除いて reflog を削除することによって、それをシミュレートすることができます。最初の二つのコミットは今いかなるものからも到達不能な状態です。</p>
+[group gitosis-admin]
+writable = gitosis-admin
+members = scott</code></pre>
 
-<pre><code>$ git branch –D recover-branch
-$ rm -Rf .git/logs/</code></pre>
+<p>これは、&#8217;scott&#8217; ユーザー（Gitosis の初期化時に公開鍵を指定したユーザー）だけが <code>gitosis-admin</code> プロジェクトにアクセスできるという意味です。</p>
 
-<p>なぜなら reflog データは <code>.git/logs/</code> ディレクトリに残っているため、あなたは効率的に reflog を持たない状態です。この時点でそのコミットをどうやって復元できるのでしょうか? ひとつの方法は <code>git fsck</code> ユティリティーを使用することです。それはあなたのデータベースの完全性（integrity）をチェックします。もし <code>--full</code> オプションを付けて実行すると、別のオブジェクトによってポイントされていないすべてのオブジェクトを表示します。</p>
+<p>では、新しいプロジェクトを追加してみましょう。<code>mobile</code> という新しいセクションを作成し、モバイルチームのメンバーとモバイルチームがアクセスするプロジェクトを書き入れます。今のところ存在するユーザーは &#8216;scott&#8217; だけなので、とりあえずは彼をメンバーとして追加します。そして、新しいプロジェクト <code>iphone_project</code> を作ることにしましょう。</p>
 
-<pre><code>$ git fsck --full
-dangling blob d670460b4b4aece5915caf5c68d12f560a9fe3e4
-dangling commit ab1afef80fac8e34258ff41fc1b867c702daa24b
-dangling tree aea790b9a58f6cf6f2804eeac9f0abbe9631e4c9
-dangling blob 7108f7ecb345ee9d0084193f147cdad4d2998293</code></pre>
+<pre><code>[group mobile]
+writable = iphone_project
+members = scott</code></pre>
 
-<p>このケースでは、あなたは浮遊コミットの後に見失ったコミットを見つけることができます。その SHA1ハッシュにポイントするブランチを加えることによって、同様にそれを復元することができます。</p>
+<p><code>gitosis-admin</code> プロジェクトに手を入れたら、それをコミットしてサーバーにプッシュしないと変更が反映されません。</p>
 
-<h3 id='id203'>オブジェクトの除去</h3>
+<pre><code>$ git commit -am &#39;add iphone_project and mobile group&#39;
+[master]: created 8962da8: &quot;changed name&quot;
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+$ git push
+Counting objects: 5, done.
+Compressing objects: 100% (2/2), done.
+Writing objects: 100% (3/3), 272 bytes, done.
+Total 3 (delta 1), reused 0 (delta 0)
+To git@gitserver:/opt/git/gitosis-admin.git
+   fb27aec..8962da8  master -&gt; master</code></pre>
 
-<p>Git には素晴らしいものたくさんあります。しかし問題が生じる可能性がある機能がひとつあります。<code>git clone</code> がすべてのファイルのすべてのバージョンを含んだプロジェクトの履歴全体をダウンロードしてしまうということです。すべてがソースコードならこれは申し分のないことです。なぜなら Git はそのデータを効率良く圧縮することに高度に最適化されているからです。しかし、もし誰かがある時点であなたのプロジェクトの履歴に1つ非常に大きなファイルを加えると、すべてのクローンは以後ずっと、その大きなファイルのダウンロードを強いられることになります。たとえ、まさに次のコミットでそれをプロジェクトから取り除かれたとしても。なぜなら常にそこに存在して、履歴から到達可能だからです。</p>
+<p>新しい <code>iphone_project</code> プロジェクトにプッシュするには、ローカル側のプロジェクトに、このサーバーをリモートとして追加します。サーバー側でわざわざベアリポジトリを作る必要はありません。先ほどプッシュした地点で、Gitosis が自動的にベアリポジトリの作成を済ませています。</p>
 
-<p>Subversion または Perforce のレポジトリを Git に変換するときに、これは大きな問題になり得ます。なぜならそれらのシステム内のすべての履歴をダウンロードしてないため、この追加のタイプはほとんど結果を生じません。もし別のシステムからインポートを行った場合、あるいはあなたのレポジトリがあるべき状態よりもずっと大きくなっている場合、大きなオブジェクトを見つけて取り除く方法があります。</p>
+<pre><code>$ git remote add origin git@gitserver:iphone_project.git
+$ git push origin master
+Initialized empty Git repository in /opt/git/iphone_project.git/
+Counting objects: 3, done.
+Writing objects: 100% (3/3), 230 bytes, done.
+Total 3 (delta 0), reused 0 (delta 0)
+To git@gitserver:iphone_project.git
+ * [new branch]      master -&gt; master</code></pre>
 
-<p>注意: このテクニックはあなたのコミット履歴を壊すことになります。大きなファイルへの参照を取り除くために修正が必要な一番前のツリーからすべての下流のコミットオブジェクトに再書き込みをします。もしインポートした後そのコミット上での作業を誰かが開始する前にすぐにこれを行った場合は問題ないです。その他の場合は、あなたの新しいコミット上に作業をリベースしなければならないことをすべての関係者（contributors）に知らせる必要があります。</p>
+<p>パスを指定する必要がないことに注目しましょう (実際、パスを指定しても動作しません)。コロンの後にプロジェクト名を指定するだけで、Gitosis がプロジェクトを見つけてくれます。</p>
 
-<p>実演するために、あなたの <code>test</code> リポジトリに大きなファイルを追加して、次のコミットでそれを取り除き、それを見つけて、そしてレポジトリからそれを永久に取り除きます。まず、あなたの履歴に大きなオブジェクトを追加します。</p>
+<p>このプロジェクトに新たなメンバーを迎え入れることになりました、公開鍵を追加しなければなりません。しかし、今までのようにサーバー上の <code>~/.ssh/authorized_keys</code> に追記する必要はありません。ユーザー単位の鍵ファイルを <code>keydir</code> ディレクトリ内に置くだけです。鍵ファイルにつけた名前が、<code>gitosis.conf</code> でその人を指定するときの名前となります。では、John と Josie そして Jessica の公開鍵を追加しましょう。</p>
 
-<pre><code>$ curl http://kernel.org/pub/software/scm/git/git-1.6.3.1.tar.bz2 &gt; git.tbz2
-$ git add git.tbz2
-$ git commit -am &#39;added git tarball&#39;
-[master 6df7640] added git tarball
- 1 files changed, 0 insertions(+), 0 deletions(-)
- create mode 100644 git.tbz2</code></pre>
+<pre><code>$ cp /tmp/id_rsa.john.pub keydir/john.pub
+$ cp /tmp/id_rsa.josie.pub keydir/josie.pub
+$ cp /tmp/id_rsa.jessica.pub keydir/jessica.pub</code></pre>
 
-<p>おっと、誤ってプロジェクトに非常に大きなターボールを追加してしまいました。取り除いたほうがいいでしょう。</p>
+<p>そして彼らを &#8216;mobile&#8217; チームに追加し、<code>iphone_project</code> を読み書きできるようにします。</p>
 
-<pre><code>$ git rm git.tbz2
-rm &#39;git.tbz2&#39;
-$ git commit -m &#39;oops - removed large tarball&#39;
-[master da3f30d] oops - removed large tarball
- 1 files changed, 0 insertions(+), 0 deletions(-)
- delete mode 100644 git.tbz2</code></pre>
+<pre><code>[group mobile]
+writable = iphone_project
+members = scott john josie jessica</code></pre>
 
-<p>ここで、データベースに対して <code>gc</code> を実行して、どれくらい多くのスペースを使用しているのかを見てみます。</p>
+<p>この変更をコミットしてプッシュすると、この四人のユーザーがプロジェクトへの読み書きをできるようになります。</p>
 
-<pre><code>$ git gc
-Counting objects: 21, done.
-Delta compression using 2 threads.
-Compressing objects: 100% (16/16), done.
-Writing objects: 100% (21/21), done.
-Total 21 (delta 3), reused 15 (delta 1)</code></pre>
+<p>Gitosis にはシンプルなアクセス制御機能もあります。John には読み込み専用のアクセス権を設定したいという場合は、このようにします。</p>
 
-<p><code>count-objects</code> コマンドを実行してどれくらい多くのスペースを使用しているのかをすぐに見ることができます。</p>
+<pre><code>[group mobile]
+writable = iphone_project
+members = scott josie jessica
 
-<pre><code>$ git count-objects -v
-count: 4
-size: 16
-in-pack: 21
-packs: 1
-size-pack: 2016
-prune-packable: 0
-garbage: 0</code></pre>
+[group mobile_ro]
+readonly = iphone_project
+members = john</code></pre>
 
-<p><code>size-pack</code> エントリにはパックファイルのサイズがキロバイトで記されていて、2MB使用していることがわかります。最後のコミットの前は、2KB近くを使用していました。明らかに前のコミットからファイルが取り除かれましたが、そのファイルは履歴からは取り除かれませんでした。このレポジトリを誰かがクローンする都度、彼らはこの小さなプロジェクトを取得するだけに 2MBすべてをクローンする必要があるでしょう。なぜならあなたは誤って大きなファイルを追加してしまったからです。それを取り除きましょう。</p>
+<p>John はプロジェクトをクローンして変更内容を受け取れます。しかし、手元での変更をプッシュしようとすると Gitosis に拒否されます。このようにして好きなだけのグループを作成し、それぞれに個別のユーザーとプロジェクトを含めることができます。また、グループのメンバーとして別のグループを指定し (その場合は先頭に <code>@</code> をつけます)、メンバーを自動的に継承することもできます。</p>
 
-<p>最初にあなたはそれを見つけなければなりません。このケースでは、あなたはそれが何のファイルかを既に知っています。しかし、もし知らなかったとします。その場合どうやってあなたは多くのスペースを占めているファイルを見分けるのでしょうか？ もし <code>git gc</code> を実行したとき、すべてのプロジェクトはパックファイルのなかにあります。大きなオブジェクトは別の配管コマンドを実行することで見分けることができます。それは <code>git verify-pack</code> と呼ばれ、ファイルサイズを意味する三つ目の出力フィールドに対して並び替えを行います。それを <code>tail</code> コマンドと通してパイプすることもできます。なぜなら最後の幾つかの大きなファイルのみが関心の対象となるからです。</p>
+<pre><code>[group mobile_committers]
+members = scott josie jessica
 
-<pre><code>$ git verify-pack -v .git/objects/pack/pack-3f8c0...bb.idx | sort -k 3 -n | tail -3
-e3f094f522629ae358806b17daf78246c27c007b blob   1486 734 4667
-05408d195263d853f09dca71d55116663690c27c blob   12908 3478 1189
-7a9eb2fba2b1811321254ac360970fc169ba2330 blob   2056716 2056872 5401</code></pre>
+[group mobile]
+writable  = iphone_project
+members   = @mobile_committers
 
-<p>大きなオブジェクトは一番下の 2MBのものです。それが何のファイルなのかを知るには7章で少し使用した <code>rev-list</code> コマンドを使用します。<code>--objects</code> を <code>rev-list</code> に渡すと、すべてのコミットの SHA1ハッシュとブロブの SHA1ハッシュをそれらに関連するファイルパスと一緒にリストします。ブロブの名前を見つけるためにこれを使うことができます。</p>
+[group mobile_2]
+writable  = another_iphone_project
+members   = @mobile_committers john</code></pre>
 
-<pre><code>$ git rev-list --objects --all | grep 7a9eb2fb
-7a9eb2fba2b1811321254ac360970fc169ba2330 git.tbz2</code></pre>
-
-<p>ここで、あなたは過去のすべてのツリーからこのファイルを取り除く必要があります。このファイルを変更したのは何のコミットなのか知ることは簡単です。</p>
-
-<pre><code>$ git log --pretty=oneline -- git.tbz2
-da3f30d019005479c99eb4c3406225613985a1db oops - removed large tarball
-6df764092f3e7c8f5f94cbe08ee5cf42e92a0289 added git tarball</code></pre>
-
-<p>Git レポジトリから完全にこのファイルを取り除くためには、<code>6df76</code> から下流のすべてのコミットを書き直さなければなりません。そのためには、6章で使用した <code>filter-branch</code> を使用します。</p>
-
-<pre><code>$ git filter-branch --index-filter \
-   &#39;git rm --cached --ignore-unmatch git.tbz2&#39; -- 6df7640^..
-Rewrite 6df764092f3e7c8f5f94cbe08ee5cf42e92a0289 (1/2)rm &#39;git.tbz2&#39;
-Rewrite da3f30d019005479c99eb4c3406225613985a1db (2/2)
-Ref &#39;refs/heads/master&#39; was rewritten</code></pre>
-
-<p><code>--index-filter</code> オプションは、ディスク上のチェックアウトされたファイルを変更するコマンドを渡すのではなく、ステージングエリアまたはインデックスを毎度変更することを除けば、6章で使用した <code>--tree-filter</code> オプションに似ています。特定のファイルに対して <code>rm file</code> を実行するように取り除くよりもむしろ、<code>git rm --cached</code> を実行して取り除かなければなりません。つまりディスクではなくインデックスからそれを取り除くのです。このようにする理由はスピードです。Git はあなたの除去作業の前にディスク上の各リビジョンをチェックアウトする必要がないので、プロセスをもっともっと速くすることができます。同様のタスクを <code>--tree-filter</code> を使用することで達成することができます。<code>git rm</code> に渡す <code>--ignore-unmatch</code> オプションは取り除こうとするパターンがそこにない場合にエラーを出力しないようにします。最後に、<code>filter-branch</code> に <code>6df7640</code> のコミットから後の履歴のみを再書き込みするように伝えます。なぜならこれが問題が生じた場所であることをあなたは知っているからです。さもなければ、最初から開始することになり不必要に長くかかるでしょう。</p>
-
-<p>履歴にはもはやそのファイルへの参照が含まれなくなります。しかしあなたの reflog と <code>.git/refs/original</code> の下で <code>filter-branch</code> を行ったときに Git が追加した新しいセットの refs には、参照はまだ含まれているので、それらを取り除いてそしてデータベースを再パックしなければなりません。再パックの前にそれら古いコミットへのポインタを持ついかなるものを取り除く必要があります。</p>
-
-<pre><code>$ rm -Rf .git/refs/original
-$ rm -Rf .git/logs/
-$ git gc
-Counting objects: 19, done.
-Delta compression using 2 threads.
-Compressing objects: 100% (14/14), done.
-Writing objects: 100% (19/19), done.
-Total 19 (delta 3), reused 16 (delta 1)</code></pre>
-
-<p>どれくらいのスペースが節約されたかを見てみましょう。</p>
-
-<pre><code>$ git count-objects -v
-count: 8
-size: 2040
-in-pack: 19
-packs: 1
-size-pack: 7
-prune-packable: 0
-garbage: 0</code></pre>
-
-<p>パックされたレポジトリのサイズは 7KBに下がりました。当初の 2MBよりもずっとよくなりました。サイズの値から大きなオブジェクトが未だ緩いオブジェクトの中にあることがわかります。そのため、それは無くなったわけではないのです。ですが、それはプッシュや後続するクローンで移送されることは決してありません。これは重要なことです。本当にそれを望んでいたのなら、<code>git prune --expire</code> を実行することでオブジェクトを完全に取り除くことができました。</p>
+<p>何か問題が発生した場合には、<code>[gitosis]</code> セクションの下に <code>loglevel=DEBUG</code> を書いておくと便利です。設定ミスでプッシュ権限を奪われてしまった場合は、サーバー上の <code>/home/git/.gitosis.conf</code> を直接編集して元に戻します。Gitosis は、このファイルから情報を読み取っています。<code>gitosis.conf</code> ファイルへの変更がプッシュされてきたときに、その内容をこのファイルに書き出します。このファイルを手動で変更しても、次に <code>gitosis-admin</code> プロジェクトへのプッシュが成功した時点でその内容が書き換えられることになります。</p>
 
 <div id='nav'>
 <a href='ch9-6.html'>prev</a> | <a href='ch9-8.html'>next</a>

@@ -1,114 +1,152 @@
 ---
 layout: translation
-title: Pro Git 3.6 Git Branching Rebasing
+title: Pro Git 3.6 Git Internals Transfer Protocols
 ---
-<h2 id='rebasing'>Rebasing</h2>
+<h2 id='transfer_protocols'>Transfer Protocols</h2>
 
-<p>In Git, there are two main ways to integrate changes from one branch into another: the <code>merge</code> and the <code>rebase</code>. In this section you’ll learn what rebasing is, how to do it, why it’s a pretty amazing tool, and in what cases you won’t want to use it.</p>
+<p>Git can transfer data between two repositories in two major ways: over HTTP and via the so-called smart protocols used in the <code>file://</code>, <code>ssh://</code>, and <code>git://</code> transports. This section will quickly cover how these two main protocols operate.</p>
 
-<h3 id='the_basic_rebase'>The Basic Rebase</h3>
+<h3 id='the_dumb_protocol'>The Dumb Protocol</h3>
 
-<p>If you go back to an earlier example from the Merge section (see Figure 3-27), you can see that you diverged your work and made commits on two different branches.</p>
+<p>Git transport over HTTP is often referred to as the dumb protocol because it requires no Git-specific code on the server side during the transport process. The fetch process is a series of GET requests, where the client can assume the layout of the Git repository on the server. Let’s follow the <code>http-fetch</code> process for the simplegit library:</p>
 
-<p><center><img src="/figures/ch3/18333fig0327-tn.png"></center><br/> Figure 3-27. Your initial diverged commit history.</p>
+<pre><code>$ git clone http://github.com/schacon/simplegit-progit.git</code></pre>
 
-<p>The easiest way to integrate the branches, as we’ve already covered, is the <code>merge</code> command. It performs a three-way merge between the two latest branch snapshots (C3 and C4) and the most recent common ancestor of the two (C2), creating a new snapshot (and commit), as shown in Figure 3-28.</p>
+<p>The first thing this command does is pull down the <code>info/refs</code> file. This file is written by the <code>update-server-info</code> command, which is why you need to enable that as a <code>post-receive</code> hook in order for the HTTP transport to work properly:</p>
 
-<p><center><img src="/figures/ch3/18333fig0328-tn.png"></center><br/> Figure 3-28. Merging a branch to integrate the diverged work history.</p>
+<pre><code>=&gt; GET info/refs
+ca82a6dff817ec66f44342007202690a93763949     refs/heads/master</code></pre>
 
-<p>However, there is another way: you can take the patch of the change that was introduced in C3 and reapply it on top of C4. In Git, this is called <em>rebasing</em>. With the <code>rebase</code> command, you can take all the changes that were committed on one branch and replay them on another one.</p>
+<p>Now you have a list of the remote references and SHAs. Next, you look for what the HEAD reference is so you know what to check out when you’re finished:</p>
 
-<p>In this example, you’d run the following:</p>
+<pre><code>=&gt; GET HEAD
+ref: refs/heads/master</code></pre>
 
-<pre><code>$ git checkout experiment
-$ git rebase master
-First, rewinding head to replay your work on top of it...
-Applying: added staged command</code></pre>
+<p>You need to check out the <code>master</code> branch when you’ve completed the process. At this point, you’re ready to start the walking process. Because your starting point is the <code>ca82a6</code> commit object you saw in the <code>info/refs</code> file, you start by fetching that:</p>
 
-<p>It works by going to the common ancestor of the two branches (the one you’re on and the one you’re rebasing onto), getting the diff introduced by each commit of the branch you’re on, saving those diffs to temporary files, resetting the current branch to the same commit as the branch you are rebasing onto, and finally applying each change in turn. Figure 3-29 illustrates this process.</p>
+<pre><code>=&gt; GET objects/ca/82a6dff817ec66f44342007202690a93763949
+(179 bytes of binary data)</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0329-tn.png"></center><br/> Figure 3-29. Rebasing the change introduced in C3 onto C4.</p>
+<p>You get an object back — that object is in loose format on the server, and you fetched it over a static HTTP GET request. You can zlib-uncompress it, strip off the header, and look at the commit content:</p>
 
-<p>At this point, you can go back to the master branch and do a fast-forward merge (see Figure 3-30).</p>
+<pre><code>$ git cat-file -p ca82a6dff817ec66f44342007202690a93763949
+tree cfda3bf379e4f8dba8717dee55aab78aef7f4daf
+parent 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+author Scott Chacon &lt;schacon@gmail.com&gt; 1205815931 -0700
+committer Scott Chacon &lt;schacon@gmail.com&gt; 1240030591 -0700
 
-<p><center><img src="/figures/ch3/18333fig0330-tn.png"></center><br/> Figure 3-30. Fast-forwarding the master branch.</p>
+changed the version number</code></pre>
 
-<p>Now, the snapshot pointed to by C3 is exactly the same as the one that was pointed to by C5 in the merge example. There is no difference in the end product of the integration, but rebasing makes for a cleaner history. If you examine the log of a rebased branch, it looks like a linear history: it appears that all the work happened in series, even when it originally happened in parallel.</p>
+<p>Next, you have two more objects to retrieve — <code>cfda3b</code>, which is the tree of content that the commit we just retrieved points to; and <code>085bb3</code>, which is the parent commit:</p>
 
-<p>Often, you’ll do this to make sure your commits apply cleanly on a remote branch — perhaps in a project to which you’re trying to contribute but that you don’t maintain. In this case, you’d do your work in a branch and then rebase your work onto <code>origin/master</code> when you were ready to submit your patches to the main project. That way, the maintainer doesn’t have to do any integration work — just a fast-forward or a clean apply.</p>
+<pre><code>=&gt; GET objects/08/5bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+(179 bytes of data)</code></pre>
 
-<p>Note that the snapshot pointed to by the final commit you end up with, whether it’s the last of the rebased commits for a rebase or the final merge commit after a merge, is the same snapshot — it’s only the history that is different. Rebasing replays changes from one line of work onto another in the order they were introduced, whereas merging takes the endpoints and merges them together.</p>
+<p>That gives you your next commit object. Grab the tree object:</p>
 
-<h3 id='more_interesting_rebases'>More Interesting Rebases</h3>
+<pre><code>=&gt; GET objects/cf/da3bf379e4f8dba8717dee55aab78aef7f4daf
+(404 - Not Found)</code></pre>
 
-<p>You can also have your rebase replay on something other than the rebase branch. Take a history like Figure 3-31, for example. You branched a topic branch (<code>server</code>) to add some server-side functionality to your project, and made a commit. Then, you branched off that to make the client-side changes (<code>client</code>) and committed a few times. Finally, you went back to your server branch and did a few more commits.</p>
+<p>Oops — it looks like that tree object isn’t in loose format on the server, so you get a 404 response back. There are a couple of reasons for this — the object could be in an alternate repository, or it could be in a packfile in this repository. Git checks for any listed alternates first:</p>
 
-<p><center><img src="/figures/ch3/18333fig0331-tn.png"></center><br/> Figure 3-31. A history with a topic branch off another topic branch.</p>
+<pre><code>=&gt; GET objects/info/http-alternates
+(empty file)</code></pre>
 
-<p>Suppose you decide that you want to merge your client-side changes into your mainline for a release, but you want to hold off on the server-side changes until it’s tested further. You can take the changes on client that aren’t on server (C8 and C9) and replay them on your master branch by using the <code>--onto</code> option of <code>git rebase</code>:</p>
+<p>If this comes back with a list of alternate URLs, Git checks for loose files and packfiles there — this is a nice mechanism for projects that are forks of one another to share objects on disk. However, because no alternates are listed in this case, your object must be in a packfile. To see what packfiles are available on this server, you need to get the <code>objects/info/packs</code> file, which contains a listing of them (also generated by <code>update-server-info</code>):</p>
 
-<pre><code>$ git rebase --onto master server client</code></pre>
+<pre><code>=&gt; GET objects/info/packs
+P pack-816a9b2334da9953e530f27bcac22082a9f5b835.pack</code></pre>
 
-<p>This basically says, “Check out the client branch, figure out the patches from the common ancestor of the <code>client</code> and <code>server</code> branches, and then replay them onto <code>master</code>.” It’s a bit complex; but the result, shown in Figure 3-32, is pretty cool.</p>
+<p>There is only one packfile on the server, so your object is obviously in there, but you’ll check the index file to make sure. This is also useful if you have multiple packfiles on the server, so you can see which packfile contains the object you need:</p>
 
-<p><center><img src="/figures/ch3/18333fig0332-tn.png"></center><br/> Figure 3-32. Rebasing a topic branch off another topic branch.</p>
+<pre><code>=&gt; GET objects/pack/pack-816a9b2334da9953e530f27bcac22082a9f5b835.idx
+(4k of binary data)</code></pre>
 
-<p>Now you can fast-forward your master branch (see Figure 3-33):</p>
+<p>Now that you have the packfile index, you can see if your object is in it — because the index lists the SHAs of the objects contained in the packfile and the offsets to those objects. Your object is there, so go ahead and get the whole packfile:</p>
 
-<pre><code>$ git checkout master
-$ git merge client</code></pre>
+<pre><code>=&gt; GET objects/pack/pack-816a9b2334da9953e530f27bcac22082a9f5b835.pack
+(13k of binary data)</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0333-tn.png"></center><br/> Figure 3-33. Fast-forwarding your master branch to include the client branch changes.</p>
+<p>You have your tree object, so you continue walking your commits. They’re all also within the packfile you just downloaded, so you don’t have to do any more requests to your server. Git checks out a working copy of the <code>master</code> branch that was pointed to by the HEAD reference you downloaded at the beginning.</p>
 
-<p>Let’s say you decide to pull in your server branch as well. You can rebase the server branch onto the master branch without having to check it out first by running <code>git rebase [basebranch] [topicbranch]</code> — which checks out the topic branch (in this case, <code>server</code>) for you and replays it onto the base branch (<code>master</code>):</p>
+<p>The entire output of this process looks like this:</p>
 
-<pre><code>$ git rebase master server</code></pre>
+<pre><code>$ git clone http://github.com/schacon/simplegit-progit.git
+Initialized empty Git repository in /private/tmp/simplegit-progit/.git/
+got ca82a6dff817ec66f44342007202690a93763949
+walk ca82a6dff817ec66f44342007202690a93763949
+got 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+Getting alternates list for http://github.com/schacon/simplegit-progit.git
+Getting pack list for http://github.com/schacon/simplegit-progit.git
+Getting index for pack 816a9b2334da9953e530f27bcac22082a9f5b835
+Getting pack 816a9b2334da9953e530f27bcac22082a9f5b835
+ which contains cfda3bf379e4f8dba8717dee55aab78aef7f4daf
+walk 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+walk a11bef06a3f659402fe7563abf99ad00de2209e6</code></pre>
 
-<p>This replays your <code>server</code> work on top of your <code>master</code> work, as shown in Figure 3-34.</p>
+<h3 id='the_smart_protocol'>The Smart Protocol</h3>
 
-<p><center><img src="/figures/ch3/18333fig0334-tn.png"></center><br/> Figure 3-34. Rebasing your server branch on top of your master branch.</p>
+<p>The HTTP method is simple but a bit inefficient. Using smart protocols is a more common method of transferring data. These protocols have a process on the remote end that is intelligent about Git — it can read local data and figure out what the client has or needs and generate custom data for it. There are two sets of processes for transferring data: a pair for uploading data and a pair for downloading data.</p>
 
-<p>Then, you can fast-forward the base branch (<code>master</code>):</p>
+<h4 id='uploading_data'>Uploading Data</h4>
 
-<pre><code>$ git checkout master
-$ git merge server</code></pre>
+<p>To upload data to a remote process, Git uses the <code>send-pack</code> and <code>receive-pack</code> processes. The <code>send-pack</code> process runs on the client and connects to a <code>receive-pack</code> process on the remote side.</p>
 
-<p>You can remove the <code>client</code> and <code>server</code> branches because all the work is integrated and you don’t need them anymore, leaving your history for this entire process looking like Figure 3-35:</p>
+<p>For example, say you run <code>git push origin master</code> in your project, and <code>origin</code> is defined as a URL that uses the SSH protocol. Git fires up the <code>send-pack</code> process, which initiates a connection over SSH to your server. It tries to run a command on the remote server via an SSH call that looks something like this:</p>
 
-<pre><code>$ git branch -d client
-$ git branch -d server</code></pre>
+<pre><code>$ ssh -x git@github.com &quot;git-receive-pack &#39;schacon/simplegit-progit.git&#39;&quot;
+005bca82a6dff817ec66f4437202690a93763949 refs/heads/master report-status delete-refs
+003e085bb3bcb608e1e84b2432f8ecbe6306e7e7 refs/heads/topic
+0000</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0335-tn.png"></center><br/> Figure 3-35. Final commit history.</p>
+<p>The <code>git-receive-pack</code> command immediately responds with one line for each reference it currently has — in this case, just the <code>master</code> branch and its SHA. The first line also has a list of the server’s capabilities (here, <code>report-status</code> and <code>delete-refs</code>).</p>
 
-<h3 id='the_perils_of_rebasing'>The Perils of Rebasing</h3>
+<p>Each line starts with a 4-byte hex value specifying how long the rest of the line is. Your first line starts with 005b, which is 91 in hex, meaning that 91 bytes remain on that line. The next line starts with 003e, which is 62, so you read the remaining 62 bytes. The next line is 0000, meaning the server is done with its references listing.</p>
 
-<p>Ahh, but the bliss of rebasing isn’t without its drawbacks, which can be summed up in a single line:</p>
+<p>Now that it knows the server’s state, your <code>send-pack</code> process determines what commits it has that the server doesn’t. For each reference that this push will update, the <code>send-pack</code> process tells the <code>receive-pack</code> process that information. For instance, if you’re updating the <code>master</code> branch and adding an <code>experiment</code> branch, the <code>send-pack</code> response may look something like this:</p>
 
-<p><strong>Do not rebase commits that you have pushed to a public repository.</strong></p>
+<pre><code>0085ca82a6dff817ec66f44342007202690a93763949  15027957951b64cf874c3557a0f3547bd83b3ff6 refs/heads/master report-status
+00670000000000000000000000000000000000000000 cdfdb42577e2506715f8cfeacdbabc092bf63e8d refs/heads/experiment
+0000</code></pre>
 
-<p>If you follow that guideline, you’ll be fine. If you don’t, people will hate you, and you’ll be scorned by friends and family.</p>
+<p>The SHA-1 value of all &#8216;0&#8217;s means that nothing was there before — because you’re adding the experiment reference. If you were deleting a reference, you would see the opposite: all &#8216;0&#8217;s on the right side.</p>
 
-<p>When you rebase stuff, you’re abandoning existing commits and creating new ones that are similar but different. If you push commits somewhere and others pull them down and base work on them, and then you rewrite those commits with <code>git rebase</code> and push them up again, your collaborators will have to re-merge their work and things will get messy when you try to pull their work back into yours.</p>
+<p>Git sends a line for each reference you’re updating with the old SHA, the new SHA, and the reference that is being updated. The first line also has the client’s capabilities. Next, the client uploads a packfile of all the objects the server doesn’t have yet. Finally, the server responds with a success (or failure) indication:</p>
 
-<p>Let’s look at an example of how rebasing work that you’ve made public can cause problems. Suppose you clone from a central server and then do some work off that. Your commit history looks like Figure 3-36.</p>
+<pre><code>000Aunpack ok</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0336-tn.png"></center><br/> Figure 3-36. Clone a repository, and base some work on it.</p>
+<h4 id='downloading_data'>Downloading Data</h4>
 
-<p>Now, someone else does more work that includes a merge, and pushes that work to the central server. You fetch them and merge the new remote branch into your work, making your history look something like Figure 3-37.</p>
+<p>When you download data, the <code>fetch-pack</code> and <code>upload-pack</code> processes are involved. The client initiates a <code>fetch-pack</code> process that connects to an <code>upload-pack</code> process on the remote side to negotiate what data will be transferred down.</p>
 
-<p><center><img src="/figures/ch3/18333fig0337-tn.png"></center><br/> Figure 3-37. Fetch more commits, and merge them into your work.</p>
+<p>There are different ways to initiate the <code>upload-pack</code> process on the remote repository. You can run via SSH in the same manner as the <code>receive-pack</code> process. You can also initiate the process via the Git daemon, which listens on a server on port 9418 by default. The <code>fetch-pack</code> process sends data that looks like this to the daemon after connecting:</p>
 
-<p>Next, the person who pushed the merged work decides to go back and rebase their work instead; they do a <code>git push --force</code> to overwrite the history on the server. You then fetch from that server, bringing down the new commits.</p>
+<pre><code>003fgit-upload-pack schacon/simplegit-progit.git\0host=myserver.com\0</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0338-tn.png"></center><br/> Figure 3-38. Someone pushes rebased commits, abandoning commits you’ve based your work on.</p>
+<p>It starts with the 4 bytes specifying how much data is following, then the command to run followed by a null byte, and then the server’s hostname followed by a final null byte. The Git daemon checks that the command can be run and that the repository exists and has public permissions. If everything is cool, it fires up the <code>upload-pack</code> process and hands off the request to it.</p>
 
-<p>At this point, you have to merge this work in again, even though you’ve already done so. Rebasing changes the SHA-1 hashes of these commits so to Git they look like new commits, when in fact you already have the C4 work in your history (see Figure 3-39).</p>
+<p>If you’re doing the fetch over SSH, <code>fetch-pack</code> instead runs something like this:</p>
 
-<p><center><img src="/figures/ch3/18333fig0339-tn.png"></center><br/> Figure 3-39. You merge in the same work again into a new merge commit.</p>
+<pre><code>$ ssh -x git@github.com &quot;git-upload-pack &#39;schacon/simplegit-progit.git&#39;&quot;</code></pre>
 
-<p>You have to merge that work in at some point so you can keep up with the other developer in the future. After you do that, your commit history will contain both the C4 and C4&#8217; commits, which have different SHA-1 hashes but introduce the same work and have the same commit message. If you run a <code>git log</code> when your history looks like this, you’ll see two commits that have the same author date and message, which will be confusing. Furthermore, if you push this history back up to the server, you’ll reintroduce all those rebased commits to the central server, which can further confuse people.</p>
+<p>In either case, after <code>fetch-pack</code> connects, <code>upload-pack</code> sends back something like this:</p>
 
-<p>If you treat rebasing as a way to clean up and work with commits before you push them, and if you only rebase commits that have never been available publicly, then you’ll be fine. If you rebase commits that have already been pushed publicly, and people may have based work on those commits, then you may be in for some frustrating trouble.</p>
+<pre><code>0088ca82a6dff817ec66f44342007202690a93763949 HEAD\0multi_ack thin-pack \
+  side-band side-band-64k ofs-delta shallow no-progress include-tag
+003fca82a6dff817ec66f44342007202690a93763949 refs/heads/master
+003e085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7 refs/heads/topic
+0000</code></pre>
+
+<p>This is very similar to what <code>receive-pack</code> responds with, but the capabilities are different. In addition, it sends back the HEAD reference so the client knows what to check out if this is a clone.</p>
+
+<p>At this point, the <code>fetch-pack</code> process looks at what objects it has and responds with the objects that it needs by sending &#8220;want&#8221; and then the SHA it wants. It sends all the objects it already has with &#8220;have&#8221; and then the SHA. At the end of this list, it writes &#8220;done&#8221; to initiate the <code>upload-pack</code> process to begin sending the packfile of the data it needs:</p>
+
+<pre><code>0054want ca82a6dff817ec66f44342007202690a93763949 ofs-delta
+0032have 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+0000
+0009done</code></pre>
+
+<p>That is a very basic case of the transfer protocols. In more complex cases, the client supports <code>multi_ack</code> or <code>side-band</code> capabilities; but this example shows you the basic back and forth used by the smart protocol processes.</p>
 
 <div id='nav'>
 <a href='ch3-5.html'>prev</a> | <a href='ch3-7.html'>next</a>

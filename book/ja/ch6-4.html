@@ -1,210 +1,338 @@
 ---
 layout: translation
-title: Pro Git 6.4 Git のさまざまなツール 歴史の書き換え
+title: Pro Git 6.4 Git のカスタマイズ Git ポリシーの実施例
 ---
-<h2 id='id142'>歴史の書き換え</h2>
+<h2 id='git_'>Git ポリシーの実施例</h2>
 
-<p>Git を使って作業をしていると、何らかの理由でコミットの歴史を書き換えたくなることが多々あります。Git のすばらしい点のひとつは、何をどうするかの決断をぎりぎりまで先送りできることです。どのファイルをどのコミットに含めるのかは、ステージングエリアの内容をコミットする直前まで変更することができますし、既に作業した内容でも stash コマンドを使えばまだ作業していないことにできます。また、すでにコミットしてしまった変更についても、それを書き換えてまるで別の方法で行ったかのようにすることもできます。コミットの順序を変更したり、コミットメッセージやコミットされるファイルを変更したり、複数のコミットをひとつにまとめたりひとつのコミットを複数に分割したり、コミットそのものをなかったことにしたり……といった作業を、変更内容を他のメンバーに公開する前ならいつでもすることができます。</p>
+<p>このセクションでは、これまでに学んだ内容を使って実際に Git のワークフローを確立してみます。コミットメッセージの書式をチェックし、プッシュは fast-forward 限定にし、そしてプロジェクト内の各サブディレクトリに対して特定のユーザーだけが変更を加えられるようにするというものです。開発者に対して「なぜプッシュが却下されたのか」を伝えるためのクライアントスクリプト、そして実際にそのポリシーを実施するためのサーバースクリプトを作成します。</p>
 
-<p>このセクションでは、これらの便利な作業の方法について扱います。これで、あなたのコミットの歴史を思い通りに書き換えてから他の人と共有できるようになります。</p>
+<p>スクリプトは Ruby を使って書きます。その理由のひとつは私が Ruby を好きなこと、そしてもうひとつの理由はその他のスクリプト言語の疑似コードとしてもそれっぽく見えるであろうということです。Ruby 使いじゃなくても、きっとコードの大まかな流れは追えるはずです。しかし、Ruby 以外の言語であってもきちんと動作します。Git に同梱されているサンプルスクリプトはすべて Perl あるいは Bash で書かれているので、それらの言語のサンプルも大量に見ることができます。</p>
 
-<h3 id='id143'>直近のコミットの変更</h3>
+<h3 id='id520'>サーバーサイドフック</h3>
 
-<p>直近のコミットを変更するというのは、歴史を書き換える作業のうちもっともよくあるものでしょう。直近のコミットに対して手を加えるパターンとしては、コミットメッセージを変更したりそのコミットで記録されるスナップショットを変更 (ファイルを追加・変更あるいは削除) したりといったものがあります。</p>
+<p>サーバーサイドの作業は、すべて hooks ディレクトリの update ファイルにまとめます。update ファイルはプッシュされるブランチごとに実行されるもので、プッシュされる参照と操作前のブランチのリビジョン、そしてプッシュされる新しいリビジョンを受け取ります。また、SSH 経由でのプッシュの場合は、プッシュしたユーザーを知ることもできます。全員に共通のユーザー (&#8220;git&#8221; など) を使って公開鍵認証をさせている場合は、公開鍵の情報に基づいて実際のユーザーを判断して環境変数を設定するというラッパーが必要です。ここでは、接続しているユーザー名が環境変数 <code>$USER</code> に格納されているものとします。スクリプトは、まずこれらの情報を取得するところから始まります。</p>
 
-<p>単に直近のコミットメッセージを変更したいだけの場合は非常にシンプルです。</p>
+<pre><code>#!/usr/bin/env ruby
 
-<pre><code>$ git commit --amend</code></pre>
+$refname = ARGV[0]
+$oldrev  = ARGV[1]
+$newrev  = ARGV[2]
+$user    = ENV[&#39;USER&#39;]
 
-<p>これを実行するとテキストエディタが開きます。すでに直近のコミットメッセージが書き込まれた状態になっており、それを変更することができます。変更を保存してエディタを終了すると、変更後のメッセージを含む新しいコミットを作成して直近のコミットをそれで置き換えます。</p>
+puts &quot;Enforcing Policies... \n(#{$refname}) (#{$oldrev[0,6]}) (#{$newrev[0,6]})&quot;</code></pre>
 
-<p>いったんコミットしたあとで、そこにさらにファイルを追加したり変更したりしたくなったとしましょう。「新しく作ったファイルを追加し忘れた」とかがありそうですね。この場合の手順も基本的には同じです。ファイルを編集して <code>git add</code> したり追跡中のファイルを <code>git rm</code> したりしてステージングエリアをお好みの状態にしたら、続いて <code>git commit --amend</code> を実行します。すると、現在のステージングエリアの状態を次回のコミット用のスナップショットにします。</p>
+<p>ああ、グローバル変数を使ってるとかいうツッコミは勘弁してください。このほうが説明が楽なので。</p>
 
-<p>この技を使う際には注意が必要です。この処理を行うとコミットの SHA-1 が変わるからです。いわば、非常に小規模なリベースのようなものです。すでにプッシュしているコミットは書き換えないようにしましょう。</p>
+<h4 id='id521'>特定のコミットメッセージ書式の強制</h4>
 
-<h3 id='id144'>複数のコミットメッセージの変更</h3>
+<p>まずは、コミットメッセージを特定の書式に従わせることに挑戦してみましょう。ここでは、コミットメッセージには必ず &#8220;ref: 1234&#8221; 形式の文字列を含むこと、というルールにします。個々のコミットをチケットシステムとリンクさせたいという意図です。やらなければならないことは、プッシュされてきた各コミットのコミットメッセージにその文字列があるかどうかを調べ、もしなければゼロ以外の値で終了してプッシュを却下することです。</p>
 
-<p>さらに歴史をさかのぼったコミットを変更したい場合は、もう少し複雑なツールを使わなければなりません。Git には歴史を修正するツールはありませんが、リベースツールを使って一連のコミットを (別の場所ではなく) もともとあった場所と同じ HEAD につなげるという方法を使うことができます。対話的なリベースツールを使えば、各コミットについてメッセージを変更したりファイルを追加したりお望みの変更をすることができます。対話的なリベースを行うには、<code>git rebase</code> に <code>-i</code> オプションを追加します。どこまでさかのぼってコミットを書き換えるかを指示するために、どのコミットにリベースするかを指定しなければなりません。</p>
+<p>プッシュされたすべてのコミットの SHA-1 値を取得するには、<code>$newrev</code> と <code>$oldrev</code> の内容を <code>git rev-list</code> という低レベル Git コマンドに渡します。これは基本的には <code>git log</code> コマンドのようなものですが、デフォルトでは SHA-1 値だけを表示してそれ以外の情報は出力しません。ふたつのコミットの間のすべてのコミットの SHA を得るには、次のようなコマンドを実行します。</p>
 
-<p>直近の三つのコミットメッセージあるいはそのいずれかを変更したくなった場合、変更したい最古のコミットの親を <code>git rebase -i</code> の引数に指定します。ここでは <code>HEAD~2^</code> あるいは <code>HEAD~3</code> となります。直近の三つのコミットを編集しようと考えているのだから、<code>~3</code> のほうが覚えやすいでしょう。しかし、実際のところは四つ前 (変更したい最古のコミットの親) のコミットを指定していることに注意しましょう。</p>
+<pre><code>$ git rev-list 538c33..d14fc7
+d14fc7c847ab946ec39590d87783c69b031bdfb7
+9f585da4401b0a3999e84113824d15245c13f0be
+234071a1be950e2a8d078e6141f5cd20c1e61ad3
+dfa04c9ef3d5197182f13fb5b9b1fb7717d2222a
+17716ec0f1ff5c77eff40b7fe912f9f6cfd0e475</code></pre>
 
-<pre><code>$ git rebase -i HEAD~3</code></pre>
+<p>この出力を受け取ってループさせて各コミットの SHA を取得し、個々のメッセージを取り出し、正規表現でそのメッセージを調べることができます。</p>
 
-<p>これはリベースコマンドであることを認識しておきましょう。 <code>HEAD~3..HEAD</code> に含まれるすべてのコミットは、実際にメッセージを変更したか否かにかかわらずすべて書き換えられます。すでに中央サーバーにプッシュしたコミットをここに含めてはいけません。含めてしまうと、同じ変更が別のバージョンで見えてしまうことになって他の開発者が混乱します。</p>
+<p>さて、これらのコミットからコミットメッセージを取り出す方法を見つけなければなりません。生のコミットデータを取得するには、別の低レベルコマンド <code>git cat-file</code> を使います。低レベルコマンドについては第 9 章で詳しく説明しますが、とりあえずはこのコマンドがどんな結果を返すのだけを示します。</p>
 
-<p>このコマンドを実行すると、テキストエディタが開いてコミットの一覧が表示され、このようになります。</p>
+<pre><code>$ git cat-file commit ca82a6
+tree cfda3bf379e4f8dba8717dee55aab78aef7f4daf
+parent 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+author Scott Chacon &lt;schacon@gmail.com&gt; 1205815931 -0700
+committer Scott Chacon &lt;schacon@gmail.com&gt; 1240030591 -0700
 
-<pre><code>pick f7f3f6d changed my name a bit
-pick 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file
+changed the version number</code></pre>
 
-# Rebase 710f0f8..a5f4a0d onto 710f0f8
-#
-# Commands:
-#  p, pick = use commit
-#  e, edit = use commit, but stop for amending
-#  s, squash = use commit, but meld into previous commit
-#
-# If you remove a line here THAT COMMIT WILL BE LOST.
-# However, if you remove everything, the rebase will be aborted.
-#</code></pre>
+<p>SHA-1 値がわかっているときにコミットからコミットメッセージを得るシンプルな方法は、空行を探してそれ以降をすべて取得するというものです。これには、Unix システムの <code>sed</code> コマンドが使えます。</p>
 
-<p>このコミット一覧の表示順は、<code>log</code> コマンドを使ったときの通常の表示順とは逆になることに注意しましょう。<code>log</code> を実行すると、このようになります。</p>
+<pre><code>$ git cat-file commit ca82a6 | sed &#39;1,/^$/d&#39;
+changed the version number</code></pre>
 
-<pre><code>$ git log --pretty=format:&quot;%h %s&quot; HEAD~3..HEAD
-a5f4a0d added cat-file
-310154e updated README formatting and added blame
-f7f3f6d changed my name a bit</code></pre>
+<p>この呪文を使ってコミットメッセージを取得し、もし条件にマッチしないものがあれば終了させればよいのです。スクリプトを抜けてプッシュを却下するには、ゼロ以外の値で終了させます。以上を踏まえると、このメソッドは次のようになります。</p>
 
-<p>逆順になっていますね。対話的なリベースを実行するとスクリプトが出力されるので、それをあとで実行することになります。このスクリプトはコマンドラインで指定したコミット (<code>HEAD~3</code>) から始まり、それ以降のコミットを古い順に再現していきます。最新のものからではなく古いものから表示されているのは、最初に再現するのがいちばん古いコミットだからです。</p>
+<pre><code>$regex = /\[ref: (\d+)\]/
 
-<p>このスクリプトを編集し、手を加えたいコミットのところでスクリプトを停止させるようにします。そのためには、各コミットのうちスクリプトを停止させたいものについて「pick」を「edit」に変更します。たとえば、三番目のコミットメッセージだけを変更したい場合はこのようにファイルを変更します。</p>
+# enforced custom commit message format
+def check_message_format
+  missed_revs = `git rev-list #{$oldrev}..#{$newrev}`.split(&quot;\n&quot;)
+  missed_revs.each do |rev|
+    message = `git cat-file commit #{rev} | sed &#39;1,/^$/d&#39;`
+    if !$regex.match(message)
+      puts &quot;[POLICY] Your message is not formatted correctly&quot;
+      exit 1
+    end
+  end
+end
+check_message_format</code></pre>
 
-<pre><code>edit f7f3f6d changed my name a bit
-pick 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file</code></pre>
+<p>これを <code>update</code> スクリプトに追加すると、ルールを守らないコミットメッセージが含まれるコミットのプッシュを却下するようになります。</p>
 
-<p>これを保存してエディタを終了すると、Git はそのリストの最初のコミットまで処理を巻き戻し、次のようなメッセージとともにコマンドラインを返します。</p>
+<h4 id='id522'>ユーザーベースのアクセス制御</h4>
 
-<pre><code>$ git rebase -i HEAD~3
-Stopped at 7482e0d... updated the gemspec to hopefully work better
-You can amend the commit now, with
+<p>アクセス制御リスト (ACL) を使って、ユーザーごとにプロジェクトのどの部分を変更できるのかを指定できるようにしてみましょう。全体にアクセスできるユーザーもいれば、特定のサブディレクトリやファイルだけにしか変更をプッシュできないユーザーもいる、といった仕組みです。これを実施するには、ルールを書いたファイル <code>acl</code> をサーバー上のベア Git リポジトリに置きます。<code>update</code> フックにこのファイルを読ませ、プッシュされたコミットにどのファイルが含まれているのかを調べ、そしてプッシュしたユーザーがそれらのファイルを変更する権限があるのかどうかを判断します。</p>
 
-       git commit --amend
+<p>まずは ACL を作るところから始めましょう。ここでは、CVS の ACL と似た書式を使います。これは各項目を一行で表すもので、最初のフィールドは <code>avail</code> あるいは <code>unavail</code>、そして次の行がそのルールを適用するユーザーの一覧 (カンマ区切り)、そして最後のフィールドがそのルールを適用するパス (ブランクは全体へのアクセスを意味します) です。フィールドの区切りには、パイプ文字 (<code>|</code>) を使います。</p>
 
-Once you’re satisfied with your changes, run
+<p>ここでは、全体にアクセスする管理者と <code>doc</code> ディレクトリにアクセスするドキュメント担当者、そして <code>lib</code> と <code>tests</code> サブディレクトリだけにアクセスできる開発者を設定します。ACL ファイルは次のようになります。</p>
 
-       git rebase --continue</code></pre>
+<pre><code>avail|nickh,pjhyett,defunkt,tpw
+avail|usinclair,cdickens,ebronte|doc
+avail|schacon|lib
+avail|schacon|tests</code></pre>
 
-<p>この指示が、まさにこれからすべきことを教えてくれています。</p>
+<p>まずはこのデータを読み込んで、スクリプト内で使えるデータ構造にしてみましょう。例をシンプルにするために、ここでは <code>avail</code> ディレクティブだけを使います。次のメソッドは連想配列を返すものです。ユーザー名が配列のキー、そのユーザーが書き込み権を持つパスの配列が対応する値となります。</p>
 
-<pre><code>$ git commit --amend</code></pre>
+<pre><code>def get_acl_access_data(acl_file)
+  # read in ACL data
+  acl_file = File.read(acl_file).split(&quot;\n&quot;).reject { |line| line == &#39;&#39; }
+  access = {}
+  acl_file.each do |line|
+    avail, users, path = line.split(&#39;|&#39;)
+    next unless avail == &#39;avail&#39;
+    users.split(&#39;,&#39;).each do |user|
+      access[user] ||= []
+      access[user] &lt;&lt; path
+    end
+  end
+  access
+end</code></pre>
 
-<p>と打ち込んでコミットメッセージを変更してからエディタを終了し、次に</p>
+<p>先ほどの ACL ファイルをこの <code>get_acl_access_data</code> メソッドに渡すと、このようなデータ構造を返します。</p>
+
+<pre><code>{&quot;defunkt&quot;=&gt;[nil],
+ &quot;tpw&quot;=&gt;[nil],
+ &quot;nickh&quot;=&gt;[nil],
+ &quot;pjhyett&quot;=&gt;[nil],
+ &quot;schacon&quot;=&gt;[&quot;lib&quot;, &quot;tests&quot;],
+ &quot;cdickens&quot;=&gt;[&quot;doc&quot;],
+ &quot;usinclair&quot;=&gt;[&quot;doc&quot;],
+ &quot;ebronte&quot;=&gt;[&quot;doc&quot;]}</code></pre>
+
+<p>これで権限がわかったので、あとはプッシュされた各コミットがどのパスを変更しようとしているのかを調べれば、そのユーザーがプッシュすることができるのかどうかを判断できます。</p>
 
-<pre><code>$ git rebase --continue</code></pre>
+<p>あるコミットでどのファイルが変更されるのかを知るのはとても簡単で、<code>git log</code> コマンドに <code>--name-only</code> オプションを指定するだけです (第 2 章で簡単に説明しました)。</p>
 
-<p>を実行します。このコマンドはその他のふたつのコミットも自動的に適用するので、これで作業は終了です。複数行で「pick」を「edit」に変更した場合は、これらの作業を各コミットについてくりかえすことになります。それぞれの場面で Git が停止するので、amend でコミットを書き換えて continue で処理を続けます。</p>
+<pre><code>$ git log -1 --name-only --pretty=format:&#39;&#39; 9f585d
 
-<h3 id='id145'>コミットの並べ替え</h3>
+README
+lib/test.rb</code></pre>
 
-<p>対話的なリベースで、コミットの順番を変更したり完全に消し去ってしまったりすることもできます。&#8221;added cat-file&#8221; のコミットを削除して残りの二つのコミットの適用順を反対にしたい場合は、リベーススクリプトを</p>
+<p><code>get_acl_access_data</code> メソッドが返す ACL のデータとこのファイルリストを付き合わせれば、そのユーザーがコミットをプッシュする権限があるかどうかを判断できます。</p>
 
-<pre><code>pick f7f3f6d changed my name a bit
-pick 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file</code></pre>
+<pre><code># only allows certain users to modify certain subdirectories in a project
+def check_directory_perms
+  access = get_acl_access_data(&#39;acl&#39;)
 
-<p>から</p>
+  # see if anyone is trying to push something they can&#39;t
+  new_commits = `git rev-list #{$oldrev}..#{$newrev}`.split(&quot;\n&quot;)
+  new_commits.each do |rev|
+    files_modified = `git log -1 --name-only --pretty=format:&#39;&#39; #{rev}`.split(&quot;\n&quot;)
+    files_modified.each do |path|
+      next if path.size == 0
+      has_file_access = false
+      access[$user].each do |access_path|
+        if !access_path || # user has access to everything
+          (path.index(access_path) == 0) # access to this path
+          has_file_access = true 
+        end
+      end
+      if !has_file_access
+        puts &quot;[POLICY] You do not have access to push to #{path}&quot;
+        exit 1
+      end
+    end
+  end  
+end
 
-<pre><code>pick 310154e updated README formatting and added blame
-pick f7f3f6d changed my name a bit</code></pre>
+check_directory_perms</code></pre>
 
-<p>のように変更します。これを保存してエディタを終了すると、Git はまずこれらのコミットの親までブランチを巻き戻してから <code>310154e</code> を適用し、その次に <code>f7f3f6d</code> を適用して停止します。これで、効率的にコミット順を変更して &#8220;added cat-file&#8221; のコミットは完全に取り除くことができました。</p>
+<p>それほど難しい処理ではありません。まず最初に <code>git rev-list</code> でコミットの一覧を取得し、それぞれに対してどのファイルが変更されるのかを調べ、ユーザーがそのファイルを変更する権限があることを確かめています。Ruby を知らない人にはわかりにくいところがあるとすれば <code>path.index(access_path) == 0</code> でしょうか。これは、パスが <code>access_path</code> で始まるときに真となります。つまり、<code>access_path</code> がパスの一部に含まれるのではなく、パスがそれで始まっているということを確認しています。</p>
 
-<h3 id='id146'>コミットのまとめ</h3>
+<p>これで、まずい形式のコミットメッセージや権利のないファイルの変更を含むコミットはプッシュできなくなりました。</p>
 
-<p>一連のコミット群をひとつのコミットにまとめて押し込んでしまうことも、対話的なリベースツールで行うことができます。リベースメッセージの中に、その手順が出力されています。</p>
+<h4 id='fastforward_'>Fast-Forward なプッシュへの限定</h4>
 
-<pre><code>#
-# Commands:
-#  p, pick = use commit
-#  e, edit = use commit, but stop for amending
-#  s, squash = use commit, but meld into previous commit
-#
-# If you remove a line here THAT COMMIT WILL BE LOST.
-# However, if you remove everything, the rebase will be aborted.
-#</code></pre>
+<p>最後は、fast-forward なプッシュに限るという仕組みです。Git バージョン 1.6 以降には <code>receive.denyDeletes</code> および <code>receive.denyNonFastForwards</code> という設定項目がありますが、これをフックで記述しておけば、古いバージョンの Git でも動作します。また、特定のユーザーにだけこの制約を加えたいなどといった変更にも対応できます。</p>
 
-<p>「pick」や「edit」のかわりに「squash」を指定すると、Git はその変更と直前の変更をひとつにまとめて新たなコミットメッセージを書き込めるようにします。つまり、これらの三つのコミットをひとつのコミットにまとめたい場合は、スクリプトをこのように変更します。</p>
+<p>これを調べるには、旧リビジョンからたどれるすべてのコミットについて、新リビジョンから到達できないものがないかどうかを探します。もしひとつもなければ、それは fast-forward なプッシュです。ひとつでも見つかれば、却下することになります。</p>
 
-<pre><code>pick f7f3f6d changed my name a bit
-squash 310154e updated README formatting and added blame
-squash a5f4a0d added cat-file</code></pre>
+<pre><code># enforces fast-forward only pushes 
+def check_fast_forward
+  missed_refs = `git rev-list #{$newrev}..#{$oldrev}`
+  missed_ref_count = missed_refs.split(&quot;\n&quot;).size
+  if missed_ref_count &gt; 0
+    puts &quot;[POLICY] Cannot push a non fast-forward reference&quot;
+    exit 1
+  end
+end
 
-<p>これを保存してエディタを終了すると、Git は三つの変更をすべて適用してからエディタに戻るので、そこでコミットメッセージを変更します。</p>
+check_fast_forward</code></pre>
 
-<pre><code># This is a combination of 3 commits.
-# The first commit&#39;s message is:
-changed my name a bit
+<p>これですべてがととのいました。これまでのコードを書き込んだファイルに対して <code>chmod u+x .git/hooks/update</code> を実行し、fast-forward ではない参照をプッシュしてみましょう。すると、こんなメッセージが表示されるでしょう。</p>
 
-# This is the 2nd commit message:
+<pre><code>$ git push -f origin master
+Counting objects: 5, done.
+Compressing objects: 100% (3/3), done.
+Writing objects: 100% (3/3), 323 bytes, done.
+Total 3 (delta 1), reused 0 (delta 0)
+Unpacking objects: 100% (3/3), done.
+Enforcing Policies... 
+(refs/heads/master) (8338c5) (c5b616)
+[POLICY] Cannot push a non-fast-forward reference
+error: hooks/update exited with error code 1
+error: hook declined to update refs/heads/master
+To git@gitserver:project.git
+ ! [remote rejected] master -&gt; master (hook declined)
+error: failed to push some refs to &#39;git@gitserver:project.git&#39;</code></pre>
 
-updated README formatting and added blame
+<p>この中には、いくつか興味深い点があります。まず、フックの実行が始まったときの次の表示に注目しましょう。</p>
 
-# This is the 3rd commit message:
+<pre><code>Enforcing Policies... 
+(refs/heads/master) (fb8c72) (c56860)</code></pre>
 
-added cat-file</code></pre>
+<p>これは、スクリプトの先頭で標準出力に表示した内容でした。ここで重要なのは「スクリプトから標準出力に送った内容は、すべてクライアントにも送られる」ということです。</p>
 
-<p>これを保存すると、さきほどの三つのコミットの内容をすべて含んだひとつのコミットができあがります。</p>
+<p>次に注目するのは、エラーメッセージです。</p>
 
-<h3 id='id147'>コミットの分割</h3>
+<pre><code>[POLICY] Cannot push a non fast-forward reference
+error: hooks/update exited with error code 1
+error: hook declined to update refs/heads/master</code></pre>
 
-<p>コミットの分割は、いったんコミットを取り消してから部分的なステージとコミットを繰り返して行います。たとえば、先ほどの三つのコミットのうち真ん中のものを分割することになったとしましょう。&#8221;updated README formatting and added blame&#8221; のコミットを、&#8221;updated README formatting&#8221; と &#8220;added blame&#8221; のふたつに分割します。そのためには、<code>rebase -i</code> スクリプトを実行してそのコミットの指示を「edit」に変更します。</p>
+<p>最初の行はスクリプトから出力したもので、その他の 2 行は Git が出力したものです。この 2 行では、スクリプトがゼロ以外の値で終了したためにプッシュが却下されたということを説明しています。最後に、次の部分に注目します。</p>
 
-<pre><code>pick f7f3f6d changed my name a bit
-edit 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file</code></pre>
+<pre><code>To git@gitserver:project.git
+ ! [remote rejected] master -&gt; master (hook declined)
+error: failed to push some refs to &#39;git@gitserver:project.git&#39;</code></pre>
 
-<p>そして、スクリプトからコマンドラインに戻ってきたらそのコミットをリセットし、リセットされた変更を複数のコミットに分割します。変更を保存してエディタを終了すると、Git はリストの最初のコミットの親まで処理を巻き戻します。そして最初のコミット (<code>f7f3f6d</code>) と二番目のコミット (<code>310154e</code>) を適用してからコンソールに戻ります。コミットをリセットするには <code>git reset HEAD^</code> を実行します。これはコミット自体を取り消し、変更されたファイルはステージしていない状態にします。ここで、必要なファイルをステージしてコミットしていきます。すべての処理が終われば、<code>git rebase --continue</code> を実行します。</p>
+<p>フックで却下したすべての参照について、remote rejected メッセージが表示されます。これを見れば、フック内での処理のせいで却下されたのだということがわかります。</p>
 
-<pre><code>$ git reset HEAD^
-$ git add README
-$ git commit -m &#39;updated README formatting&#39;
-$ git add lib/simplegit.rb
-$ git commit -m &#39;added blame&#39;
-$ git rebase --continue</code></pre>
+<p>さらに、もしコミットメッセージに適切な ref が含まれていなければ、それを示す次のようなエラーメッセージが表示されるでしょう。</p>
 
-<p>Git はスクリプトの最後のコミット (<code>a5f4a0d</code>) を適用し、歴史はこのようになります。</p>
+<pre><code>[POLICY] Your message is not formatted correctly</code></pre>
 
-<pre><code>$ git log -4 --pretty=format:&quot;%h %s&quot;
-1c002dd added cat-file
-9b29157 added blame
-35cfb2b updated README formatting
-f3cc40e changed my name a bit</code></pre>
+<p>また、変更権限のないファイルを変更してそれを含むコミットをプッシュしようとしたときも、同様にエラーが表示されます。たとえば、ドキュメント担当者が <code>lib</code> ディレクトリ内の何かを変更しようとした場合のメッセージは次のようになります。</p>
 
-<p>念のためにもう一度言いますが、この変更はリスト内のすべてのコミットの SHA を変更します。すでに共有リポジトリにプッシュしたコミットは、このリストに表示させないようにしましょう。</p>
+<pre><code>[POLICY] You do not have access to push to lib/test.rb</code></pre>
 
-<h3 id='_filterbranch'>最強のオプション: filter-branch</h3>
+<p>以上です。この <code>update</code> スクリプトが動いてさえいれば、もう二度とリポジトリが汚されることはありません。コミットメッセージは決まりどおりのきちんとしたものになるし、ユーザーに変なところをさわられる心配もなくなります。</p>
 
-<p>歴史を書き換える方法がもうひとつあります。これは、大量のコミットの書き換えを機械的に行いたい場合 (メールアドレスを一括変更したりすべてのコミットからあるファイルを削除したりなど) に使うものです。そのためのコマンドが <code>filter-branch</code> です。これは歴史を大規模にばさっと書き換えることができるものなので、プロジェクトを一般に公開した後や書き換え対象のコミットを元にしてだれかが作業を始めている場合はまず使うことはありません。しかし、これは非常に便利なものでもあります。一般的な使用例をいくつか説明するので、それをもとにこの機能を使いこなせる場面を考えてみましょう。</p>
+<h3 id='id523'>クライアントサイドフック</h3>
 
-<h4 id='id148'>全コミットからのファイルの削除</h4>
+<p>この方式の弱点は、プッシュが却下されたときにユーザーが泣き寝入りせざるを得なくなるということです。手間暇かけて仕上げた作業が最後の最後で却下されるというのは、非常にストレスがたまるし不可解です。プッシュするためには歴史を修正しなければならないのですが、気弱な人にとってそれはかなりつらいことです。</p>
 
-<p>これは、相当よくあることでしょう。誰かが不注意で <code>git add .</code> をした結果、巨大なバイナリファイルが間違えてコミットされてしまったとしましょう。これを何とか削除してしまいたいものです。あるいは、間違ってパスワードを含むファイルをコミットしてしまったとしましょう。このプロジェクトをオープンソースにしたいと思ったときに困ります。<code>filter-branch</code> は、こんな場合に歴史全体を洗うために使うツールです。passwords.txt というファイルを歴史から完全に抹殺してしまうには、<code>filter-branch</code> の <code>--tree-filter</code> オプションを使います。</p>
+<p>このジレンマに対する答えとして、サーバーが却下するであろう作業をするときにそれをユーザーに伝えるためのクライアントサイドフックを用意します。そうすれば、何か問題があるときにそれをコミットする前に知ることができるので、取り返しのつかなくなる前に問題を修正することができます。プロジェクトをクローンしてもフックはコピーされないので、別の何らかの方法で各ユーザーにスクリプトを配布しなければなりません。各ユーザーはそれを <code>.git/hooks</code> にコピーし、実行可能にします。フックスクリプト自体をプロジェクトに含めたり別のプロジェクトにしたりすることはできますが、各自の環境でそれをフックとして自動的に設定することはできないのです。</p>
 
-<pre><code>$ git filter-branch --tree-filter &#39;rm -f passwords.txt&#39; HEAD
-Rewrite 6b9b3cf04e7c5686a9cb838c3f36a8cb6a0fc2bd (21/21)
-Ref &#39;refs/heads/master&#39; was rewritten</code></pre>
+<p>はじめに、コミットを書き込む直前にコミットメッセージをチェックしなければなりません。そして、サーバーに却下されないようにコミットメッセージの書式を調べるのです。そのためには <code>commit-msg</code> フックを使います。最初の引数で渡されたファイルからコミットメッセージを読み込んでパターンと比較し、もしマッチしなければ Git の処理を中断させます。</p>
 
-<p><code>--tree-filter</code> オプションは、プロジェクトの各チェックアウトに対して指定したコマンドを実行し、結果を再コミットします。この場合は、すべてのスナップショットから passwords.txt というファイルを削除します。間違えてコミットしてしまったエディタのバックアップファイルを削除するには、<code>git filter-branch --tree-filter &#39;rm -f *~&#39; HEAD</code> のように実行します。</p>
+<pre><code>#!/usr/bin/env ruby
+message_file = ARGV[0]
+message = File.read(message_file)
 
-<p>Git がツリーを書き換えてコミットし、ブランチのポインタを末尾に移動させる様子がごらんいただけるでしょう。この作業は、まずはテスト用ブランチで実行してから結果をよく吟味し、それから master ブランチに適用することをおすすめします。<code>filter-branch</code> をすべてのブランチで実行するには、このコマンドに <code>--all</code> を渡します。</p>
+$regex = /\[ref: (\d+)\]/
 
-<h4 id='id149'>サブディレクトリを新たなルートへ</h4>
+if !$regex.match(message)
+  puts &quot;[POLICY] Your message is not formatted correctly&quot;
+  exit 1
+end</code></pre>
 
-<p>別のソース管理システムからのインポートを終えた後、無意味なサブディレクトリ (trunk、tags など) が残っている状態を想定しましょう。すべてのコミットの <code>trunk</code> ディレクトリを新たなプロジェクトルートとしたい場合にも、<code>filter-branch</code> が助けになります。</p>
+<p>このスクリプトを適切な場所 (<code>.git/hooks/commit-msg</code>) に置いて実行可能にしておくと、不適切なメッセージを書いてコミットしようとしたときに次のような結果となります。</p>
 
-<pre><code>$ git filter-branch --subdirectory-filter trunk HEAD
-Rewrite 856f0bf61e41a27326cdae8f09fe708d679f596f (12/12)
-Ref &#39;refs/heads/master&#39; was rewritten</code></pre>
+<pre><code>$ git commit -am &#39;test&#39;
+[POLICY] Your message is not formatted correctly</code></pre>
 
-<p>これで、新たなプロジェクトルートはそれまで <code>trunk</code> ディレクトリだった場所になります。Git は、このサブディレクトリに影響を及ぼさないコミットを自動的に削除します。</p>
+<p>このとき、実際にはコミットされません。もしメッセージが適切な書式になっていれば、Git はコミットを許可します。</p>
 
-<h4 id='id150'>メールアドレスの一括変更</h4>
+<pre><code>$ git commit -am &#39;test [ref: 132]&#39;
+[master e05c914] test [ref: 132]
+ 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
 
-<p>もうひとつよくある例としては、「作業を始める前に <code>git config</code> で名前とメールアドレスを設定することを忘れていた」とか「業務で開発したプロジェクトをオープンソースにするにあたって、職場のメールアドレスをすべて個人アドレスに変更したい」などがあります。どちらの場合についても、複数のコミットのメールアドレスを一括で変更することになりますが、これも <code>filter-branch</code> ですることができます。注意して、あなたのメールアドレスのみを変更しなければなりません。そこで、<code>--commit-filter</code> を使います。</p>
+<p>次に、ACL で決められた範囲以外のファイルを変更していないことを確認しましょう。先ほど使った ACL ファイルのコピーがプロジェクトの <code>.git</code> ディレクトリにあれば、次のような <code>pre-commit</code> スクリプトでチェックすることができます。</p>
 
-<pre><code>$ git filter-branch --commit-filter &#39;
-        if [ &quot;$GIT_AUTHOR_EMAIL&quot; = &quot;schacon@localhost&quot; ];
-        then
-                GIT_AUTHOR_NAME=&quot;Scott Chacon&quot;;
-                GIT_AUTHOR_EMAIL=&quot;schacon@example.com&quot;;
-                git commit-tree &quot;$@&quot;;
-        else
-                git commit-tree &quot;$@&quot;;
-        fi&#39; HEAD</code></pre>
+<pre><code>#!/usr/bin/env ruby
 
-<p>これで、すべてのコミットであなたのアドレスを新しいものに書き換えます。コミットにはその親の SHA-1 値が含まれるので、このコマンドは (マッチするメールアドレスが存在するものだけではなく) すべてのコミットを書き換えます。</p>
+$user    = ENV[&#39;USER&#39;]
+
+# [ insert acl_access_data method from above ]
+
+# only allows certain users to modify certain subdirectories in a project
+def check_directory_perms
+  access = get_acl_access_data(&#39;.git/acl&#39;)
+
+  files_modified = `git diff-index --cached --name-only HEAD`.split(&quot;\n&quot;)
+  files_modified.each do |path|
+    next if path.size == 0
+    has_file_access = false
+    access[$user].each do |access_path|
+    if !access_path || (path.index(access_path) == 0)
+      has_file_access = true
+    end
+    if !has_file_access
+      puts &quot;[POLICY] You do not have access to push to #{path}&quot;
+      exit 1
+    end
+  end
+end
+
+check_directory_perms</code></pre>
+
+<p>大まかにはサーバーサイドのスクリプトと同じですが、重要な違いがふたつあります。まず、ACL ファイルの場所が違います。このスクリプトは作業ディレクトリから実行するものであり、Git ディレクトリから実行するものではないからです。ACL ファイルの場所を、先ほどの</p>
+
+<pre><code>access = get_acl_access_data(&#39;acl&#39;)</code></pre>
+
+<p>から次のように変更しなければなりません。</p>
+
+<pre><code>access = get_acl_access_data(&#39;.git/acl&#39;)</code></pre>
+
+<p>もうひとつの違いは、変更されたファイルの一覧を取得する方法です。サーバーサイドのメソッドではコミットログを調べていました。しかしこの時点ではまだコミットが記録されていないので、ファイルの一覧はステージング・エリアから取得しなければなりません。つまり、先ほどの</p>
+
+<pre><code>files_modified = `git log -1 --name-only --pretty=format:&#39;&#39; #{ref}`</code></pre>
+
+<p>は次のようになります。</p>
+
+<pre><code>files_modified = `git diff-index --cached --name-only HEAD`</code></pre>
+
+<p>しかし、違うのはこの二点だけ。それ以外はまったく同じように動作します。ただ、このスクリプトは、ローカルで実行しているユーザーとリモートマシンにプッシュするときのユーザーが同じであることを前提にしています。もし異なる場合は、変数 <code>$user</code> を手動で設定しなければなりません。</p>
+
+<p>最後に残ったのは fast-forward でないプッシュを止めることですが、これは多少特殊です。fast-forward でない参照を取得するには、すでにプッシュした過去のコミットにリベースするか、別のローカルブランチにリモートブランチと同じところまでプッシュしなければなりません。</p>
+
+<p>サーバーサイドでは fast-forward ではないプッシュをできないようにしているので、それ以外にあり得るのは、すでにプッシュ済みのコミットをリベースしようとするときくらいです。</p>
+
+<p>それをチェックする pre-rebase スクリプトの例を示します。これは書き換えようとしているコミットの一覧を取得し、それがリモート参照の中に存在するかどうかを調べます。リモート参照から到達可能なコミットがひとつでもあれば、リベースを中断します。</p>
+
+<pre><code>#!/usr/bin/env ruby
+
+base_branch = ARGV[0]
+if ARGV[1]
+  topic_branch = ARGV[1]
+else
+  topic_branch = &quot;HEAD&quot;
+end
+
+target_shas = `git rev-list #{base_branch}..#{topic_branch}`.split(&quot;\n&quot;)
+remote_refs = `git branch -r`.split(&quot;\n&quot;).map { |r| r.strip }
+
+target_shas.each do |sha|
+  remote_refs.each do |remote_ref|
+    shas_pushed = `git rev-list ^#{sha}^@ refs/remotes/#{remote_ref}`
+    if shas_pushed.split(“\n”).include?(sha)
+      puts &quot;[POLICY] Commit #{sha} has already been pushed to #{remote_ref}&quot;
+      exit 1
+    end
+  end
+end</code></pre>
+
+<p>このスクリプトでは、第 6 章の「リビジョンの選択」ではカバーしていない構文を使っています。既にプッシュ済みのコミットの一覧を得るために、次のコマンドを実行します。</p>
+
+<pre><code>git rev-list ^#{sha}^@ refs/remotes/#{remote_ref}</code></pre>
+
+<p><code>SHA^@</code> 構文は、そのコミットのすべての親を解決します。リモートの最後のコミットから到達可能で、これからプッシュしようとするコミットの親のいずれかからアクセスできないコミットを探します。</p>
+
+<p>この方式の弱点は非常に時間がかかることで、多くの場合このチェックは不要です。<code>-f</code> つきで強制的にプッシュしようとしない限り、サーバーが警告を出してプッシュできないからです。しかし練習用の課題としてはおもしろいもので、あとでリベースを取り消してやりなおすはめになることを理屈上は防げるようになります。</p>
 
 <div id='nav'>
 <a href='ch6-3.html'>prev</a> | <a href='ch6-5.html'>next</a>

@@ -1,72 +1,110 @@
 ---
 layout: translation
-title: Pro Git 1.3 Aan de slag De basis van Git
+title: Pro Git 1.3 Git tools Stashen
 ---
-<h2 id='de_basis_van_git'>De basis van Git</h2>
+<h2 id='stashen'>Stashen</h2>
 
-<p>Dus, wat is Git in een notendop? Dit is een belangrijk deelhoofdstuk, omdat het waarschijnlijk een stuk makkelijker wordt om Git effectief te gebruiken als je goed begrijpt wat Git is en hoe het werkt. Probeer te vergeten wat je al weet over andere VCSen zoals Subversion en Perforce als je Git aan het leren bent; zo kan je verwarring door de subtiele verschillen voorkomen. Git gaat op een hele andere manier met informatie om dan die andere systemen, ook al lijken de verschillende commando’s behoorlijk op elkaar. Als je die verschillen begrijpt, kan je voorkomen dat je verward raakt als je Git gebruikt.</p>
+<p>Vaak, als je aan een deel van je project hebt zitten werken, zijn de dingen in een rommelige staat en wil je van branch veranderen om aan wat anders te werken. Het probleem is dat je geen halfklaar werk wilt committen, alleen maar om later verder te kunnen gaan op dit punt. Het antwoord op dit probleem is het <code>git stash</code> commando.</p>
 
-<h3 id='momentopnames_in_plaats_van_verschillen'>Momentopnames in plaats van verschillen</h3>
+<p>Stashen pakt de vervuilde status van je werkmap – dat wil zeggen, je gewijzigde gevolgde bestanden en gestagede wijzigingen – en bewaard het op een stapel onafgemaakte wijzigingen, die je op ieder tijdstip opnieuw kunt toepassen.</p>
 
-<p>Een groot verschil tussen Git en elke andere VCS (inclusief Subversion en consoorten) is hoe Git denkt over zijn data. Conceptueel bewaren de meeste andere systemen informatie als een lijst van veranderingen per bestand. Deze systemen (CVS, Subversion, Perforce, Bazaar, enzovoort) zien de informatie die ze bewaren als een aantal bestanden en de veranderingen die aan die bestanden zijn aangebracht over de tijd, zoals geïllustreerd in Figuur 1-4.</p>
+<h3 id='je_werk_stashen'>Je werk stashen</h3>
 
-<p><center><img src="/figures/ch1/18333fig0104-tn.png"></center><br/> Figuur 1-4. Andere systemen bewaren data meestal als veranderingen aan een basisversie van elk bestand.</p>
+<p>Ter demonstratie, ga je in je project en begint met werken aan een paar bestanden en misschien stage je een van de wijzigingen. Als je <code>git status</code> uitvoert, kun je je vervuilde status zien:</p>
 
-<p>Git ziet en bewaart zijn data heel anders. De kijk van Git op zijn data kan worden uitgelegd als een reeks momentopnames van een miniatuurbestandsysteem. Elke keer dat je ‘commit’ - de status van van je project in Git opslaat - neemt het een soort van foto van hoe al je bestanden er op dat moment uitzien en slaat een verwijzing naar die momentopname op. Voor efficiëntie slaat Git ongewijzigde bestanden niet elke keer opnieuw op — alleen een verwijzing naar het eerdere identieke bestand dat het eerder al opgeslagen had. In Figuur 1-5 kan je zie hoe Git ongeveer over zijn data denkt.</p>
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#      modified:   index.html
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   lib/simplegit.rb
+#</code></pre>
 
-<p><center><img src="/figures/ch1/18333fig0105-tn.png"></center><br/> Figuur 1-5. Git bewaart data als momentopnames van het project.</p>
+<p>Nu wil je van branch veranderen, maar je wilt hetgeen je aan hebt zitten werken nog niet committen; dus ga je de wijzigingen stashen. Om een nieuwe stash op je stapel te duwen, voer dan <code>git stash</code> uit:</p>
 
-<p>Dat is een belangrijk verschil tussen Git en bijna alle overige VCSen. Hierdoor vindt Git bijna elk onderdeel van versiebeheer opnieuw uit, terwijl de meeste andere systemen het allemaal gewoon overnemen van de eerdere generaties. Hierdoor is Git meer een soort miniatuurbestandssysteem met een paar ongelooflijk krachtige gereedschappen, in plaats van niets meer dan een VCS. We zullen een paar van de voordelen die je krijgt als je op die manier over data denkt gaan onderzoeken, als we ‘branching’ (gesplitste ontwikkeling) toelichten in Hoofdstuk 3.</p>
+<pre><code>$ git stash
+Saved working directory and index state \
+  &quot;WIP on master: 049d078 added the index file&quot;
+HEAD is now at 049d078 added the index file
+(To restore them type &quot;git stash apply&quot;)</code></pre>
 
-<h3 id='bijna_alles_is_lokaal'>Bijna alles is lokaal</h3>
+<p>Je werkmap is schoon:</p>
 
-<p>De meeste handelingen in Git werken alleen op lokale bestanden en bronnen. Normaal gesproken is geen informatie nodig van een andere computer in je netwerk. Als je gewoon bent aan een CVCS, waar de meeste handelingen vertraagd worden door het netwerk, lijkt Git een geschenk van de snelheidsgoden. Omdat je de hele geschiedenis van het project op je lokale harde schijf hebt staan, lijken de meeste acties geen tijd in beslag te nemen.</p>
+<pre><code>$ git status
+# On branch master
+nothing to commit (working directory clean)</code></pre>
 
-<p>Een voorbeeld: Git hoeft niet aan een of andere server de geschiedenis van je project te vragen als je de die wilt doorbladeren – het leest simpelweg jouw lokale database. Dat betekent dat je de geschiedenis bijna direct te zien krijgt. Als je de veranderingen wilt zien tussen de huidige versie van een bestand en de versie van een maand geleden kan Git het bestand van een maand geleden opzoeken, en de lokale verschillen berekenen, in plaats van aan een niet-lokale server te moeten vragen om het te doen, of de oudere versie van het bestand ophalen om het lokaal te doen.</p>
+<p>Op dit punt kun je makkelijk van branch wisselen en ergens anders werken; je wijzigingen worden opgeslagen op je stapel. Om te zien welke stashes je opgeslagen hebt, kun je <code>git stash list</code> gebruiken:</p>
 
-<p>Dit betekent dat er maar heel weinig is dat je niet kunt doen als je offline bent of zonder VPN zit. Als je in een vliegtuig of trein zit, en je wilt nog even een beetje werken, kun je vrolijk doorgaan met commits maken tot je een netwerkverbinding krijgt, zodat je je werk kunt uploaden. Als je naar huis gaat en je VPN client niet aan de praat kunt krijgen dan kun je nog steeds doorwerken. Bij veel andere systemen is dat of onmogelijk of zeer onaangenaam. Als je bijvoorbeeld Perforce gebruikt kun je niet zo veel doen als je niet verbonden bent met de server. Met Subversion en CVS kun je bestanden bewerken maar je kunt geen commits maken voor je database (omdat die offline is). Dat lijkt misschien niet zo belangrijk maar je zult nog versteld staan wat een verschil het kan maken.</p>
+<pre><code>$ git stash list
+stash@{0}: WIP on master: 049d078 added the index file
+stash@{1}: WIP on master: c264051... Revert &quot;added file_size&quot;
+stash@{2}: WIP on master: 21d80a5... added number to log</code></pre>
 
-<h3 id='git_is_integer'>Git is integer</h3>
+<p>In dit geval waren er twee stashes al eerder opgeslagen, dus heb je toegang tot drie verschillende gestashete werken. Je kunt degene die je zojuist gestashed hebt opnieuw toepassen, door het commando uit te voeren dat in de help output van het originele stash commando stond: <code>git stash apply</code>. Als je een van de oudere stashes wilt toepassen, dan kun je die specificeren door hem te noemen, zoals hier: <code>git apply stash stash@{2}</code>. Als je geen stash specificeert, gaat Git uit van de meest recente stash en probeert die toe te passen:</p>
 
-<p>Git maakt een controlegetal (‘checksum’) van alles voordat het wordt opgeslagen en er wordt later naar die data verwezen met dit controlegetal. Dat betekent dat het onmogelijk is om de inhoud van een bestand of map te veranderen zonder dat Git er vanaf weet. Deze functionaliteit is ingebouwd in het diepste deel van Git en staat centraal in zijn filosofie. Je kunt geen informatie kwijtraken als het wordt verstuurd en bestanden kunnen niet corrupt raken zonder dat Git het weet.</p>
+<pre><code>$ git stash apply
+# On branch master
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   index.html
+#      modified:   lib/simplegit.rb
+#</code></pre>
 
-<p>Het mechanisme dat Git gebruikt voor deze controlegetallen heet een SHA-1-hash. Dat is een tekenreeks van 40 karakters lang, bestaande uit hexadecimale tekens (0–9 en a–f) en wordt berekend uit de inhoud van een bestand of mapstructuur in Git. Een SHA-1-hash ziet er ongeveer zo uit:</p>
+<p>Je kunt zien dat Git opnieuw de bestanden wijzigt, die je uncommitte toen je de stash opsloeg. In dit geval had je een schone werkmap toen je de stash probeerde toe te passen, en probeerde je hem op dezelfde branch toe te passen als waar je hem van opgeslagen hebt; maar het hebben van een schone werkmap en toepassen op dezelfde branch zijn niet noodzakelijk om een stash succesvol toe te kunnen passen. Je kunt een stash op één branch opslaan, later naar een andere branch wisselen, en daar opnieuw de wijzigingen toe proberen te passen. Je kunt ook gewijzigde en uncommitted bestanden in je werkmap hebben wanneer je een stash probeert toe te passen – Git geeft je merge conflicten als iets niet meer netjes toe te passen is.</p>
 
-<pre><code>24b9da6552252987aa493b52f8696cd6d3b00373</code></pre>
+<p>De wijzigingen aan je bestanden zijn opnieuw toegepast, maar het bestand dat je eerder gestaged had, is niet opnieuw gestaged. Om dat te doen moet je het <code>git stash apply</code> commando met de <code>--index</code> optie uitvoeren om het commando te vertellen de gestagede wijzigingen opnieuw toe te passen. Als je dat had uitgevoerd, dan zou je weer op je originele vertrekpunt zijn uitgekomen:</p>
 
-<p>Je zult deze hashtekenreeksen overal tegenkomen omdat Git er zoveel gebruik van maakt. Sterker nog, Git bewaart data niet onder hun bestandsnaam maar in de database van Git onder de hash van de inhoud.</p>
+<pre><code>$ git stash apply --index
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#      modified:   index.html
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   lib/simplegit.rb
+#</code></pre>
 
-<h3 id='git_voegt_normaal_gesproken_alleen_data_toe'>Git voegt normaal gesproken alleen data toe</h3>
+<p>De apply optie probeert alleen het gestashete werk toe te passen – je blijft het op je stapel behouden. Om het te verwijderen, kun je <code>git stash drop</code> uitvoeren, met de naam van de stash die je wilt verwijderen:</p>
 
-<p>Wanneer je iets doet in Git is de kans groot dat het alleen maar data aan de database van Git toevoegt. Het is erg moeilijk om het systeem iets te laten doen dat je niet ongedaan kan maken of de data uit te laten wissen op wat voor manier dan ook. Zoals met elke VCS kun je veranderingen verliezen of verhaspelen waar je nog geen momentopname van hebt gemaakt; maar als je dat eenmaal hebt gedaan, is het erg moeilijk om die data te verliezen, zeker als je je lokale database regelmatig uploadt (‘push’) naar een andere repository.</p>
+<pre><code>$ git stash list
+stash@{0}: WIP on master: 049d078 added the index file
+stash@{1}: WIP on master: c264051... Revert &quot;added file_size&quot;
+stash@{2}: WIP on master: 21d80a5... added number to log
+$ git stash drop stash@{0}
+Dropped stash@{0} (364e91f3f268f0900bc3ee613f9f733e82aaed43)</code></pre>
 
-<p>Je zult nog veel plezier van Git hebben omdat je weet dat je kunt experimenteren zonder het gevaar te lopen jezelf behoorlijk in de nesten te werken. Zie Hoofdstuk 9 voor een iets diepgaandere uitleg over hoe Git zijn data bewaart en hoe je de data die verloren lijkt kunt terughalen.</p>
+<p>Je kunt ook <code>git stash pop</code> uitvoeren om de stash toe te passen en hem onmiddellijk van je stapel te verwijderen.</p>
 
-<h3 id='de_drie_toestanden'>De drie toestanden</h3>
+<h3 id='een_branch_van_een_stash_maken'>Een branch van een stash maken</h3>
 
-<p>Let nu goed op. Dit is het belangrijkste dat je over Git moet weten als je wilt dat de rest van het leerproces goed verloopt. Git heeft drie hoofdtoestanden waarin je bestanden zich kunnen bevinden: gecommit (‘commited’), aangepast (‘modified’) en voorbereid voor een commit (‘staged’). Gecommit betekent dat alle data al veilig opgeslagen is in je lokale database. Aangepast betekent dat je je bestand hebt veranderd maar dat je nog geen nieuwe momentopname in je database hebt. Voorbereid betekent dat je al hebt aangegeven dat je de huidige versie van het aangepaste bestand in je volgende momentopname toevoegt.</p>
+<p>Als je wat werk stashet, het een poosje laat rusten, en dan doorwerkt op de branch waarvan je het werk gestashet hebt, dan kun je een probleem krijgen met het werk weer toe te passen. Als het toepassen een bestand probeert te wijzigen dat je sindsdien gewijzigd hebt, krijg je een merge conflict en zul je het moeten oplossen. Als je een eenvoudiger manier wilt hebben om je gestashete wijzigingen opnieuw te testen, kun je <code>git stash branch</code> uitvoeren, wat een nieuwe branch voor je zal aanmaken, de commit waar je op zat toen je het werk stashte weer uitchecken, je werk opnieuw toepassen en dan de stash droppen als het succesvol is toegepast:</p>
 
-<p>Dit brengt ons tot de drie hoofdonderdelen van een Gitproject: de Gitmap, de werkmap, en de wachtrij voor een commit (‘staging area’)</p>
+<pre><code>$ git stash branch testchanges
+Switched to a new branch &quot;testchanges&quot;
+# On branch testchanges
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#      modified:   index.html
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   lib/simplegit.rb
+#
+Dropped refs/stash@{0} (f0dfc4d5dc332d1cee34a634182e168c4efc3359)</code></pre>
 
-<p><center><img src="/figures/ch1/18333fig0106-tn.png"></center><br/> Figuur 1-6. Werkmap, wachtrij en Gitmap</p>
-
-<p>De Gitmap is waar Git de metadata en objectdatabase van je project opslaat. Dit is het belangrijkste deel van Git. Deze map wordt gekopiëerd wanneer je een repository kloont vanaf een andere computer.</p>
-
-<p>De werkmap is een kopie van een bepaalde versie van het project (een ‘checkout’). Deze bestanden worden uit de gecomprimeerde database in de Gitmap gehaald en op de harde schijf geplaatst waar jij ze kunt gebruiken of bewerken.</p>
-
-<p>De wachtrij is een simpel bestand, dat zich in het algemeen in je Gitmap bevindt, waar informatie opgeslagen wordt over wat in de volgende commit meegaat. Het wordt soms de index genoemd, maar tegenwoordig wordt het de wachtrij (staging area) genoemd.</p>
-
-<p>De algemene manier van werken met Git gaat ongeveer zo:</p>
-
-<ol>
-<li>Je bewerkt bestanden in je werkmap.</li>
-
-<li>Je bereidt de bestanden voor, waardoor momentopnames worden toegevoegd aan de wachtrij.</li>
-
-<li>Je maakt een commit. Een commit neemt alle momentopnames van de wachtrij en die permanent bewaard in je Gitmap.</li>
-</ol>
-
-<p>Als een bepaalde versie van een bestand in de Gitmap staat, wordt het beschouwd als gecommit. Als het is aangepast, maar wel aan de wachtrij is toegevoegd, is het voorbereid. En als het veranderd is sinds het gekopiëerd werd, maar niet voorbereid is, is het aangepast. In Hoofdstuk 2 leer je meer over deze toestanden en hoe je er voordeel van kunt hebben, maar ook hoe je de wachtrij compleet over kunt slaan.</p>
+<p>Dit is een fijne korte route om gestashed werk eenvoudig terug te halen en aan te werken in een nieuwe branch.</p>
 
 <div id='nav'>
 <a href='ch1-2.html'>prev</a> | <a href='ch1-4.html'>next</a>

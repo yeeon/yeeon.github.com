@@ -1,160 +1,262 @@
 ---
 layout: translation
-title: Pro Git 6.2 Git のさまざまなツール 対話的なステージング
+title: Pro Git 6.2 Git のカスタマイズ Git の属性
 ---
-<h2 id='id135'>対話的なステージング</h2>
+<h2 id='git_'>Git の属性</h2>
 
-<p>Git には、コマンドラインでの作業をしやすくするためのスクリプトがいくつか付属しています。ここでは、対話コマンドをいくつか紹介しましょう。これらを使うと、コミットの内容に細工をして特定のコミットだけとかファイルの中の一部だけとかを含めるようにすることが簡単にできるようになります。大量のファイルを変更した後に、それをひとつの馬鹿でかいコミットにしてしまうのではなくテーマごとの複数のコミットに分けて処理したい場合などに非常に便利です。このようにして各コミットを論理的に独立した状態にしておけば、同僚によるレビューも容易になります。<code>git add</code> に <code>-i</code> あるいは <code>--interactive</code> というオプションをつけて実行すると、Git は対話シェルモードに移行し、このように表示されます。</p>
+<p>設定項目の中には、パスにも指定できるものがあります。Git はその設定を、指定したパスのサブディレクトリやファイルにのみ適用するのです。これらのパス固有の設定は Git の属性と呼ばれ、あるディレクトリ (通常はプロジェクトのルートディレクトリ) の直下の <code>.gitattributes</code> か、あるいはそのファイルをプロジェクトとともにコミットしたくない場合は <code>.git/info/attributes</code> に設定します。</p>
 
-<pre><code>$ git add -i
-           staged     unstaged path
-  1:    unchanged        +0/-1 TODO
-  2:    unchanged        +1/-1 index.html
-  3:    unchanged        +5/-1 lib/simplegit.rb
+<p>属性を使うと、ファイルやディレクトリ単位で個別のマージ戦略を指定したりテキストファイル以外での diff の取得方法を指示したり、あるいはチェックインやチェックアウトの前に Git にフィルタリングさせたりすることができます。このセクションでは、Git プロジェクトでパスに設定できる属性のいくつかについて学び、実際にその機能を使う例を見ていきます。</p>
 
-*** Commands ***
-  1: status     2: update      3: revert     4: add untracked
-  5: patch      6: diff        7: quit       8: help
-What now&gt; </code></pre>
+<h3 id='id508'>バイナリファイル</h3>
 
-<p>このコマンドは、ステージングエリアに関する情報を違った観点で表示します。<code>git status</code> で得られる情報と基本的には同じですが、より簡潔で有益なものとなっています。ステージした変更が左側、そしてステージしていない変更が右側に表示されます。</p>
+<p>Git の属性を使ってできるちょっとした技として、どのファイルがバイナリファイルなのかを (その他の方法で判別できない場合のために) 指定して Git に対してバイナリファイルの扱い方を指示するというものがあります。たとえば、機械で生成したテキストファイルの中には diff が取得できないものがありますし、バイナリファイルであっても diff が取得できるものもあります。それを Git に指示する方法を紹介します。</p>
 
-<p>Commands セクションでは、さまざまなことができるようになっています。ファイルをステージしたりステージングエリアから戻したり、ファイルの一部だけをステージしたりまだ追跡されていないファイルを追加したり、あるいは何がステージされたのかを diff で見たりといったことが可能です。</p>
+<h4 id='id509'>バイナリファイルの特定</h4>
 
-<h3 id='id136'>ファイルのステージとその取り消し</h3>
+<p>テキストファイルのように見えるファイルであっても、何らかの目的のために意図的にバイナリデータとして扱いたいこともあります。たとえば、Mac の Xcode プロジェクトの中には <code>.pbxproj</code> で終わる名前のファイルがあります。これは JSON (プレーンテキスト形式の javascript のデータフォーマット) のデータセットで、IDE がビルド設定などをディスクに書き出したものです。すべて ASCII で構成されるので、理論上はこれはテキストファイルです。しかしこのファイルをテキストファイルとして扱いたくはありません。実際のところ、このファイルは軽量なデータベースとして使われているからです。他の人が変更した内容をマージすることはできませんし、diff をとってもあまり意味がありません。このファイルは、基本的に機械が処理するものなのです。要するに、バイナリファイルと同じように扱いたいということです。</p>
 
-<p><code>What now&gt;</code> プロンプトで <code>2</code> または <code>u</code> と入力すると、どのファイルをステージするかを聞いてきます。</p>
+<p>すべての <code>pbxproj</code> ファイルをバイナリデータとして扱うよう Git に指定するには、次の行を <code>.gitattributes</code> ファイルに追加します。</p>
 
-<pre><code>What now&gt; 2
-           staged     unstaged path
-  1:    unchanged        +0/-1 TODO
-  2:    unchanged        +1/-1 index.html
-  3:    unchanged        +5/-1 lib/simplegit.rb
-Update&gt;&gt;</code></pre>
+<pre><code>*.pbxproj -crlf -diff</code></pre>
 
-<p>TODO と index.html をステージするには、その番号を入力します。</p>
+<p>これで、Git が CRLF 問題の対応をすることもなくなりますし、git show や git diff を実行したときにもこのファイルの diff を調べることはなくなります。Git 1.6 系では、次のようなマクロを使うこともできます。これは <code>-crlf -diff</code> と同じ意味です。</p>
 
-<pre><code>Update&gt;&gt; 1,2
-           staged     unstaged path
-* 1:    unchanged        +0/-1 TODO
-* 2:    unchanged        +1/-1 index.html
-  3:    unchanged        +5/-1 lib/simplegit.rb
-Update&gt;&gt;</code></pre>
+<pre><code>*.pbxproj binary</code></pre>
 
-<p>ファイル名の横に <code>*</code> がついていれば、そのファイルがステージ対象として選択されたことを意味します。<code>Update&gt;&gt;</code> プロンプトで何も入力せずに Enter を押すと、選択されたすべてのファイルを Git がステージします。</p>
+<h4 id='id510'>バイナリファイルの差分</h4>
 
-<pre><code>Update&gt;&gt; 
-updated 2 paths
+<p>Git 1.6系では、バイナリファイルの差分を効果的に扱うためにGitの属性機能を使うことができます。通常のdiff機能を使って比較を行うことができるように、バイナリデータをテキストデータに変換する方法をGitに教えればいいのです。</p>
 
-*** Commands ***
-  1: status     2: update      3: revert     4: add untracked
-  5: patch      6: diff        7: quit       8: help
-What now&gt; 1
-           staged     unstaged path
-  1:        +0/-1      nothing TODO
-  2:        +1/-1      nothing index.html
-  3:    unchanged        +5/-1 lib/simplegit.rb</code></pre>
+<h5 id='ms_word_'>MS Word ファイル</h5>
 
-<p>TODO と index.html がステージされ、simplegit.rb はまだステージされていないままです。ここで仮に TODO ファイルのステージを取り消したくなったとしたら、<code>3</code> あるいは <code>r</code> (revert の r) を選択します。</p>
+<p>これは素晴らしい機能ですがほとんど知られていないので、少し例をあげてみたいと思います。あなたはまず最初に人類にとっても最も厄介な問題のひとつを解決するためにこのテクニックを使いたいと思うでしょう。そう、Wordで作成した文書のバージョン管理です。奇妙なことに、Wordは最悪のエディタだと全ての人が知ってるいるにも係わらず、全ての人がWordを使っています。Word文書をバージョン管理したいと思ったなら、Gitのリポジトリにそれらを追加して、まとめてcommitすればいいのです。しかし、それでいいのでしょうか？ あなたが&#8217;git diff&#8217;をいつも通りに実行すると、次のように表示されるだけです。</p>
 
-<pre><code>*** Commands ***
-  1: status     2: update      3: revert     4: add untracked
-  5: patch      6: diff        7: quit       8: help
-What now&gt; 3
-           staged     unstaged path
-  1:        +0/-1      nothing TODO
-  2:        +1/-1      nothing index.html
-  3:    unchanged        +5/-1 lib/simplegit.rb
-Revert&gt;&gt; 1
-           staged     unstaged path
-* 1:        +0/-1      nothing TODO
-  2:        +1/-1      nothing index.html
-  3:    unchanged        +5/-1 lib/simplegit.rb
-Revert&gt;&gt; [enter]
-reverted one path</code></pre>
+<pre><code>$ git diff 
+diff --git a/chapter1.doc b/chapter1.doc
+index 88839c4..4afcb7c 100644
+Binary files a/chapter1.doc and b/chapter1.doc differ</code></pre>
 
-<p>もう一度 Git のステータスを見ると、TODO ファイルのステージが取り消されていることがわかります。</p>
+<p>これでは2つのバージョンをcheckoutしてそれらを自分で見比べてみない限り、比較することは出来ませんよね？ Gitの属性を使えば、うまく解決できます。<code>.gitattributes</code>に次の行を追加して下さい。</p>
 
-<pre><code>*** Commands ***
-  1: status     2: update      3: revert     4: add untracked
-  5: patch      6: diff        7: quit       8: help
-What now&gt; 1
-           staged     unstaged path
-  1:    unchanged        +0/-1 TODO
-  2:        +1/-1      nothing index.html
-  3:    unchanged        +5/-1 lib/simplegit.rb</code></pre>
+<pre><code>*.doc diff=word</code></pre>
 
-<p>ステージした変更の diff を見るには、<code>6</code> あるいは <code>d</code> (diff の d) を使用します。このコマンドは、ステージしたファイルの一覧を表示します。その中から、ステージされた diff を見たいファイルを選択します。これは、コマンドラインで <code>git diff --cached</code> を使用するのと同じようなことです。</p>
+<p>これは、指定したパターン(.doc)にマッチした全てのファイルに対して、差分を表示する時には&#8221;word&#8221;というフィルタを使うべきであるとGitに教えているのです。&#8221;word&#8221;フィルタとは何でしょうか？ それはあなたが用意しなければなりません。Word文書をテキストファイルに変換するプログラムとして <code>strings</code> を使うように次のようにGitを設定してみましょう。</p>
 
-<pre><code>*** Commands ***
-  1: status     2: update      3: revert     4: add untracked
-  5: patch      6: diff        7: quit       8: help
-What now&gt; 6
-           staged     unstaged path
-  1:        +1/-1      nothing index.html
-Review diff&gt;&gt; 1
-diff --git a/index.html b/index.html
-index 4d07108..4335f49 100644
---- a/index.html
-+++ b/index.html
-@@ -16,7 +16,7 @@ Date Finder
+<pre><code>$ git config diff.word.textconv strings</code></pre>
 
- &lt;p id=&quot;out&quot;&gt;...&lt;/p&gt;
+<p>このコマンドは、<code>.git/config</code> に次のようなセクションを追加します。</p>
 
--&lt;div id=&quot;footer&quot;&gt;contact : support@github.com&lt;/div&gt;
-+&lt;div id=&quot;footer&quot;&gt;contact : email.support@github.com&lt;/div&gt;
+<pre><code>[diff &quot;word&quot;]
+	textconv = strings</code></pre>
 
- &lt;script type=&quot;text/javascript&quot;&gt;</code></pre>
+<p>補足: <code>.doc</code> ファイルにもさまざまな種類があります。中には UTF-16 エンコーディングやその他の &#8220;コードページ&#8221; を使っているものもあり、<code>strings</code> では有効な結果を得られないかもしれません。有用性も落ちる可能性があります。</p>
 
-<p>これらの基本的なコマンドを使えば、ステージングエリアでの対話的な追加モードを多少簡単に扱えるようになるでしょう。</p>
+<p>これで、<code>.doc</code>という拡張子をもったファイルはそれぞれのファイルに<code>strings</code>というプログラムとして定義された&#8221;word&#8221;フィルタを通してからdiffを取るべきだということをGitは知っていることになります。こうすることで、Wordファイルに対して直接差分を取るのではなく、より効果的なテキストベースでの差分を取ることができるようになります。</p>
 
-<h3 id='id137'>パッチのステージ</h3>
+<p>例を示しましょう。この本の第1章をGitリポジトリに登録した後、ある段落にいくつかの文章を追加して保存し、それから、変更箇所を確認するために<code>git diff</code>を実行しました。</p>
 
-<p>Git では、ファイルの特定の箇所だけをステージして他の部分はそのままにしておくということもできます。たとえば、simplegit.rb のふたつの部分を変更したけれど、そのうちの一方だけをステージしたいという場合があります。Git なら、そんなことも簡単です。対話モードのプロンプトで <code>5</code> あるいは <code>p</code> (patch の p) と入力しましょう。Git は、どのファイルを部分的にステージしたいのかを聞いてきます。その後、選択したファイルのそれぞれについて diff のハンクを順に表示し、ステージするかどうかをひとつひとつたずねます。</p>
+<pre><code>$ git diff
+diff --git a/chapter1.doc b/chapter1.doc
+index c1c8a0a..b93c9e4 100644
+--- a/chapter1.doc
++++ b/chapter1.doc
+@@ -8,7 +8,8 @@ re going to cover Version Control Systems (VCS) and Git basics
+ re going to cover how to get it and set it up for the first time if you don
+ t already have it on your system.
+ In Chapter Two we will go over basic Git usage - how to use Git for the 80% 
+-s going on, modify stuff and contribute changes. If the book spontaneously 
++s going on, modify stuff and contribute changes. If the book spontaneously 
++Let&#39;s see if this works.</code></pre>
 
-<pre><code>diff --git a/lib/simplegit.rb b/lib/simplegit.rb
-index dd5ecc4..57399e0 100644
---- a/lib/simplegit.rb
-+++ b/lib/simplegit.rb
-@@ -22,7 +22,7 @@ class SimpleGit
-   end
+<p>Gitは正しく、追加した&#8221;Let’s see if this works&#8221;という文字列を首尾よく、かつ、簡潔に知らせてくれました。予想外の差分が表示されているので、完璧といえません。しかし、正しく動作しているとはいえます。あなたがWord文書をテキストファイルに変換するもっと良いプログラムを見付けられれば、よりよい結果を得られるでしょう。とはいえ、<code>strings</code>はほとんどのMacとLinuxで動作するので、様々なバイナリフォーマットに試してみるのに、最初の選択肢としては良いと思います。</p>
 
-   def log(treeish = &#39;master&#39;)
--    command(&quot;git log -n 25 #{treeish}&quot;)
-+    command(&quot;git log -n 30 #{treeish}&quot;)
-   end
+<h5 id='opendocument_text_'>OpenDocument Text ファイル</h5>
 
-   def blame(path)
-Stage this hunk [y,n,a,d,/,j,J,g,e,?]? </code></pre>
+<p>MS Word ファイル (<code>*.doc</code>) と同じ考えかたで、OpenOffice.org の OpenDocument Text ファイル (<code>*.odt</code>) も扱えます。</p>
 
-<p>ここでは多くの選択肢があります。何ができるのかを見るには <code>?</code> を入力しましょう。</p>
+<p>次の行を <code>.gitattributes</code> ファイルに追加しましょう。</p>
 
-<pre><code>Stage this hunk [y,n,a,d,/,j,J,g,e,?]? ?
-y - stage this hunk
-n - do not stage this hunk
-a - stage this and all the remaining hunks in the file
-d - do not stage this hunk nor any of the remaining hunks in the file
-g - select a hunk to go to
-/ - search for a hunk matching the given regex
-j - leave this hunk undecided, see next undecided hunk
-J - leave this hunk undecided, see next hunk
-k - leave this hunk undecided, see previous undecided hunk
-K - leave this hunk undecided, see previous hunk
-s - split the current hunk into smaller hunks
-e - manually edit the current hunk
-? - print help</code></pre>
+<pre><code>*.odt diff=odt</code></pre>
 
-<p>たいていは、<code>y</code> か <code>n</code> で各ハンクをステージするかどうかを指定していくでしょう。しかし、それ以外にも「このファイルの残りのハンクをすべてステージする」とか「このハンクをステージするかどうかの判断を先送りする」などというオプションも便利です。あるファイルのひとつの箇所だけをステージして残りはそのままにした場合、ステータスの出力はこのようになります。</p>
+<p>そして、<code>odt</code> diff フィルタを <code>.git/config</code> に追加します。</p>
 
-<pre><code>What now&gt; 1
-           staged     unstaged path
-  1:    unchanged        +0/-1 TODO
-  2:        +1/-1      nothing index.html
-  3:        +1/-1        +4/-0 lib/simplegit.rb</code></pre>
+<pre><code>[diff &quot;odt&quot;]
+	binary = true
+	textconv = /usr/local/bin/odt-to-txt</code></pre>
 
-<p>simplegit.rb のステータスがおもしろいことになっています。ステージされた行もあれば、ステージされていない行もあるという状態です。つまり、このファイルを部分的にステージしたというわけです。この時点で対話的追加モードを抜けて <code>git commit</code> を実行すると、ステージした部分だけをコミットすることができます。</p>
+<p>OpenDocument ファイルの正体は zip で、複数のファイル (XML 形式のコンテンツやスタイルシート、画像など) を含むディレクトリをまとめたものです。このコンテンツを展開し、プレーンテキストとして返すスクリプトが必要です。<code>/usr/local/bin/odt-to-txt</code> というファイルを作って (ディレクトリはどこでもかまいません)、次のような内容を書きましょう。</p>
 
-<p>最後に、この対話的追加モードを使わずに部分的なステージを行いたい場合は、コマンドラインから <code>git add -p</code> あるいは <code>git add --patch</code> を実行すれば同じことができます。</p>
+<pre><code>#! /usr/bin/env perl
+# Simplistic OpenDocument Text (.odt) to plain text converter.
+# Author: Philipp Kempgen
+
+if (! defined($ARGV[0])) {
+	print STDERR &quot;No filename given!\n&quot;;
+	print STDERR &quot;Usage: $0 filename\n&quot;;
+	exit 1;
+}
+
+my $content = &#39;&#39;;
+open my $fh, &#39;-|&#39;, &#39;unzip&#39;, &#39;-qq&#39;, &#39;-p&#39;, $ARGV[0], &#39;content.xml&#39; or die $!;
+{
+	local $/ = undef;  # slurp mode
+	$content = &lt;$fh&gt;;
+}
+close $fh;
+$_ = $content;
+s/&lt;text:span\b[^&gt;]*&gt;//g;           # remove spans
+s/&lt;text:h\b[^&gt;]*&gt;/\n\n*****  /g;   # headers
+s/&lt;text:list-item\b[^&gt;]*&gt;\s*&lt;text:p\b[^&gt;]*&gt;/\n    --  /g;  # list items
+s/&lt;text:list\b[^&gt;]*&gt;/\n\n/g;       # lists
+s/&lt;text:p\b[^&gt;]*&gt;/\n  /g;          # paragraphs
+s/&lt;[^&gt;]+&gt;//g;                      # remove all XML tags
+s/\n{2,}/\n\n/g;                   # remove multiple blank lines
+s/\A\n+//;                         # remove leading blank lines
+print &quot;\n&quot;, $_, &quot;\n\n&quot;;</code></pre>
+
+<p>そして実行権限をつけます。</p>
+
+<pre><code>chmod +x /usr/local/bin/odt-to-txt</code></pre>
+
+<p>これで、<code>git diff</code> で <code>.odt</code> ファイルの変更点を確認できるようになりました。</p>
+
+<h5 id='id511'>画像ファイル</h5>
+
+<p>その他の興味深い問題としては画像ファイルの差分があります。JPEGファイルに対するひとつの方法としては、EXIF情報(多くのファイルでメタデータとして使われています)を抽出するフィルタを使う方法です。<code>exiftool</code>をダウンロードしインストールすれば、画像データをメタデータの形でテキストデータとして扱うことができます。従って、次のように設定すれば、画像データの差分をメタデータの差分という形で表示することができます。</p>
+
+<pre><code>$ echo &#39;*.png diff=exif&#39; &gt;&gt; .gitattributes
+$ git config diff.exif.textconv exiftool</code></pre>
+
+<p>上記の設定をしてからプロジェクトで画像データを置き換えて<code>git diff</code>と実行すれば、次のように表示されることになるでしょう。</p>
+
+<pre><code>diff --git a/image.png b/image.png
+index 88839c4..4afcb7c 100644
+--- a/image.png
++++ b/image.png
+@@ -1,12 +1,12 @@
+ ExifTool Version Number         : 7.74
+-File Size                       : 70 kB
+-File Modification Date/Time     : 2009:04:21 07:02:45-07:00
++File Size                       : 94 kB
++File Modification Date/Time     : 2009:04:21 07:02:43-07:00
+ File Type                       : PNG
+ MIME Type                       : image/png
+-Image Width                     : 1058
+-Image Height                    : 889
++Image Width                     : 1056
++Image Height                    : 827
+ Bit Depth                       : 8
+ Color Type                      : RGB with Alpha</code></pre>
+
+<p>ファイルのサイズと画像のサイズが変更されたことが簡単に見て取れるでしょう。</p>
+
+<h3 id='id512'>キーワード展開</h3>
+
+<p>SubversionやCVSを使っていた開発者から、キーワード展開機能をリクエストされることがよくあります。これについてGitにおける主な問題は、Gitはまずファイルのチェックサムを生成するためにcommitした後にファイルに関する情報を変更できないという点です。しかし、commitするためにaddする前にファイルをcheckoutしremoveするという手順を踏めば、その時にファイルにテキストを追加することが可能です。Gitの属性はそうするための方法を2つ提供します。</p>
+
+<p>ひとつめの方法として、ファイルの<code>$Id$</code>フィールドを自動的にblobのSHA-1 checksumを挿入するようにできます。あるファイル、もしくはいくつかのファイルに対してこの属性を設定すれば、次にcheckoutする時、Gitはこの置き換えを行うようになるでしょう。ただし、挿入されるチェックサムはcommitに対するものではなく、対象となるblobものであるという点に注意して下さい。</p>
+
+<pre><code>$ echo &#39;*.txt ident&#39; &gt;&gt; .gitattributes
+$ echo &#39;$Id$&#39; &gt; test.txt</code></pre>
+
+<p>次にtest.txtをcheckoutする時、GitはSHA-1チェックサムを挿入します。</p>
+
+<pre><code>$ rm test.txt
+$ git checkout -- test.txt
+$ cat test.txt 
+$Id: 42812b7653c7b88933f8a9d6cad0ca16714b9bb3 $</code></pre>
+
+<p>しかし、このやりかたには制限があります。CVSやSubversionのキーワード展開ではタイムスタンプを含めることができます。対して、SHA-1チェックサムは完全にランダムな値ですから、2つの値の新旧を知るための助けにはなりません。</p>
+
+<p>これには、commit/checkout時にキーワード展開を行うためのフィルタを書いてやることで対応できます。このために&#8221;clean&#8221;と&#8221;smudge&#8221;フィルタがあります。特定のファイルに対して使用するフィルタを設定し、checkoutされる前(&#8220;smudge&#8221; 図7-2参照)もしくはcommitされる前(&#8220;clean&#8221; 図7-3参照)に指定したスクリプトが実行させるよう、<code>.gitattributes</code>ファイルで設定できます。これらのフィルタはあらゆる種類の面白い内容を実行するように設定できます。</p>
+
+<p><center><img src="/figures/ch6/18333fig0702-tn.png"></center><br/> 図7-2. checkoutする時に&#8221;smudge&#8221;フィルタを実行する</p>
+
+<p><center><img src="/figures/ch6/18333fig0703-tn.png"></center><br/> 図7-3. ステージする時に&#8221;clean&#8221;フィルタを実行する。</p>
+
+<p>この機能に対してオリジナルのcommitメッセージは簡単な例を与えてくれています。それはcommit前にあなたのCのソースコードを<code>indent</code>プログラムに通すというものです。<code>*.c</code>ファイルに対して&#8221;indent&#8221;フィルタを実行するように、<code>.gitattributes</code>ファイルにfilter属性を設定することができます。</p>
+
+<pre><code>*.c     filter=indent</code></pre>
+
+<p>それから、smudgeとcleanで&#8221;indent&#8221;フィルタが何を行えばいいのかをGitに教えます。</p>
+
+<pre><code>$ git config --global filter.indent.clean indent
+$ git config --global filter.indent.smudge cat</code></pre>
+
+<p>このケースでは、<code>*.c</code>にマッチするファイルをcommitした時、Gitはcommit前にindentプログラムにファイルを通し、checkoutする前には<code>cat</code>を通すようにします。<code>cat</code>は基本的に何もしません。入力されたデータと同じデータを吐き出すだけです。この組み合わせでCのソースコードに対してcommit前に<code>indent</code>を通すことが効果的に行えます。</p>
+
+<p>RCSスタイルの<code>$Date$</code>キーワード展開もまた別の興味深い例です。満足のいく形でこれを行うには、ファイル名を受け取って、プロジェクトの最新のcommitの日付を見付けだし、その日付をファイルに挿入するちょっとしたスクリプトが必要になります。そのようなRubyスクリプトが以下です。</p>
+
+<pre><code>#! /usr/bin/env ruby
+data = STDIN.read
+last_date = `git log --pretty=format:&quot;%ad&quot; -1`
+puts data.gsub(&#39;$Date$&#39;, &#39;$Date: &#39; + last_date.to_s + &#39;$&#39;)</code></pre>
+
+<p>このスクリプトは、<code>git log</code>コマンドの出力から最新のcommitの日付を取得し、標準入力からの入力中のすべての<code>$Date$</code>文字列にその日付を追加し、結果を表示します。あなたのお気に入りのどのような言語でスクリプトを書くにしても、簡潔にすべきです。このスクリプトファイルに<code>expand_date</code>と名前をつけ、実行パスのどこかに置きます。次に、Gitが使うフィルタ(<code>dater</code>と呼びましょうか)を設定し、checkout時に<code>expand_date</code>が実行されるようにGitに教えてあげましょう。</p>
+
+<pre><code>$ git config filter.dater.smudge expand_date
+$ git config filter.dater.clean &#39;perl -pe &quot;s/\\\$Date[^\\\$]*\\\$/\\\$Date\\\$/&quot;&#39;</code></pre>
+
+<p>このPerlのスクリプトは、開始点に戻るために<code>$Date$</code>文字列内の他の文字列を削除します。さあ、フィルタの準備ができました。ファイルに<code>$Date$</code>キーワードを追加して新しいフィルタに仕事をさせるためにGitの属性を設定して、テストしてみましょう。</p>
+
+<pre><code>$ echo &#39;# $Date$&#39; &gt; date_test.txt
+$ echo &#39;date*.txt filter=dater&#39; &gt;&gt; .gitattributes</code></pre>
+
+<p>これらの変更をcommitして再度ファイルをcheckoutすれば、キーワード展開が正しく行われているのがわかります。</p>
+
+<pre><code>$ git add date_test.txt .gitattributes
+$ git commit -m &quot;Testing date expansion in Git&quot;
+$ rm date_test.txt
+$ git checkout date_test.txt
+$ cat date_test.txt
+# $Date: Tue Apr 21 07:26:52 2009 -0700$</code></pre>
+
+<p>アプリケーションをカスタマイズするためのこのテクニックがどれほど強力か、おわかりいただけたと思います。しかし、注意が必要です。<code>.gitattributes</code>ファイルはcommitされ、プロジェクト内で共有されますが、ドライバ(このケースで言えば、<code>dater</code>)はそうはいきません。そう、すべての環境で動くとは限らないのです。あなたがこうしたフィルタをデザインする時、たとえフィルタが正常に動作しなかったとしても、プロジェクトは適切に動き続けられるようにすべきです。</p>
+
+<h3 id='id513'>リポジトリをエクスポートする</h3>
+
+<p>あなたのプロジェクトのアーカイブをエクスポートする時には、Gitの属性データを使って興味深いことを行うことができます。</p>
+
+<h4 id='exportignore'>export-ignore</h4>
+
+<p>アーカイヴを生成するとき、あるファイルやディレクトリをエクスポートしないように設定することができます。プロジェクトにはcheckinしたいがアーカイブファイルには含めたくないディレクトリやファイルがあるなら、それらに<code>export-ignore</code>を設定してやることができます。</p>
+
+<p>例えば、<code>test/</code>ディレクトリ以下にいくつかのテストファイルがあって、それらをプロジェクトのtarballには含めたくないとしましょう。その場合、次の1行をGitの属性ファイルに追加します。</p>
+
+<pre><code>test/ export-ignore</code></pre>
+
+<p>これで、プロジェクトのtarballを作成するためにgitを実行した時、アーカイブには<code>test/</code>ディレクトリが含まれないようになります。</p>
+
+<h4 id='exportsubst'>export-subst</h4>
+
+<p>アーカイブ作成時にできる別のこととして、いくつかの簡単なキーワード展開があります。第2章で紹介した<code>--pretty=format</code>で指定できるフォーマット指定子とともに<code>$Format:$</code>文字列をファイルに追加することができます。例えば、<code>LAST_COMMIT</code>という名前のファイルをプロジェクトに追加し、<code>git archive</code>を実行した時にそれを最新のcommitの日付に変換したい場合、次のように設定します。</p>
+
+<pre><code>$ echo &#39;Last commit date: $Format:%cd$&#39; &gt; LAST_COMMIT
+$ echo &quot;LAST_COMMIT export-subst&quot; &gt;&gt; .gitattributes
+$ git add LAST_COMMIT .gitattributes
+$ git commit -am &#39;adding LAST_COMMIT file for archives&#39;</code></pre>
+
+<p><code>git archive</code>を実行したあと、アーカイブを展開すると、<code>LAST_COMMIT</code>は以下のような内容になっているでしょう。</p>
+
+<pre><code>$ cat LAST_COMMIT
+Last commit date: $Format:Tue Apr 21 08:38:48 2009 -0700$</code></pre>
+
+<h3 id='id514'>マージの戦略</h3>
+
+<p>Git属性を使えば、プロジェクトにある指定したファイルに対して異なるマージ戦略を使うようにすることができます。とても有効なオプションのひとつは、指定したファイルで競合が発生した場合に、マージを行わずにあなたの変更内容で他の誰かの変更を上書きするように設定するというものです。</p>
+
+<p>これはブランチを分岐させ特別な作業をしている時、そのブランチでの変更をマージさせたいが、いくつかのファイルの変更はなかったことにしたいというような時に助けになります。例えば、database.xmlというデータベースの設定ファイルがあり、ふたつのブランチでその内容が異なっているとしましょう。そして、そのデータベースファイルを台無しすることなしに、一方のブランチへとマージしたいとします。これは、次のように属性を設定すれば実現できます。</p>
+
+<pre><code>database.xml merge=ours</code></pre>
+
+<p>マージを実行すると、database.xmlに関する競合は発生せず、次のような結果になります。</p>
+
+<pre><code>$ git merge topic
+Auto-merging database.xml
+Merge made by recursive.</code></pre>
+
+<p>この場合、database.xmlは元々のバージョンのまま、書き変わりません。</p>
 
 <div id='nav'>
 <a href='ch6-1.html'>prev</a> | <a href='ch6-3.html'>next</a>

@@ -1,211 +1,257 @@
 ---
 layout: translation
-title: Pro Git 3.2 Git Branching Basic Branching and Merging
+title: Pro Git 3.2 Elementární principy systému Git Objekty Git
 ---
-<h2 id='basic_branching_and_merging'>Basic Branching and Merging</h2>
+<h2 id='objekty_git'>Objekty Git</h2>
 
-<p>Let’s go through a simple example of branching and merging with a workflow that you might use in the real world. You’ll follow these steps:</p>
+<p>Git je obsahově adresovatelný systém souborů. Výborně. A co to znamená? Znamená to, že v jádru systému Git se nachází jednoduché úložiště dat, ke kterému lze přistupovat pomocí klíčů. Můžete do něj vložit jakýkoli obsah a na oplátku dostanete klíč, který můžete kdykoli v budoucnu použít k vyzvednutí obsahu. Můžete tak použít například nízkoúrovňový příkaz <code>hash-object</code>, který vezme určitá data, uloží je v adresáři <code>.git</code> a dá vám klíč, pod nímž jsou tato data uložena. Vytvořme nejprve nový repozitář Git. Můžeme se přesvědčit, že je adresář <code>objects</code> prázdný:</p>
 
-<ol>
-<li>Do work on a web site.</li>
+<pre><code>$ mkdir test
+$ cd test
+$ git init
+Initialized empty Git repository in /tmp/test/.git/
+$ find .git/objects
+.git/objects
+.git/objects/info
+.git/objects/pack
+$ find .git/objects -type f
+$</code></pre>
 
-<li>Create a branch for a new story you’re working on.</li>
+<p>Git inicializoval adresář <code>objects</code> a vytvořil v něm podadresáře <code>pack</code> a <code>info</code>, nenajdeme tu však žádné skutečné soubory. Nyní můžete uložit kousek textu do databáze Git:</p>
 
-<li>Do some work in that branch.</li>
-</ol>
+<pre><code>$ echo &#39;test content&#39; | git hash-object -w --stdin
+d670460b4b4aece5915caf5c68d12f560a9fe3e4</code></pre>
 
-<p>At this stage, you’ll receive a call that another issue is critical and you need a hotfix. You’ll do the following:</p>
+<p>Parametr <code>-w</code> sděluje příkazu <code>hash-object</code>, aby objekt uložil. Bez parametru by vám příkaz jen sdělil, jaký klíč by byl přidělen. Parametr <code>--stdin</code> zase příkazu sděluje, aby načetl obsah ze standardního vstupu. Pokud byste parametr nezadali, příkaz <code>hash-object</code> by očekával, že zadáte cestu k souboru. Výstupem příkazu je 40znakový otisk kontrolního součtu (checksum hash). Jedná se o otisk SHA-1 – kontrolní součet spojení ukládaného obsahu a záhlaví, o němž si povíme za okamžik. Nyní se můžete podívat, jak Git vaše data uložil:</p>
 
-<ol>
-<li>Revert back to your production branch.</li>
+<pre><code>$ find .git/objects -type f
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4</code></pre>
 
-<li>Create a branch to add the hotfix.</li>
+<p>Vidíte, že v adresáři <code>objects</code> přibyl nový soubor. Takto Git ukládá nejprve veškerý obsah – jeden soubor pro každý kus obsahu, nazvaný kontrolním součtem SHA-1 obsahu a záhlaví. Podadresář je pojmenován prvními dvěma znaky SHA, název souboru zbývajícími 38 znaky.</p>
 
-<li>After it’s tested, merge the hotfix branch, and push to production.</li>
+<p>Obsah můžete ze systému Git zase vytáhnout, k tomu slouží příkaz <code>cat-file</code>. Tento příkaz je něco jako švýcarský nůž k prohlížení objektů Git. Přidáte-li k příkazu <code>cat-file</code> parametr <code>-p</code>, říkáte mu, aby zjistil typ obsahu a přehledně vám ho zobrazil:</p>
 
-<li>Switch back to your original story and continue working.</li>
-</ol>
+<pre><code>$ git cat-file -p d670460b4b4aece5915caf5c68d12f560a9fe3e4
+test content</code></pre>
 
-<h3 id='basic_branching'>Basic Branching</h3>
+<p>Nyní tedy umíte vložit do systému Git určitý obsah a ten poté zase vytáhnout. Totéž můžete udělat také s obsahem v souborech. Na souboru můžete například provádět jednoduché verzování. Vytvořte nový soubor a uložte jeho obsah do své databáze:</p>
 
-<p>First, let’s say you’re working on your project and have a couple of commits already (see Figure 3-10).</p>
+<pre><code>$ echo &#39;version 1&#39; &gt; test.txt
+$ git hash-object -w test.txt
+83baae61804e65cc73a7201a7252750c76066a30</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0310-tn.png"></center><br/> Figure 3-10. A short and simple commit history</p>
+<p>Poté do souboru zapište nový obsah a znovu ho uložte:</p>
 
-<p>You’ve decided that you’re going to work on issue #53 in whatever issue-tracking system your company uses. To be clear, Git isn’t tied into any particular issue-tracking system; but because issue #53 is a focused topic that you want to work on, you’ll create a new branch in which to work. To create a branch and switch to it at the same time, you can run the <code>git checkout</code> command with the <code>-b</code> switch:</p>
+<pre><code>$ echo &#39;version 2&#39; &gt; test.txt
+$ git hash-object -w test.txt
+1f7a7a472abf3dd9643fd615f6da379c4acb3e3a</code></pre>
 
-<pre><code>$ git checkout -b iss53
-Switched to a new branch &quot;iss53&quot;</code></pre>
+<p>Vaše databáze obsahuje dvě nové verze souboru a počáteční obsah, který jste do ní vložili:</p>
 
-<p>This is shorthand for</p>
+<pre><code>$ find .git/objects -type f
+.git/objects/1f/7a7a472abf3dd9643fd615f6da379c4acb3e3a
+.git/objects/83/baae61804e65cc73a7201a7252750c76066a30
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4</code></pre>
 
-<pre><code>$ git branch iss53
-$ git checkout iss53</code></pre>
+<p>Soubor nyní můžete vrátit do první verze:</p>
 
-<p>Figure 3-11 illustrates the result.</p>
+<pre><code>$ git cat-file -p 83baae61804e65cc73a7201a7252750c76066a30 &gt; test.txt
+$ cat test.txt
+version 1</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0311-tn.png"></center><br/> Figure 3-11. Creating a new branch pointer</p>
+<p>Nebo do druhé verze:</p>
 
-<p>You work on your web site and do some commits. Doing so moves the <code>iss53</code> branch forward, because you have it checked out (that is, your HEAD is pointing to it; see Figure 3-12):</p>
+<pre><code>$ git cat-file -p 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a &gt; test.txt
+$ cat test.txt
+version 2</code></pre>
 
-<pre><code>$ vim index.html
-$ git commit -a -m &#39;added a new footer [issue 53]&#39;</code></pre>
+<p>Pamatovat si klíč SHA-1 každé verze souboru ale není praktické, navíc v systému neukládáte název souboru, pouze jeho obsah. Tento typ objektu se nazývá blob. Zadáte-li příkaz <code>cat-file -t</code> v kombinaci s klíčem SHA-1 objektu, Git vám sdělí jeho typ, ať se jedná o jakýkoli objekt Git.</p>
 
-<p><center><img src="/figures/ch3/18333fig0312-tn.png"></center><br/> Figure 3-12. The iss53 branch has moved forward with your work.</p>
+<pre><code>$ git cat-file -t 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a
+blob</code></pre>
 
-<p>Now you get the call that there is an issue with the web site, and you need to fix it immediately. With Git, you don’t have to deploy your fix along with the <code>iss53</code> changes you’ve made, and you don’t have to put a lot of effort into reverting those changes before you can work on applying your fix to what is in production. All you have to do is switch back to your master branch.</p>
+<h3 id='objekty_stromu'>Objekty stromu</h3>
 
-<p>However, before you do that, note that if your working directory or staging area has uncommitted changes that conflict with the branch you’re checking out, Git won’t let you switch branches. It’s best to have a clean working state when you switch branches. There are ways to get around this (namely, stashing and commit amending) that we’ll cover later. For now, you’ve committed all your changes, so you can switch back to your master branch:</p>
+<p>Dalším typem objektu, na který se podíváme, je objekt stromu (tree object), jenž řeší problém ukládání názvu souboru a zároveň umožňuje uložit skupinu souborů dohromady. Git ukládá obsah podobným způsobem jako systém souborů UNIX, jen trochu jednodušeji. Veškerý obsah se ukládá v podobě blobů a objektů stromu. Stromy odpovídají položkám v adresáři UNIX a bloby víceméně odpovídají inodům neboli obsahům souborů. Jeden objekt stromu obsahuje jednu nebo více položek stromu, z nichž každá obsahuje ukazatel SHA-1 na blob nebo podstrom s asociovaným režimem, typem a názvem souboru. Nejnovější strom v projektu „simplegit“ může vypadat například takto:</p>
 
-<pre><code>$ git checkout master
-Switched to branch &quot;master&quot;</code></pre>
+<pre><code>$ git cat-file -p master^{tree}
+100644 blob a906cb2a4a904a152e80877d4088654daad0c859      README
+100644 blob 8f94139338f9404f26296befa88755fc2598c289      Rakefile
+040000 tree 99f1a6d12cb4b6f19c8655fca46c3ecf317074e0      lib</code></pre>
 
-<p>At this point, your project working directory is exactly the way it was before you started working on issue #53, and you can concentrate on your hotfix. This is an important point to remember: Git resets your working directory to look like the snapshot of the commit that the branch you check out points to. It adds, removes, and modifies files automatically to make sure your working copy is what the branch looked like on your last commit to it.</p>
+<p>Syntaxe <code>master^{tree}</code> určuje objekt stromu, na nějž ukazuje poslední revize větve <code>master</code>. Všimněte si, že podadresář <code>lib</code> není blob, ale ukazatel na jiný strom:</p>
 
-<p>Next, you have a hotfix to make. Let’s create a hotfix branch on which to work until it’s completed (see Figure 3-13):</p>
+<pre><code>$ git cat-file -p 99f1a6d12cb4b6f19c8655fca46c3ecf317074e0
+100644 blob 47c6340d6459e05787f644c2447d2595f5d3a54b      simplegit.rb</code></pre>
 
-<pre><code>$ git checkout -b &#39;hotfix&#39;
-Switched to a new branch &quot;hotfix&quot;
-$ vim index.html
-$ git commit -a -m &#39;fixed the broken email address&#39;
-[hotfix]: created 3a0874c: &quot;fixed the broken email address&quot;
- 1 files changed, 0 insertions(+), 1 deletions(-)</code></pre>
+<p>Data, která Git ukládá, vypadají v principu jako na obrázku 9-1.</p>
 
-<p><center><img src="/figures/ch3/18333fig0313-tn.png"></center><br/> Figure 3-13. hotfix branch based back at your master branch point</p>
+<p><center><img src="/figures/ch3/18333fig0901-tn.png"></center><br/> Figure 9-1. Zjednodušený model dat v systému Git</p>
 
-<p>You can run your tests, make sure the hotfix is what you want, and merge it back into your master branch to deploy to production. You do this with the <code>git merge</code> command:</p>
+<p>Můžete si vytvořit i vlastní strom. Git běžně vytváří strom tak, že vezme stav oblasti připravených změn nebo-li indexu a zapíše z nich objekt stromu. Proto chcete-li vytvořit objekt stromu, musíte ze všeho nejdříve připravit soubory k zapsání, a vytvořit tak index. Chcete-li vytvořit index s jediným záznamem – první verzí souboru text.txt – můžete k tomu použít nízkoúrovňový příkaz <code>update-index</code>. Tento příkaz lze použít, jestliže chcete uměle přidat starší verzi souboru test.txt do nové oblasti připravených změn. K příkazu je třeba zadat parametr <code>--add</code>, neboť tento soubor ve vaší oblasti připravených změn ještě neexistuje (dokonce ještě nemáte ani vytvořenou oblast připravených změn), a parametr <code>--cacheinfo</code>, protože soubor, který přidáváte, není ve vašem adresáři, je ale ve vaší databázi. K tomu všemu přidáte režim, SHA-1 a název souboru:</p>
 
-<pre><code>$ git checkout master
-$ git merge hotfix
-Updating f42c576..3a0874c
-Fast forward
- README |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)</code></pre>
+<pre><code>$ git update-index --add --cacheinfo 100644 \
+  83baae61804e65cc73a7201a7252750c76066a30 test.txt</code></pre>
 
-<p>You’ll notice the phrase &#8220;Fast forward&#8221; in that merge. Because the commit pointed to by the branch you merged in was directly upstream of the commit you’re on, Git moves the pointer forward. To phrase that another way, when you try to merge one commit with a commit that can be reached by following the first commit’s history, Git simplifies things by moving the pointer forward because there is no divergent work to merge together — this is called a &#8220;fast forward&#8221;.</p>
+<p>V tomto případě jste zadali režim <code>100644</code>, který znamená, že se jedná o běžný soubor. Dalšími možnostmi režimu jsou <code>100755</code>, který označuje spustitelný soubor, a <code>120000</code>, který znamená symbolický odkaz. Režim (mode) je převzat z normálních režimů UNIX, jen je podstatně méně flexibilní. Tyto tři režimy jsou jediné platné pro soubory (bloby) v systému Git (ačkoli se pro adresáře a submoduly používají ještě další režimy).</p>
 
-<p>Your change is now in the snapshot of the commit pointed to by the <code>master</code> branch, and you can deploy your change (see Figure 3-14).</p>
+<p>Nyní můžete použít příkaz <code>write-tree</code>, jímž zapíšete stav oblasti připravovaných změn neboli indexu do objektu stromu. Tentokrát se obejdete bez parametru <code>-w</code>. Příkaz <code>write-tree</code> automaticky vytvoří objekt stromu ze stavu indexu, pokud tento strom ještě neexistuje:</p>
 
-<p><center><img src="/figures/ch3/18333fig0314-tn.png"></center><br/> Figure 3-14. Your master branch points to the same place as your hotfix branch after the merge.</p>
+<pre><code>$ git write-tree
+d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+$ git cat-file -p d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+100644 blob 83baae61804e65cc73a7201a7252750c76066a30      test.txt</code></pre>
 
-<p>After that your super-important fix is deployed, you’re ready to switch back to the work you were doing before you were interrupted. However, first you’ll delete the <code>hotfix</code> branch, because you no longer need it — the <code>master</code> branch points at the same place. You can delete it with the <code>-d</code> option to <code>git branch</code>:</p>
+<p>Můžete si také ověřit, že jde skutečně o objekt stromu:</p>
 
-<pre><code>$ git branch -d hotfix
-Deleted branch hotfix (3a0874c).</code></pre>
+<pre><code>$ git cat-file -t d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+tree</code></pre>
 
-<p>Now you can switch back to your work-in-progress branch on issue #53 and continue working on it (see Figure 3-15):</p>
+<p>Nyní vytvoříte nový strom s druhou verzí souboru test.txt a jedním novým souborem (new.txt):</p>
 
-<pre><code>$ git checkout iss53
-Switched to branch &quot;iss53&quot;
-$ vim index.html
-$ git commit -a -m &#39;finished the new footer [issue 53]&#39;
-[iss53]: created ad82d7a: &quot;finished the new footer [issue 53]&quot;
+<pre><code>$ echo &#39;new file&#39; &gt; new.txt
+$ git update-index test.txt
+$ git update-index --add new.txt</code></pre>
+
+<p>V oblasti připravených změn nyní máte jak novou verzi souboru test.txt, tak nový soubor new.txt. Uložte tento strom (zaznamenáním stavu oblasti připravených změn neboli indexu do objektu stromu) a prohlédněte si výsledek:</p>
+
+<pre><code>$ git write-tree
+0155eb4229851634a0f03eb265b69f5a2d56f341
+$ git cat-file -p 0155eb4229851634a0f03eb265b69f5a2d56f341
+100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
+100644 blob 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a      test.txt</code></pre>
+
+<p>Všimněte si, že tento strom má oba záznamy souborů a že hodnota SHA souboru test.txt je SHA původní „verze 2“ (<code>1f7a7a</code>). Jen pro zábavu nyní můžete přidat první strom jako podadresář do tohoto stromu. Stromy můžete do oblasti připravených změn načíst příkazem <code>read-tree</code>. V tomto případě můžete načíst existující strom jako podstrom do oblasti připravených změn pomocí parametru <code>--prefix</code>, který zadáte k příkazu <code>read-tree</code>:</p>
+
+<pre><code>$ git read-tree --prefix=bak d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+$ git write-tree
+3c4e9cd789d88d8d89c1073707c3585e41b0e614
+$ git cat-file -p 3c4e9cd789d88d8d89c1073707c3585e41b0e614
+040000 tree d8329fc1cc938780ffdd9f94e0d364e0ea74f579      bak
+100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
+100644 blob 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a      test.txt</code></pre>
+
+<p>Pokud byste vytvořili pracovní adresář z nového stromu, který jste právě zapsali, dostali byste dva soubory na nejvyšší úrovni pracovního adresáře a podadresář <code>bak</code>, obsahující první verzi souboru test.txt. Data, která Git pro tyto struktury obsahuje, si můžete představit jako ilustraci na obrázku 9-2.</p>
+
+<p><center><img src="/figures/ch3/18333fig0902-tn.png"></center><br/> Figure 9-2. Struktura obsahu vašich současných dat Git</p>
+
+<h3 id='objekty_revize'>Objekty revize</h3>
+
+<p>Máte vytvořeny tři stromy označující různé snímky vašeho projektu, jež chcete sledovat. Původního problému jsme se však stále nezbavili: musíte si pamatovat všechny tři hodnoty SHA-1, abyste mohli snímky znovu vyvolat. Nemáte také žádné informace o tom, kdo snímky uložil, kdy byly uloženy a proč se tak stalo. Toto jsou základní informace, které obsahuje objekt revize.</p>
+
+<p>Pro vytvoření objektu revize zavolejte příkaz <code>commit-tree</code> a zadejte jeden SHA-1 stromu a eventuální objekty revize, které mu bezprostředně předcházely. Začněte prvním stromem, který jste zapsali:</p>
+
+<pre><code>$ echo &#39;first commit&#39; | git commit-tree d8329f
+fdf4fc3344e67ab068f836878b6c4951e3b15f3d</code></pre>
+
+<p>Nyní se můžete podívat na nově vytvořený objekt revize. Použijte příkaz <code>cat-file</code>:</p>
+
+<pre><code>$ git cat-file -p fdf4fc3
+tree d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+author Scott Chacon &lt;schacon@gmail.com&gt; 1243040974 -0700
+committer Scott Chacon &lt;schacon@gmail.com&gt; 1243040974 -0700
+
+first commit</code></pre>
+
+<p>Formát objektu revize je prostý. Udává strom nejvyšší úrovně pro snímek projektu v tomto místě; informace o autorovi řešení/autorovi změny revize získané z konfiguračního nastavení <code>user.name</code> a <code>user.email</code>, spolu s aktuálním časovým údajem; poté následuje prázdný řádek a za ním zpráva k revizi.</p>
+
+<p>Dále zapíšete i zbylé dva objekty revize. Oba budou odkazovat na revizi, která jim bezprostředně předcházela:</p>
+
+<pre><code>$ echo &#39;second commit&#39; | git commit-tree 0155eb -p fdf4fc3
+cac0cab538b970a37ea1e769cbbde608743bc96d
+$ echo &#39;third commit&#39;  | git commit-tree 3c4e9c -p cac0cab
+1a410efbd13591db07496601ebc7a059dd55cfe9</code></pre>
+
+<p>Všechny tři tyto objekty revizí ukazují na jeden ze tří stromů snímku, který jste vytvořili. Může se to zdát zvláštní, ale nyní máte vytvořenu skutečnou historii revizí Git, kterou lze zobrazit příkazem <code>git log</code> spuštěným pro hodnotu SHA-1 poslední revize:</p>
+
+<pre><code>$ git log --stat 1a410e
+commit 1a410efbd13591db07496601ebc7a059dd55cfe9
+Author: Scott Chacon &lt;schacon@gmail.com&gt;
+Date:   Fri May 22 18:15:24 2009 -0700
+
+    third commit
+
+ bak/test.txt |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit cac0cab538b970a37ea1e769cbbde608743bc96d
+Author: Scott Chacon &lt;schacon@gmail.com&gt;
+Date:   Fri May 22 18:14:29 2009 -0700
+
+    second commit
+
+ new.txt  |    1 +
+ test.txt |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletions(-)
+
+commit fdf4fc3344e67ab068f836878b6c4951e3b15f3d
+Author: Scott Chacon &lt;schacon@gmail.com&gt;
+Date:   Fri May 22 18:09:34 2009 -0700
+
+    first commit
+
+ test.txt |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0315-tn.png"></center><br/> Figure 3-15. Your iss53 branch can move forward independently.</p>
+<p>Úžasné! Právě jste vytvořili historii Git jen na základě nízkoúrovňových operací, bez použití front-endů. To je v podstatě také to, co se odehrává, když zadáte příkazy jako <code>git add</code> nebo <code>git commit</code> – Git uloží bloby souborů, které byly změněny, akutalizuje index, uloží stromy a zapíše objekty revize, které referencí odkazují na stromy nejvyšší úrovně a revize, které jim bezprostředně předcházely. Tyto tři základní objekty Git – bloby, stromy a revize – jsou nejprve uloženy jako samostatné soubory do adresáře <code>.git/objects</code>. Toto jsou všechny objekty v ukázkovém adresáři spolu s komentářem k tomu co obsahují:</p>
 
-<p>It’s worth noting here that the work you did in your <code>hotfix</code> branch is not contained in the files in your <code>iss53</code> branch. If you need to pull it in, you can merge your <code>master</code> branch into your <code>iss53</code> branch by running <code>git merge master</code>, or you can wait to integrate those changes until you decide to pull the <code>iss53</code> branch back into <code>master</code> later.</p>
+<pre><code>$ find .git/objects -type f
+.git/objects/01/55eb4229851634a0f03eb265b69f5a2d56f341 # tree 2
+.git/objects/1a/410efbd13591db07496601ebc7a059dd55cfe9 # commit 3
+.git/objects/1f/7a7a472abf3dd9643fd615f6da379c4acb3e3a # test.txt v2
+.git/objects/3c/4e9cd789d88d8d89c1073707c3585e41b0e614 # tree 3
+.git/objects/83/baae61804e65cc73a7201a7252750c76066a30 # test.txt v1
+.git/objects/ca/c0cab538b970a37ea1e769cbbde608743bc96d # commit 2
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4 # &#39;test content&#39;
+.git/objects/d8/329fc1cc938780ffdd9f94e0d364e0ea74f579 # tree 1
+.git/objects/fa/49b077972391ad58037050f2a75f74e3671e92 # new.txt
+.git/objects/fd/f4fc3344e67ab068f836878b6c4951e3b15f3d # commit 1</code></pre>
 
-<h3 id='basic_merging'>Basic Merging</h3>
+<p>Pokud byste hledali vztahy mezi všemi interními ukazateli, vyšel by vám celý diagram objektů – viz obrázek 9-3.</p>
 
-<p>Suppose you’ve decided that your issue #53 work is complete and ready to be merged into your <code>master</code> branch. In order to do that, you’ll merge in your <code>iss53</code> branch, much like you merged in your <code>hotfix</code> branch earlier. All you have to do is check out the branch you wish to merge into and then run the <code>git merge</code> command:</p>
+<p><center><img src="/figures/ch3/18333fig0903-tn.png"></center><br/> Figure 9-3. Všechny objekty v adresáři Git</p>
 
-<pre><code>$ git checkout master
-$ git merge iss53
-Merge made by recursive.
- README |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
+<h3 id='ukldn_objekt'>Ukládání objektů</h3>
 
-<p>This looks a bit different than the <code>hotfix</code> merge you did earlier. In this case, your development history has diverged from some older point. Because the commit on the branch you’re on isn’t a direct ancestor of the branch you’re merging in, Git has to do some work. In this case, Git does a simple three-way merge, using the two snapshots pointed to by the branch tips and the common ancestor of the two. Figure 3-16 highlights the three snapshots that Git uses to do its merge in this case.</p>
+<p>Už jsem zmínil, že se spolu s obsahem ukládá také záhlaví (header). Zaměřme se teď chvíli na to, jak Git ukládá své objekty. Uvidíte, jak lze uložit objekt blobu – v našem případě řetězec „what is up, doc?“ – interaktivně v skriptovacím jazyce Ruby. Interaktivní režim Ruby spustíte příkazem <code>irb</code>:</p>
 
-<p><center><img src="/figures/ch3/18333fig0316-tn.png"></center><br/> Figure 3-16. Git automatically identifies the best common-ancestor merge base for branch merging.</p>
+<pre><code>$ irb
+&gt;&gt; content = &quot;what is up, doc?&quot;
+=&gt; &quot;what is up, doc?&quot;</code></pre>
 
-<p>Instead of just moving the branch pointer forward, Git creates a new snapshot that results from this three-way merge and automatically creates a new commit that points to it (see Figure 3-17). This is referred to as a merge commit and is special in that it has more than one parent.</p>
+<p>Git vytvoří záhlaví, které bude začínat typem objektu, jímž je v našem případě blob. Poté vloží mezeru, za níž bude následovat velikost obsahu a na konec nulový byte:</p>
 
-<p>It’s worth pointing out that Git determines the best common ancestor to use for its merge base; this is different than CVS or Subversion (before version 1.5), where the developer doing the merge has to figure out the best merge base for themselves. This makes merging a heck of a lot easier in Git than in these other systems.</p>
+<pre><code>&gt;&gt; header = &quot;blob #{content.length}\0&quot;
+=&gt; &quot;blob 16\000&quot;</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0317-tn.png"></center><br/> Figure 3-17. Git automatically creates a new commit object that contains the merged work.</p>
+<p>Git vytvoří řetězec ze záhlaví a původního obsahu a vypočítá kontrolní součet SHA-1 tohoto nového obsahu. V Ruby můžete hodnotu SHA-1 daného řetězce spočítat tak, že příkazem <code>require</code> připojíte knihovnu pro počítání SHA1 a zavoláte <code>Digest::SHA1.hexdigest()</code> s daným řetězcem:</p>
 
-<p>Now that your work is merged in, you have no further need for the <code>iss53</code> branch. You can delete it and then manually close the ticket in your ticket-tracking system:</p>
+<pre><code>&gt;&gt; store = header + content
+=&gt; &quot;blob 16\000what is up, doc?&quot;
+&gt;&gt; require &#39;digest/sha1&#39;
+=&gt; true
+&gt;&gt; sha1 = Digest::SHA1.hexdigest(store)
+=&gt; &quot;bd9dbf5aae1a3862dd1526723246b20206e5fc37&quot;</code></pre>
 
-<pre><code>$ git branch -d iss53</code></pre>
+<p>Git zkomprimuje nový obsah metodou zlib, která je obsažena v knihovně zlib. Nejprve je třeba vyžádat si knihovnu a poté na obsah spustit příkaz <code>Zlib::Deflate.deflate()</code>:</p>
 
-<h3 id='basic_merge_conflicts'>Basic Merge Conflicts</h3>
+<pre><code>&gt;&gt; require &#39;zlib&#39;
+=&gt; true
+&gt;&gt; zlib_content = Zlib::Deflate.deflate(store)
+=&gt; &quot;x\234K\312\311OR04c(\317H,Q\310,V(-\320QH\311O\266\a\000_\034\a\235&quot;</code></pre>
 
-<p>Occasionally, this process doesn’t go smoothly. If you changed the same part of the same file differently in the two branches you’re merging together, Git won’t be able to merge them cleanly. If your fix for issue #53 modified the same part of a file as the <code>hotfix</code>, you’ll get a merge conflict that looks something like this:</p>
+<p>Na závěr zapíšete obsah zkomprimovaný metodou zlib do objektu na disku. Musíte tu určit cestu k objektu, který chcete zapsat (první dva znaky hodnoty SHA-1 budou název podadresáře, zbývajících 38 znaků bude tvořit název souboru v tomto adresáři). Pokud podadresář neexistuje, můžete ho v jazyce Ruby vytvořit pomocí funkce <code>FileUtils.mkdir_p()</code>. Poté zadejte <code>File.open()</code> pro otevření souboru a voláním <code>write()</code> na vzniklý identifikátor souboru zapište do souboru právě zkomprimovaný (zlib) obsah:</p>
 
-<pre><code>$ git merge iss53
-Auto-merging index.html
-CONFLICT (content): Merge conflict in index.html
-Automatic merge failed; fix conflicts and then commit the result.</code></pre>
+<pre><code>&gt;&gt; path = &#39;.git/objects/&#39; + sha1[0,2] + &#39;/&#39; + sha1[2,38]
+=&gt; &quot;.git/objects/bd/9dbf5aae1a3862dd1526723246b20206e5fc37&quot;
+&gt;&gt; require &#39;fileutils&#39;
+=&gt; true
+&gt;&gt; FileUtils.mkdir_p(File.dirname(path))
+=&gt; &quot;.git/objects/bd&quot;
+&gt;&gt; File.open(path, &#39;w&#39;) { |f| f.write zlib_content }
+=&gt; 32</code></pre>
 
-<p>Git hasn’t automatically created a new merge commit. It has paused the process while you resolve the conflict. If you want to see which files are unmerged at any point after a merge conflict, you can run <code>git status</code>:</p>
-
-<pre><code>[master*]$ git status
-index.html: needs merge
-# On branch master
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#   (use &quot;git checkout -- &lt;file&gt;...&quot; to discard changes in working directory)
-#
-#	unmerged:   index.html
-#</code></pre>
-
-<p>Anything that has merge conflicts and hasn’t been resolved is listed as unmerged. Git adds standard conflict-resolution markers to the files that have conflicts, so you can open them manually and resolve those conflicts. Your file contains a section that looks something like this:</p>
-
-<pre><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD:index.html
-&lt;div id=&quot;footer&quot;&gt;contact : email.support@github.com&lt;/div&gt;
-=======
-&lt;div id=&quot;footer&quot;&gt;
-  please contact us at support@github.com
-&lt;/div&gt;
-&gt;&gt;&gt;&gt;&gt;&gt;&gt; iss53:index.html</code></pre>
-
-<p>This means the version in HEAD (your master branch, because that was what you had checked out when you ran your merge command) is the top part of that block (everything above the <code>=======</code>), while the version in your <code>iss53</code> branch looks like everything in the bottom part. In order to resolve the conflict, you have to either choose one side or the other or merge the contents yourself. For instance, you might resolve this conflict by replacing the entire block with this:</p>
-
-<pre><code>&lt;div id=&quot;footer&quot;&gt;
-please contact us at email.support@github.com
-&lt;/div&gt;</code></pre>
-
-<p>This resolution has a little of each section, and I’ve fully removed the <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code>, <code>=======</code>, and <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code> lines. After you’ve resolved each of these sections in each conflicted file, run <code>git add</code> on each file to mark it as resolved. Staging the file marks it as resolved in Git. If you want to use a graphical tool to resolve these issues, you can run <code>git mergetool</code>, which fires up an appropriate visual merge tool and walks you through the conflicts:</p>
-
-<pre><code>$ git mergetool
-merge tool candidates: kdiff3 tkdiff xxdiff meld gvimdiff opendiff emerge vimdiff
-Merging the files: index.html
-
-Normal merge conflict for &#39;index.html&#39;:
-  {local}: modified
-  {remote}: modified
-Hit return to start merge resolution tool (opendiff):</code></pre>
-
-<p>If you want to use a merge tool other than the default (Git chose <code>opendiff</code> for me in this case because I ran the command on a Mac), you can see all the supported tools listed at the top after “merge tool candidates”. Type the name of the tool you’d rather use. In Chapter 7, we’ll discuss how you can change this default value for your environment.</p>
-
-<p>After you exit the merge tool, Git asks you if the merge was successful. If you tell the script that it was, it stages the file to mark it as resolved for you.</p>
-
-<p>You can run <code>git status</code> again to verify that all conflicts have been resolved:</p>
-
-<pre><code>$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#	modified:   index.html
-#</code></pre>
-
-<p>If you’re happy with that, and you verify that everything that had conflicts has been staged, you can type <code>git commit</code> to finalize the merge commit. The commit message by default looks something like this:</p>
-
-<pre><code>Merge branch &#39;iss53&#39;
-
-Conflicts:
-  index.html
-#
-# It looks like you may be committing a MERGE.
-# If this is not correct, please remove the file
-# .git/MERGE_HEAD
-# and try again.
-#</code></pre>
-
-<p>You can modify that message with details about how you resolved the merge if you think it would be helpful to others looking at this merge in the future — why you did what you did, if it’s not obvious.</p>
+<p>A je hotovo. Právě jste vytvořili platný objekt blobu Git. Všechny objekty Git se ukládají stejným způsobem, jen s odlišným typem. Místo řetězce blob bude záhlaví začínat řetězcem „commit“ (u revize) nebo „tree“ (u stromu). A navíc, zatímco obsahem blobu může být téměř cokoliv, obsah revize nebo stromu má velmi specifický formát.</p>
 
 <div id='nav'>
 <a href='ch3-1.html'>prev</a> | <a href='ch3-3.html'>next</a>

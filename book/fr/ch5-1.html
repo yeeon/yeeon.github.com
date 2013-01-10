@@ -1,62 +1,42 @@
 ---
 layout: translation
-title: Pro Git 5.1 Git distribué Développements distribués
+title: Pro Git 5.1 Les bases de Git Démarrer un dépôt Git
 ---
-<h2 id='dveloppements_distribus'>Développements distribués</h2>
+<h2 id='dmarrer_un_dpt_git'>Démarrer un dépôt Git</h2>
 
-<p>À la différence des systèmes de gestion de version centralisés (CVCS), la nature distribuée de Git permet une bien plus grande flexibilité dans la manière dont les développeurs collaborent sur un projet. Dans les systèmes centralisés, tout développeur est un nœud travaillant de manière plus ou moins égale sur un concentrateur central. Dans Git par contre, tout développeur est potentiellement un nœud et un concentrateur, c&#8217;est-à-dire que chaque développeur peut à la fois contribuer du code vers les autres dépôts et maintenir un dépôt public sur lequel d&#8217;autres vont baser leur travail et auquel ils vont contribuer. Cette capacité ouvre une perspective de modes de développement pour votre projet ou votre équipe dont certains archétypes tirant parti de cette flexibilité seront traités dans les sections qui suivent. Les avantages et inconvénients éventuels de chaque mode seront traités. Vous pouvez choisir d&#8217;en utiliser un seul ou de mélanger les fonctions de chacun.</p>
+<p>Vous pouvez principalement démarrer un dépôt Git de deux manières. La première consiste à prendre un projet ou un répertoire existant et à l&#8217;importer dans Git. La seconde consiste à cloner un dépôt Git existant sur un autre serveur.</p>
 
-<h3 id='gestion_centralise'>Gestion centralisée</h3>
+<h3 id='initialisation_dun_dpt_git_dans_un_rpertoire_existant'>Initialisation d&#8217;un dépôt Git dans un répertoire existant</h3>
 
-<p>Dans les systèmes centralisés, il n&#8217;y a généralement qu&#8217;un seul modèle de collaboration, la gestion centralisée. Un concentrateur ou dépôt central accepte le code et tout le monde doit synchroniser son travail avec. Les développeurs sont des nœuds, des consommateurs du concentrateur, seul endroit où ils se synchronisent (voir figure 5-1).</p>
+<p>Si vous commencez à suivre un projet existant dans Git, vous n&#8217;avez qu&#8217;à vous positionner dans le répertoire du projet et saisir :</p>
 
-<p><center><img src="/figures/ch5/18333fig0501-tn.png"></center><br/> Figure 5-1. La gestion centralisée.</p>
+<pre><code>$ git init</code></pre>
 
-<p>Cela signifie que si deux développeurs clonent depuis le concentrateur et qu&#8217;ils introduisent tous les deux des modifications, le premier à pousser ses modifications le fera sans encombre. Le second développeur doit fusionner les modifications du premier dans son dépôt local avant de pousser ses modifications pour ne pas écraser les modifications du premier. Ce concept reste aussi vrai avec Git qu&#8217;il l&#8217;est avec Subversion (ou tout autre CVCS) et le modèle fonctionne parfaitement dans Git.</p>
+<p>Cela crée un nouveau sous-répertoire nommé <code>.git</code> qui contient tous les fichiers nécessaire au dépôt — un squelette de dépôt Git. Pour l&#8217;instant, aucun fichier n&#8217;est encore versionné. (Cf. chapitre 9 pour plus d&#8217;information sur les fichiers contenus dans le répertoire <code>.git</code> que vous venez de créer.)</p>
 
-<p>Si votre équipe est petite et que vous êtes déjà habitués à une gestion centralisée dans votre société ou votre équipe, vous pouvez simplement continuer à utiliser cette méthode avec Git. Mettez en place un dépôt unique et donnez à tous l&#8217;accès en poussée. Git empêchera les utilisateurs d&#8217;écraser le travail des autres. Si un développeur clone le dépôt central, fait des modifications et essaie de les pousser alors qu&#8217;un autre développeur à poussé ses modifications dans le même temps, le serveur rejettera les modifications du premier. Il lui sera indiqué qu&#8217;il cherche à pousser des modifications sans mode avance rapide et qu&#8217;il ne pourra pas le faire tant qu&#8217;il n&#8217;aura pas récupéré et fusionné les nouvelles modifications depuis le serveur. Cette méthode est très intéressante pour de nombreuses personnes car c&#8217;est un paradigme avec lequel beaucoup sont familiers et à l&#8217;aise.</p>
+<p>Si vous souhaitez commencer à suivre les versions des fichiers existants (contrairement à un répertoire vide), vous devriez probablement commencer par indexer ces fichiers et faire une validation initiale. Vous pouvez réaliser ceci avec une poignée de commandes <code>git add</code> qui spécifient les fichiers que vous souhaitez suivre, suivi d&#8217;une validation :</p>
 
-<h3 id='mode_du_gestionnaire_dintgration'>Mode du gestionnaire d&#8217;intégration</h3>
+<pre><code>$ git add *.c
+$ git add README
+$ git commit –m &#39;version initiale du projet&#39;</code></pre>
 
-<p>Comme Git permet une multiplicité de dépôt distants, il est possible d&#8217;envisager un mode de fonctionnement où chaque développeur a un accès en écriture à son propre dépôt public et en lecture à tous ceux des autres. Ce scénario inclut souvent un dépôt canonique qui représente le projet « officiel ». Pour commencer à contribuer au projet, vous créez votre propre clone public du projet et poussez vos modifications dessus. Après, il suffit d&#8217;envoyer une demande au mainteneur de projet pour qu&#8217;il tire vos modifications dans le dépôt canonique. Il peut ajouter votre dépôt comme dépôt distant, tester vos modifications localement, les fusionner dans sa branche et les pousser vers le dépôt public. Le processus se passe comme ceci (voir figure 5-2) :</p>
+<p>Nous allons passer en revue ce que ces commandes font dans une petite minute. Pour l&#8217;instant, vous avez un dépôt Git avec des fichiers sous gestion de version et une validation initiale.</p>
 
-<ol>
-<li>Le mainteneur du projet pousse vers son dépôt public.</li>
+<h3 id='cloner_un_dpt_existant'>Cloner un dépôt existant</h3>
 
-<li>Un contributeur clone ce dépôt et introduit des modifications.</li>
+<p>Si vous souhaitez obtenir une copie d&#8217;un dépôt Git existant — par exemple, un projet auquel vous aimeriez contribuer — la commande dont vous avez besoin s&#8217;appelle <code>git clone</code>. Si vous êtes familier avec d&#8217;autres systèmes de gestion de version tels que Subversion, vous noterez que la commande est <code>clone</code> et non <code>checkout</code>. C&#8217;est une distinction importante — Git reçoit une copie de quasiment toutes les données dont le serveur dispose. Toutes les versions de tous les fichiers pour l&#8217;historique du projet sont téléchargées quand vous lancez <code>git clone</code>. En fait, si le disque du serveur se corrompt, vous pouvez utiliser n&#8217;importe quel clone pour remettre le serveur dans l&#8217;état où il était au moment du clonage (vous pourriez perdre quelques paramètres du serveur, mais toutes les données sous gestion de version seraient récupérées — cf. chapitre 4 pour de plus amples détails).</p>
 
-<li>Le contributeur pousse son travail sur son dépôt public.</li>
+<p>Vous clonez un dépôt avec <code>git clone [url]</code>. Par exemple, si vous voulez cloner la bibliothèque Git Ruby appelée Grit, vous pouvez le faire de manière suivante :</p>
 
-<li>Le contributeur envoie au mainteneur un e-mail de demande pour tirer depuis son dépôt.</li>
+<pre><code>$ git clone git://github.com/schacon/grit.git</code></pre>
 
-<li>Le mainteneur ajoute le dépôt du contributeur comme dépôt distant et fusionne localement.</li>
+<p>Ceci crée un répertoire nommé <code>grit</code>, initialise un répertoire <code>.git</code> à l&#8217;intérieur, récupère toutes les données de ce dépôt, et extrait une copie de travail de la dernière version. Si vous examinez le nouveau répertoire <code>grit</code>, vous y verrez les fichiers du projet, prêt à être modifiés ou utilisés. Si vous souhaitez cloner le dépôt dans un répertoire nommé différemment, vous pouvez spécifier le nom dans une option supplémentaire de la ligne de commande :</p>
 
-<li>Le mainteneur pousse les modifications fusionnées sur le dépôt principal.</li>
-</ol>
+<pre><code>$ git clone git://github.com/schacon/grit.git mongrit</code></pre>
 
-<p><center><img src="/figures/ch5/18333fig0502-tn.png"></center><br/> Figure 5-2. Le mode du gestionnaire d&#8217;intégration</p>
+<p>Cette commande réalise la même chose que la précédente, mais le répertoire cible s&#8217;appelle <code>mongrit</code>.</p>
 
-<p>C&#8217;est une gestion très commune sur des sites tels que GitHub où il est aisé de dupliquer un projet et de pousser ses modifications pour les rendre publiques. Un avantage distinctif de cette approche est qu&#8217;il devient possible de continuer à travailler et que le mainteneur du dépôt principal peut tirer les modifications à tout moment. Les contributeurs n&#8217;ont pas à attendre le bon-vouloir du mainteneur pour incorporer leurs modifications. Chaque acteur peut travailler à son rythme.</p>
-
-<h3 id='mode_dictateur_et_ses_lieutenants'>Mode dictateur et ses lieutenants</h3>
-
-<p>C&#8217;est une variante de la gestion multi-dépôt. En général, ce mode est utilisé sur des projets immenses comprenant des centaines de collaborateurs. Un exemple connu en est le noyau Linux. Des gestionnaires d&#8217;intégration gèrent certaines parties du projet. Ce sont les lieutenants. Tous les lieutenants ont un unique gestionnaire d&#8217;intégration, le dictateur bénévole. Le dépôt du dictateur sert de dépôt de référence à partir duquel tous les collaborateurs doivent tirer. Le processus se déroule comme suit (voir figure 5-3) :</p>
-
-<ol>
-<li>Les développeurs de base travaillent sur la branche thématique et rebasent leur travail sur master. La branche master est celle du dictateur.</li>
-
-<li>Les lieutenants fusionnent les branches thématiques des développeurs dans leur propre branche master.</li>
-
-<li>Le dictateur fusionne les branches master de ses lieutenants dans sa propre branche master.</li>
-
-<li>Le dictateur pousse sa branche master sur le dépôt de référence pour que les développeurs se rebasent dessus.</li>
-</ol>
-
-<p><center><img src="/figures/ch5/18333fig0503-tn.png"></center><br/><br />Figure 5-3. Le processus du dictateur bénévole.</p>
-
-<p>Ce schéma de processus n&#8217;est pas très utilisé mais s&#8217;avère utile dans des projets très gros ou pour lesquels un ordre hiérarchique existe, car il permet au chef de projet (le dictateur) de déléguer une grande partie du travail et de collecter de grands sous-ensembles de codes à différents points avant de les intégrer.</p>
-
-<p>Ce sont des schémas de processus rendus possibles et généralement utilisés avec des systèmes distribués tels que Git, mais de nombreuses variations restent possibles pour coller à un flux de modifications donné. En espérant vous avoir aidé à choisir le meilleur mode de gestion pour votre cas, je vais traiter des exemples plus spécifiques de méthode de réalisation des rôles principaux constituant les différents flux.</p>
+<p>Git dispose de différents protocoles de transfert que vous pouvez utiliser. L&#8217;exemple précédent utilise le protocole <code>git://</code>, mais vous pouvez aussi voir <code>http(s)://</code> ou <code>utilisateur@serveur:/chemin.git</code>, qui utilise le protocole de transfert SSH. Le chapitre 4 introduit toutes les options disponibles pour mettre en place un serveur Git, ainsi que leurs avantages et inconvénients.</p>
 
 <div id='nav'>
 <a href='ch5-0.html'>prev</a> | <a href='ch5-2.html'>next</a>

@@ -1,64 +1,72 @@
 ---
 layout: translation
-title: Pro Git 7.3 Git op Maat Maken Git Haken
+title: Pro Git 7.3 Aan de slag De basis van Git
 ---
-<h2 id='git_haken'>Git Haken</h2>
+<h2 id='de_basis_van_git'>De basis van Git</h2>
 
-<p>Zoals vele andere Versie Beheer Systemen, heeft Git een manier om eigengemaakte scripts op te starten wanneer bepaalde belangrijke akties voorkomen. Er zijn twee groepen van dit soort haken: aan de client kant en aan de server kant. De haken aan de client kant zijn voor client operaties zoasl committen en samenvoegen. De haken voor de server kant zijn voor Git server operaties zoals het ontvangen van gepushte commits. Je kunt deze haken om allerlei redenen gebruiken, en je zult hier over een aantal ervan leren.</p>
+<p>Dus, wat is Git in een notendop? Dit is een belangrijk deelhoofdstuk, omdat het waarschijnlijk een stuk makkelijker wordt om Git effectief te gebruiken als je goed begrijpt wat Git is en hoe het werkt. Probeer te vergeten wat je al weet over andere VCSen zoals Subversion en Perforce als je Git aan het leren bent; zo kan je verwarring door de subtiele verschillen voorkomen. Git gaat op een hele andere manier met informatie om dan die andere systemen, ook al lijken de verschillende commando’s behoorlijk op elkaar. Als je die verschillen begrijpt, kan je voorkomen dat je verward raakt als je Git gebruikt.</p>
 
-<h3 id='een_haak_installeren'>Een Haak Installeren</h3>
+<h3 id='momentopnames_in_plaats_van_verschillen'>Momentopnames in plaats van verschillen</h3>
 
-<p>De haken worden allemaal opgeslagen in de <code>hooks</code> submap van de Git map. In de meeste projecten is dat <code>.git/hooks</code>. Standaard voorziet Git deze map van een aantal voorbeeld scripts, waarvan de meeste al bruikbaar zijn; maar ze documenteren ook de invoer waarden van ieder script. Alle scripts zijn als shell script geschreven, met hier en daar wat Perl, maar iedere executable met de juiste naam zal prima werken – je kunt ze in Ruby of Python of wat je wil schrijven. Voor Git versies later dan 1.6, eindigen deze haak bestanden met .sample; je zult ze van naam moeten veranderen. Voor eerdere versies van Git, zijn de scripts al van de juiste naam voorzien, maar je moet ze nog uitvoerbaar maken.</p>
+<p>Een groot verschil tussen Git en elke andere VCS (inclusief Subversion en consoorten) is hoe Git denkt over zijn data. Conceptueel bewaren de meeste andere systemen informatie als een lijst van veranderingen per bestand. Deze systemen (CVS, Subversion, Perforce, Bazaar, enzovoort) zien de informatie die ze bewaren als een aantal bestanden en de veranderingen die aan die bestanden zijn aangebracht over de tijd, zoals geïllustreerd in Figuur 1-4.</p>
 
-<p>Om een haak script aan te zetten, stop je een bestand met de juiste naam en dat uitvoerbaar is in de <code>hooks</code> map van je Git map. Vanaf dat punt zou het aangeroepen moeten worden. Ik zal de meestgebruikte haak bestandsnamen hier behandelen.</p>
+<p><center><img src="/figures/ch7/18333fig0104-tn.png"></center><br/> Figuur 1-4. Andere systemen bewaren data meestal als veranderingen aan een basisversie van elk bestand.</p>
 
-<h3 id='clientkan_haken'>Client-Kan Haken</h3>
+<p>Git ziet en bewaart zijn data heel anders. De kijk van Git op zijn data kan worden uitgelegd als een reeks momentopnames van een miniatuurbestandssysteem. Elke keer dat je ‘commit’ - de status van van je project in Git opslaat - neemt het een soort van foto van hoe al je bestanden er op dat moment uitzien en slaat een verwijzing naar die momentopname op. Voor efficiëntie slaat Git ongewijzigde bestanden niet elke keer opnieuw op — alleen een verwijzing naar het eerdere identieke bestand dat het eerder al opgeslagen had. In Figuur 1-5 kan je zie hoe Git ongeveer over zijn data denkt.</p>
 
-<p>Er zijn veel client-kant haken. Deze sectie verdeeld ze in commit-werwijze haken, e-mail-werkwijze scripts, en de rest van de client-kant scripts</p>
+<p><center><img src="/figures/ch7/18333fig0105-tn.png"></center><br/> Figuur 1-5. Git bewaart data als momentopnames van het project.</p>
 
-<h4 id='commitwerkwijze_haken'>Commit-Werkwijze Haken</h4>
+<p>Dat is een belangrijk verschil tussen Git en bijna alle overige VCSen. Hierdoor vindt Git bijna elk onderdeel van versiebeheer opnieuw uit, terwijl de meeste andere systemen het allemaal gewoon overnemen van de eerdere generaties. Hierdoor is Git meer een soort miniatuurbestandssysteem met een paar ongelooflijk krachtige gereedschappen, in plaats van niets meer dan een VCS. We zullen een paar van de voordelen die je krijgt als je op die manier over data denkt gaan onderzoeken, als we ‘branching’ (gesplitste ontwikkeling) toelichten in Hoofdstuk 3.</p>
 
-<p>De eerste vier haken hebben te maken met het commit proces. De <code>pre-commit</code> haak wordt eerst uitgevoerd, nog voor je een commit boodschap intyped. Het wordt gebruikt om het snapshot dat op het punt staat gecommit te worden te inspecteren, om te zien of je iets bent vergeten, om er zeker van te zijn dat tests uitgevoerd worden, of om te onderzoeken wat je wilt in de code. Deze haak met een waarde anders dan nul afsluiten breekt de commit af, alhoewel je &#8216;m kunt omzeilen met <code>git commit --no-verify</code>. Je kunt dingen doen als op code stijl controleren (voer lint of iets dergelijks uit), op aanhangende spaties controleren (de standaard haak doet dat), of om de juiste documentatie op nieuwe functies te controleren.</p>
+<h3 id='bijna_alles_is_lokaal'>Bijna alles is lokaal</h3>
 
-<p>De <code>prepare-commit-msg</code> haak wordt uitgevoerd voordat de commit boodschap editor gestart wordt, maar nadat de standaard boodschap aangemaakt is. Het stelt je in staat om de standaard boodschap aan te passen voordat de commit auteur het ziet. Deze haak accepteerd een aantal opties: het pad naar het bestand dat de huidige commit boodschap bevat, het type van de commit, en de SHA-1 van de commit als het een verbeterde commit betreft. Deze haak is voor normale commits niet zo bruikbaar; maar, het is goed voor commits waarbij de standaard boodschap automatisch gegenereerd wordt, zoals sjabloon commit boodschappen, samenvoeg commits, gesquashte commits en verbeterde commits. Je mag het samen met een commit sjabloon gebruiken om informatie in te voegen.</p>
+<p>De meeste handelingen in Git werken alleen op lokale bestanden en bronnen. Normaal gesproken is geen informatie nodig van een andere computer in je netwerk. Als je gewoon bent aan een CVCS, waar de meeste handelingen vertraagd worden door het netwerk, lijkt Git een geschenk van de snelheidsgoden. Omdat je de hele geschiedenis van het project op je lokale harde schijf hebt staan, lijken de meeste acties geen tijd in beslag te nemen.</p>
 
-<p>De <code>commit-msg</code> hook accepteerd één parameter, wat weer het pad naar een tijdelijk bestand is dat de huidige commit boodschap bevat. Als dit script eindigt met een waarde anders dan nul, dan zal Git het commit proces afbreken, dus je kunt het gebruiken om je project-status of de commit boodschap te valideren alvorens een commit toe te staan. In het laatste gedeelte van dit hoofdstuk, zal ik deze haak demonstreren om te controleren of je commit boodschap aan een bepaald patroon voldoet.</p>
+<p>Een voorbeeld: Git hoeft niet aan een of andere server de geschiedenis van je project te vragen als je de die wilt doorbladeren – het leest simpelweg jouw lokale database. Dat betekent dat je de geschiedenis bijna direct te zien krijgt. Als je de veranderingen wilt zien tussen de huidige versie van een bestand en de versie van een maand geleden kan Git het bestand van een maand geleden opzoeken, en de lokale verschillen berekenen, in plaats van aan een niet-lokale server te moeten vragen om het te doen, of de oudere versie van het bestand ophalen om het lokaal te doen.</p>
 
-<p>Nadat het hele commit proces afgerond is, zal de <code>post-commit</code> haak uitgevoerd worden. Het accepteerd geen parameters, maar je kunt de laatste commit eenvoudig ophalen door <code>git log -1 HEAD</code> uit te voeren. Over het algemeen wordt dit script gebruikt om notificaties of iets dergelijks uit te sturen.</p>
+<p>Dit betekent dat er maar heel weinig is dat je niet kunt doen als je offline bent of zonder VPN zit. Als je in een vliegtuig of trein zit, en je wilt nog even een beetje werken, kun je vrolijk doorgaan met commits maken tot je een netwerkverbinding krijgt, zodat je je werk kunt uploaden. Als je naar huis gaat en je VPN client niet aan de praat kunt krijgen dan kun je nog steeds doorwerken. Bij veel andere systemen is dat of onmogelijk of zeer onaangenaam. Als je bijvoorbeeld Perforce gebruikt kun je niet zo veel doen als je niet verbonden bent met de server. Met Subversion en CVS kun je bestanden bewerken maar je kunt geen commits maken voor je database (omdat die offline is). Dat lijkt misschien niet zo belangrijk maar je zult nog versteld staan wat een verschil het kan maken.</p>
 
-<p>De commit-werkwijze client-kant scripts kunnen gebruikt worden in vrijwel iedere werkwijze. Ze worden vaak gebruikt om een bepaald beleid af te dwingen, maar het is belangrijk om te weten dat deze scripts niet overgedragen worden tijdens een clone. Je kunt beleid afdwingen op de server kant om pushes of commits te weigeren, die niet voldoen aan een bepaald beleid, maar het is aan de ontwikkelaar om deze scripts aan de client kant te gebruiken. Dus, deze scripts zijn er om ontwikkelaars te helpen, en ze moeten door hen ingesteld en onderhouden worden, alhoewel ze aangepast of omzeilt kunnen worden op ieder tijdstip.</p>
+<h3 id='git_is_integer'>Git is integer</h3>
 
-<h4 id='email_werkwijze_haken'>E-mail Werkwijze Haken</h4>
+<p>Git maakt een controlegetal (‘checksum’) van alles voordat het wordt opgeslagen en er wordt later naar die data verwezen met dit controlegetal. Dat betekent dat het onmogelijk is om de inhoud van een bestand of map te veranderen zonder dat Git er vanaf weet. Deze functionaliteit is ingebouwd in het diepste deel van Git en staat centraal in zijn filosofie. Je kunt geen informatie kwijtraken als het wordt verstuurd en bestanden kunnen niet corrupt raken zonder dat Git het weet.</p>
 
-<p>Je kunt drie client kant haken instellen voor een e-mail gebaseerde werkwijze. Ze worden allemaal aangeroepen door het <code>git am</code> commando, dus als je dat commndo niet gebruikt in je werkwijze, dan kun je veilig doorgaan naar de volgende sectie. Als je patches aanneemt via e-mail, die door <code>git format-patch</code> geprepareerd zijn, dan zullen sommige van deze behulpzaam zijn voor je.</p>
+<p>Het mechanisme dat Git gebruikt voor deze controlegetallen heet een SHA-1-hash. Dat is een tekenreeks van 40 karakters lang, bestaande uit hexadecimale tekens (0–9 en a–f) en wordt berekend uit de inhoud van een bestand of mappenstructuur in Git. Een SHA-1-hash ziet er ongeveer zo uit:</p>
 
-<p>De eerste haak die uitgevoerd wordt is <code>applypatch-msg</code>. Het accepteerd een enkel argument: de naam van het tijdelijke bestand dat de voorgestelde commit boodschap bevat. Git breekt de patch als dit script met een waarde ongelijk aan nul eindigt. Je kunt dit gebruiken om er zeker van te zijn dat een commit boodschap juist geformateerd is, of om de boodschap te normaliseren door het script de boodschap aan te laten passen.</p>
+<pre><code>24b9da6552252987aa493b52f8696cd6d3b00373</code></pre>
 
-<p>De volgende haak die wordt uitgevoerd tijdens het toepassen van patches via <code>git am</code> is <code>pre-applypatch</code>. Dit neemt geen argumenten aan en wordt uitgevoerd nadat de patch is toegepast, zodat je het kunt gebruiken om het snapshot te inspecteren alvorens de commit te doen. Je kunt tests uitvoeren of de werkmap op een andere manier inspecteren met behulp van dit script. Als er iets mist of één van de tests faalt, dan zal eindigen met niet nul het <code>git am</code> script afbreken zonder de patch te committen.</p>
+<p>Je zult deze hashtekenreeksen overal tegenkomen omdat Git er zoveel gebruik van maakt. Sterker nog, Git bewaart data niet onder hun bestandsnaam maar in de database van Git onder de hash van de inhoud.</p>
 
-<p>De laatste haak die uitgevoerd wordt tijdens een <code>git am</code> operatie is de <code>post-applypatch</code>. Je kunt dat gebruiken om een groep te notificeren of de auteur van de patch die je zojuist gepulled hebt. Je kunt het patch proces niet stoppen met behulp van dit script.</p>
+<h3 id='git_voegt_normaal_gesproken_alleen_data_toe'>Git voegt normaal gesproken alleen data toe</h3>
 
-<h4 id='andere_client_haken'>Andere Client Haken</h4>
+<p>Wanneer je iets doet in Git is de kans groot dat het alleen maar data aan de database van Git toevoegt. Het is erg moeilijk om het systeem iets te laten doen dat je niet ongedaan kan maken of de data uit te laten wissen op wat voor manier dan ook. Zoals met elke VCS kun je veranderingen verliezen of verhaspelen waar je nog geen momentopname van hebt gemaakt; maar als je dat eenmaal hebt gedaan, is het erg moeilijk om die data te verliezen, zeker als je je lokale database regelmatig uploadt (‘push’) naar een andere repository.</p>
 
-<p>De <code>pre-rebase</code> haak wordt uitgevoerd voordat je ook maar iets rebased, en kan het proces afbreken door met een waarde anders dan nul te eindigen. Je kunt deze haak gebruiken om tegen te gaan dat commits die al gepushed zijn gerebased worden. De voorbeeld <code>pre-rebase</code> haak die Git installeert doet dit, alhoewel deze er vanuit gaat dat next de naam is van de branch die je publiceert. Je zult dat waarschijnlijk moeten veranderen in de naam van je stabiele gepubliceerde branch.</p>
+<p>Je zult nog veel plezier van Git hebben omdat je weet dat je kunt experimenteren zonder het gevaar te lopen jezelf behoorlijk in de nesten te werken. Zie Hoofdstuk 9 voor een iets diepgaandere uitleg over hoe Git zijn data bewaart en hoe je de data die verloren lijkt kunt terughalen.</p>
 
-<p>Nadat je een succesvolle <code>git checkout</code> uitgevoerd hebt, wordt de <code>post-checkout</code> haak uitgevoerd; je kunt het gebruiken om je werkmap goed in te stellen voor je project omgeving. Dit kan het invoegen van grote binaire bestanden die je niet in versie beheer wil hebben betekenen, of het automatisch genereren van documentatie, of iets in die geest.</p>
+<h3 id='de_drie_toestanden'>De drie toestanden</h3>
 
-<p>Als laatste wordt de <code>post-merge</code> haak uitgevoerd na een succesvol <code>merge</code> commando. Je kunt het gebruiken om gegevens in de boom die Git niet kan volgen terug te zetten, bijvoorbeeld permissie gegevens. Ook kan deze haak gebruikt worden om de aanwezigheid van bestanden buiten de controle van Git te controleren, die je misschien in je boom gekopieerd wil hebben zodra hij veranderd.</p>
+<p>Let nu goed op. Dit is het belangrijkste dat je over Git moet weten als je wilt dat de rest van het leerproces goed verloopt. Git heeft drie hoofdtoestanden waarin je bestanden zich kunnen bevinden: gecommit (‘commited’), aangepast (‘modified’) en voorbereid voor een commit (‘staged’). Gecommit betekent dat alle data al veilig opgeslagen is in je lokale database. Aangepast betekent dat je je bestand hebt veranderd maar dat je nog geen nieuwe momentopname in je database hebt. Voorbereid betekent dat je al hebt aangegeven dat je de huidige versie van het aangepaste bestand in je volgende momentopname toevoegt.</p>
 
-<h3 id='serverkant_haken'>Server-Kant Haken</h3>
+<p>Dit brengt ons tot de drie hoofdonderdelen van een Gitproject: de Gitmap, de werkmap, en de wachtrij voor een commit (‘staging area’)</p>
 
-<p>Naast de client-kant haken, kun je als systeem administrator ook een paar belangrijke server-kant haken gebruiken om vrijwel ieder beleid op je project af te dwingen. Deze scripts worden voor en na de pushes op de server uitgevoerd. De pre haken kunnen met een ander getal dan nul eindigeen om de push te weigeren en een foutmelding naar de client te sturen; je kunt een push beleid instellen dat zo complex is als je zelf wenst.</p>
+<p><center><img src="/figures/ch7/18333fig0106-tn.png"></center><br/> Figuur 1-6. Werkmap, wachtrij en Gitmap</p>
 
-<h4 id='prereceive_en_postreceive'>pre-receive en post-receive</h4>
+<p>De Gitmap is waar Git de metadata en objectdatabase van je project opslaat. Dit is het belangrijkste deel van Git. Deze map wordt gekopieerd wanneer je een repository kloont vanaf een andere computer.</p>
 
-<p>Het eerste script dat uitgevoerd wordt tijdens het afhandelen van een push van een client is <code>pre-receive</code>. Het aanvaardt een lijst van referenties die worden gepushed op stdin; als het eindigt met een andere waarde dan nul, worden ze allen geweigerd. Je kunt deze haak gebruiken om dingen te doen als valideren dat geen van de vernieuwde referenties een non-fast-forward is; of om te controleren dat de gebruiker die de push doet ook creatie, verwijder, of push toegang of toegang om vernieuwingen te pushen naar alle bestanden die ze proberen aan te passen met de push.</p>
+<p>De werkmap is een kopie van een bepaalde versie van het project (een ‘checkout’). Deze bestanden worden uit de gecomprimeerde database in de Gitmap gehaald en op de harde schijf geplaatst waar jij ze kunt gebruiken of bewerken.</p>
 
-<p>De <code>post-receive</code> haak wordt uitgevoerd nadat het hele proces afgerond is, en hij kan gebruikt worden om andere services te vernieuwen of gebruikers te notificeren. Het aanvaardt dezelfde gegevens op stdin als de <code>pre-receive</code> haak. Voorbeelden zijn een e-mail sturen naar een lijst, een continue integratie server notificeren, of het vernieuwen van een ticket-volg systeem – je kunt zelfs de commit boodschappen doorlopen om te zien of er nog tickets zijn die moeten worden geopend, aangepast of afgesloten moeten worden. Dit script kan het push proces niet stopppen, maar de client verbreekt de connectie niet totdat het afgerond is; dus ben voorzichtig als je iets probeert te doen dat een lange tijd in beslag neemt.</p>
+<p>De wachtrij is een simpel bestand, dat zich in het algemeen in je Gitmap bevindt, waar informatie opgeslagen wordt over wat in de volgende commit meegaat. Het wordt soms de index genoemd, maar tegenwoordig wordt het de wachtrij (staging area) genoemd.</p>
 
-<h4 id='update'>update</h4>
+<p>De algemene manier van werken met Git gaat ongeveer zo:</p>
 
-<p>Het update script is vergelijkbaar met het <code>pre-receive</code> script, behalve dan dat het uitgevoerd wordt voor iedere branch die de pusher probeert te vernieuwen. Als de pusher naar meerdere branches probeert te pushen, wordt <code>pre-receive</code> slechts één keer uitgevoerd, maar <code>update</code> bij iedere branch waar ze naar pushen. In plaats van stdin te lezen, aanvaardt dit script drie argumenten: de naam van de referentie (branch), de SHA-1 waar die referentie naar wees voor de push, en de SHA-1 die de gebruiker probeert te pushen. Als het update script met een andere waarde dan nul eindigt, wordt alleen die referentie geweigerd; andere referenties kunnen nog steeds vernieuwd worden.</p>
+<ol>
+<li>Je bewerkt bestanden in je werkmap.</li>
+
+<li>Je bereidt de bestanden voor, waardoor momentopnames worden toegevoegd aan de wachtrij.</li>
+
+<li>Je maakt een commit. Een commit neemt alle momentopnames van de wachtrij en die permanent bewaard in je Gitmap.</li>
+</ol>
+
+<p>Als een bepaalde versie van een bestand in de Gitmap staat, wordt het beschouwd als gecommit. Als het is aangepast, maar wel aan de wachtrij is toegevoegd, is het voorbereid. En als het veranderd is sinds het gekopieerd werd, maar niet voorbereid is, is het aangepast. In Hoofdstuk 2 leer je meer over deze toestanden en hoe je er voordeel van kunt hebben, maar ook hoe je de wachtrij compleet over kunt slaan.</p>
 
 <div id='nav'>
 <a href='ch7-2.html'>prev</a> | <a href='ch7-4.html'>next</a>

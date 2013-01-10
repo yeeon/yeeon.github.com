@@ -1,114 +1,152 @@
 ---
 layout: translation
-title: Pro Git 3.6 Ramificaciones en Git Reorganizando el trabajo realizado
+title: Pro Git 3.6 Los entesijos internos de Git Protocolos de transferencia
 ---
-<h2 id='reorganizando_el_trabajo_realizado'>Reorganizando el trabajo realizado</h2>
+<h2 id='protocolos_de_transferencia'>Protocolos de transferencia</h2>
 
-<p>En Git tenemos dos formas de integrar cambios de una rama en otra: la fusión (merge) y la reorganización (rebase). En esta sección vas a aprender en qué consiste la reorganización, como utilizarla, por qué es una herramienta sorprendente y en qué casos no es conveniente utilizarla.</p>
+<p>Git puede transferir datos entre dos repositorios utilizando uno de sus dos principales mecanismos de transporte: sobre HTTP (protocolo tonto), o sobre los denominados protocolos inteligentes (utilizados en <code>file://</code>, <code>ssh://</code> o <code>git://</code>). En esta parte, se verán sucintamente cómo trabajan esos dos tipos de protocolo.</p>
 
-<h3 id='reorganizacin_bsica'>Reorganización básica</h3>
+<h3 id='el_protocolo_tonto_dumb'>El protocolo tonto (dumb)</h3>
 
-<p>Volviendo al ejemplo anterior, en la sección sobre fusiones (ver Figura 3-27), puedes ver que has separado tu trabajo y realizado confirmaciones (commit) en dos ramas diferentes.</p>
+<p>El transporte de Git sobre protocolo HTTP es conocido también como protocolo tonto. Porque no requiere ningún tipo de codigo Git en la parte servidor. El proceso de recuperación (fetch) de datos se limita a una serie de peticiones GET, siendo el cliente quien ha de conocer la estructura del repositorio Git en el servidor. Vamos a revisar el proceso <code>http-fetch</code> para una libreria simple de Git:</p>
 
-<p><center><img src="/figures/ch3/18333fig0327-tn.png"></center><br/> Figura 3-27. El registro de confirmaciones inicial.</p>
+<pre><code>$ git clone http://github.com/schacon/simplegit-progit.git</code></pre>
 
-<p>La manera más sencilla de integrar ramas, tal y como hemos visto, es el comando &#8216;git merge&#8217;. Realiza una fusión a tres bandas entre las dos últimas instantáneas de cada rama (C3 y C4) y el ancestro común a ambas (C2); creando una nueva instantánea (snapshot) y la correspondiente confirmación (commit), según se muestra en la Figura 3-28.</p>
+<p>Lo primero que hace este comando es recuperar el archivo <code>info/refs</code>. Este es un archivo escrito por el comando <code>update-server-info</code>, el que has de habilitar como enganche (hook) <code>post-receive</code> para permitir funcionar correctamente al transporte HTTP:</p>
 
-<p><center><img src="/figures/ch3/18333fig0328-tn.png"></center><br/> Figura 3-28. Fusionando una rama para integrar el registro de trabajos divergentes.</p>
+<pre><code>=&gt; GET info/refs
+ca82a6dff817ec66f44342007202690a93763949     refs/heads/master</code></pre>
 
-<p>Aunque también hay otra forma de hacerlo: puedes coger los cambios introducidos en C3 y reaplicarlos encima de C4. Esto es lo que en Git llamamos <em>reorganizar</em>. Con el comando &#8216;git rebase&#8217;, puedes coger todos los cambios confirmados en una rama, y reaplicarlos sobre otra.</p>
+<p>A partir de ahi, ya tienes una lista de las referencias remotas y sus SHAs. Lo siguiente es mirar cual es la referencia a HEAD, de tal forma que puedas saber el punto a activar (checkout) cuando termines:</p>
 
-<p>Por ejemplo, puedes lanzar los comandos:</p>
+<pre><code>=&gt; GET HEAD
+ref: refs/heads/master</code></pre>
 
-<pre><code>$ git checkout experiment
-$ git rebase master
-First, rewinding head to replay your work on top of it...
-Applying: added staged command</code></pre>
+<p>Ves que es la rama<code>master</code> la que has de activar cuando el proceso esté completado.<br />sus ramas al espacio de nombres <code>qa/</code>En este punto, ya estás preparado para seguir procesando el resto de los objetos. En el archivo <code>info/refs</code> se ve que el punto de partida es la confirmación de cambios (commit) <code>ca82a6</code>, y, por tanto, comenzaremos recuperandola:</p>
 
-<p>Haciendo que Git: vaya al ancestro común de ambas ramas (donde estás actualmente y de donde quieres reorganizar), saque las diferencias introducidas por cada confirmación en la rama donde estás, guarde esas diferencias en archivos temporales, reinicie (reset) la rama actual hasta llevarla a la misma confirmación en la rama de donde quieres reorganizar, y, finalmente, vuelva a aplicar ordenadamente los cambios. El proceso se muestra en la Figura 3-29.</p>
+<pre><code>=&gt; GET objects/ca/82a6dff817ec66f44342007202690a93763949
+(179 bytes of binary data)</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0329-tn.png"></center><br/> Figura 3-29. Reorganizando sobre C4 los cambios introducidos en C3.</p>
+<p>Cuando recuperas un objeto, dicho objeto se encuentra suelto (loose) en el servidor y lo traes mediante una petición estática HTTP GET. Puedes descomprimirlo, quitarle la cabecera y mirar el contenido:</p>
 
-<p>En este momento, puedes volver a la rama &#8216;master&#8217; y hacer una fusión con avance rápido (fast-forward merge). (ver Figura 3-30)</p>
+<pre><code>$ git cat-file -p ca82a6dff817ec66f44342007202690a93763949
+tree cfda3bf379e4f8dba8717dee55aab78aef7f4daf
+parent 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+author Scott Chacon &lt;schacon@gmail.com&gt; 1205815931 -0700
+committer Scott Chacon &lt;schacon@gmail.com&gt; 1240030591 -0700
 
-<p><center><img src="/figures/ch3/18333fig0330-tn.png"></center><br/> Figura 3-30. Avance rápido de la rama &#8216;master&#8217;.</p>
+changed the version number</code></pre>
 
-<p>Así, la instantánea apuntada por C3 aquí es exactamente la misma apuntada por C5 en el ejemplo de la fusión. No hay ninguna diferencia en el resultado final de la integración, pero el haberla hecho reorganizando nos deja un registro más claro. Si examinas el registro de una rama reorganizada, este aparece siempre como un registro lineal: como si todo el trabajo se hubiera realizado en series, aunque realmente se haya hecho en paralelo.</p>
+<p>Tras esto, ya tienes más objetos a recuperar &#8211;el árbol de contenido <code>cfda3b</code> al que apunta la confirmación de cambios; y la confirmación de cambios padre <code>085bb3</code>&#8211;.</p>
 
-<p>Habitualmente, optarás por esta vía cuando quieras estar seguro de que tus confirmaciones de cambio (commits) se pueden aplicar limpiamente sobre una rama remota; posiblemente, en un proyecto donde estés intentando colaborar, pero lleves tu el mantenimiento. En casos como esos, puedes trabajar sobre una rama y luego reorgainzar lo realizado en la rama &#8216;origin/master&#8217; cuando lo tengas todo listo para enviarlo al proyecto principal. De esta forma, la persona que mantiene el proyecto no necesitará hacer ninguna integración con tu trabajo; le bastará con un avance rápido o una incorporación limpia.</p>
+<pre><code>=&gt; GET objects/08/5bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+(179 bytes of data)</code></pre>
 
-<p>Cabe destacar que la instantánea (snapshot) apuntada por la confirmación (commit) final, tanto si es producto de una regorganización (rebase) como si lo es de una fusión (merge), es exactamente la misma instantánea. Lo único diferente es el registro. La reorganización vuelve a aplicar cambios de una rama de trabajo sobre otra rama, en el mismo orden en que fueron introducidos en la primera. Mientras que la fusión combina entre sí los dos puntos finales de ambas ramas.</p>
+<p>El siguiente objeto confirmación de cambio (commit). Y el árbol de contenido:</p>
 
-<h3 id='algunas_otras_reorganizaciones_interesantes'>Algunas otras reorganizaciones interesantes</h3>
+<pre><code>=&gt; GET objects/cf/da3bf379e4f8dba8717dee55aab78aef7f4daf
+(404 - Not Found)</code></pre>
 
-<p>También puedes aplicar una reorganización (rebase) sobre otra cosa además de sobre la rama de reorganización. Por ejemplo, sea un registro como el de la Figura 3-31. Has ramificado a una rama puntual (&#8216;server&#8217;) para añadir algunas funcionalidades al proyecto, y luego has confirmado los cambios. Despues, vuelves a la rama original para hacer algunos cambios en la parte cliente (rama &#8216;client&#8217;), y confirmas también esos cambios. Por último, vuelves sobre la rama &#8216;server&#8217; y haces algunos cambios más.</p>
+<p>Pero&#8230; ¡Ay!&#8230; parece que el objeto árbol no está suelto en el servidor. Por lo que obtienes una respuesta 404 (objeto no encontrado). Puede haber un par de razones para que suceda esto: el objeto está en otro repositorio alternativo; o el objeto está en este repositorio, pero dentro de un objeto empaquetador (packfile). Git comprueba primero a ver si en el listado hay alguna alternativa:</p>
 
-<p><center><img src="/figures/ch3/18333fig0331-tn.png"></center><br/> Figura 3-31. Un registro con una rama puntual sobre otra rama puntual.</p>
+<pre><code>=&gt; GET objects/info/http-alternates
+(empty file)</code></pre>
 
-<p>Imagina que decides incorporar tus cambios de la parte cliente sobre el proyecto principal, para hacer un lanzamiento de versión; pero no quieres lanzar aún los cambios de la parte server porque no están aún suficientemente probados. Puedes coger los cambios del cliente que no estan en server (C8 y C9), y reaplicarlos sobre tu rama principal usando la opción &#8217;&#8211;onto&#8217; del comando &#8216;git rebase&#8217;:</p>
+<p>En el caso de que esto devolviera una lista de ubicaciones (URL) alternativas, Git busca en ellas. (Es un mecanismo muy adecuado en aquellos proyectos donde hay segmentos derivados uno de otro compartiendo objetos en disco.) Pero, en este caso, no hay altenativas. Por lo que el objeto debe encontrarse dentro de un empaquetado. Para ver que empaquetados hay disponibles en el servidor, has de recuperar el archivo <code>objects/info/packs</code>. Este contiene una lista de todos ellos: (que ha sido generada por <code>update-server-info</code>)</p>
 
-<pre><code>$ git rebase --onto master server client</code></pre>
+<pre><code>=&gt; GET objects/info/packs
+P pack-816a9b2334da9953e530f27bcac22082a9f5b835.pack</code></pre>
 
-<p>Esto viene a decir: &#8220;Activa la rama &#8216;client&#8217;, averigua los cambios desde el ancestro común entre las ramas &#8216;client&#8217; y &#8216;server&#8217;, y aplicalos en la rama &#8216;master&#8217;. Puede parecer un poco complicado, pero los resultados, mostrados en la Figura 3-32, son realmente interesantes.</p>
+<p>Vemos que hay un archivo empaquetado, y el objeto buscado ha de encontrarse dentro de él; pero merece comprobarlo revisando el archivo de índice, para asegurarse. Hacer la comprobacion es sobre todo util en aquellos casos donde existan multiples archivos empaquetados en el servidor, para determinar así en cual de ellos se encuentra el objeto que necesitas:</p>
 
-<p><center><img src="/figures/ch3/18333fig0332-tn.png"></center><br/> Figura 3-32. Reorganizando una rama puntual fuera de otra rama puntual.</p>
+<pre><code>=&gt; GET objects/pack/pack-816a9b2334da9953e530f27bcac22082a9f5b835.idx
+(4k of binary data)</code></pre>
 
-<p>Y, tras esto, ya puedes avanzar la rama principal (ver Figura 3-33):</p>
+<p>Una vez tengas el índice del empaquetado, puedes mirar si el objeto buscado está en él, (Dicho índice contiene la lista de SHAs de los objetos dentro del empaquetado y las ubicaciones -offsets- de cada uno de llos dentro de él.) Una vez comprobada la presencia del objeto, adelante con la recuperación de todo el archivo empaquetado:</p>
 
-<pre><code>$ git checkout master
-$ git merge client</code></pre>
+<pre><code>=&gt; GET objects/pack/pack-816a9b2334da9953e530f27bcac22082a9f5b835.pack
+(13k of binary data)</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0333-tn.png"></center><br/> Figura 3-33. Avance rápido de tu rama &#8216;master&#8217;, para incluir los cambios de la rama &#8216;client&#8217;.</p>
+<p>Cuando tengas el objeto árbol, puedes continuar avanzando por las confirmaciones de cambio. Y, como estás también están dentro del archivo empaquetado que acabas de descargar, ya no necesitas hacer mas peticiones al servidor. Git activa una copia de trabajo de la rama <code>master</code> señalada por la referencia HEAD que has descargado al principio.</p>
 
-<p>Ahora supongamos que decides traerlos (pull) también sobre tu rama &#8216;server&#8217;. Puedes reorganizar (rebase) la rama &#8216;server&#8217; sobre la rama &#8216;master&#8217; sin necesidad siquiera de comprobarlo previamente, usando el comando &#8216;git rebase <span>ramabase</span>&#8217;. El cual activa la rama puntual (&#8216;server&#8217; en este caso) y la aplica sobre la rama base (&#8216;master&#8217; en este caso):</p>
+<p>La salida completa de todo el proceso es algo como esto:</p>
 
-<pre><code>$ git rebase master server</code></pre>
+<pre><code>$ git clone http://github.com/schacon/simplegit-progit.git
+Initialized empty Git repository in /private/tmp/simplegit-progit/.git/
+got ca82a6dff817ec66f44342007202690a93763949
+walk ca82a6dff817ec66f44342007202690a93763949
+got 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+Getting alternates list for http://github.com/schacon/simplegit-progit.git
+Getting pack list for http://github.com/schacon/simplegit-progit.git
+Getting index for pack 816a9b2334da9953e530f27bcac22082a9f5b835
+Getting pack 816a9b2334da9953e530f27bcac22082a9f5b835
+ which contains cfda3bf379e4f8dba8717dee55aab78aef7f4daf
+walk 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+walk a11bef06a3f659402fe7563abf99ad00de2209e6</code></pre>
 
-<p>Esto vuelca el trabajo de &#8216;server&#8217; sobre el de &#8216;master&#8217;, tal y como se muestra en la Figura 3-34.</p>
+<h3 id='el_protocolo_inteligente_smart'>El protocolo inteligente (smart)</h3>
 
-<p><center><img src="/figures/ch3/18333fig0334-tn.png"></center><br/> Figura 3-34. Reorganizando la rama &#8216;server&#8217; sobre la rama &#8216;branch&#8217;.</p>
+<p>HTTP es un protocolo simple, pero ineficiente. Es mucho más común utilizar protocolos inteligentes para transferir datos. Estos protocolos suelen tener procesos en el lado remoto y conocen acerca de la estructura de datos Git en ese lado, &#8211;pueden leer datos localmente y determinar lo que el cliente tiene ya o necesita a continuación, para generar automáticamente datos expresamente preparados para él&#8211;. Existen dos conjuntos de procesos para transferir datos: uno para para enviar y otro par para recibir.</p>
 
-<p>Después, puedes avanzar rápidamente la rama base (&#8216;master&#8217;):</p>
+<h4 id='enviando_datos_uploading'>Enviando datos, (Uploading)</h4>
 
-<pre><code>$ git checkout master
-$ git merge server</code></pre>
+<p>Para enviar datos a un proceso remoto, Git utliza <code>send-pack</code> (enviar paquete) y <code>receive-pack</code> (recibir paquete). El proceso <code>send-pack</code> corre en el cliente y conecta con el proceso <code>receive-pack</code> corriendo en el lado remoto.</p>
 
-<p>Y por último puedes eliminar las ramas &#8216;client&#8217; y &#8216;server&#8217; porque ya todo su contenido ha sido integrado y no las vas a necesitar más. Dejando tu registro tras todo este proceso tal y como se muestra en la Figura 3-35:</p>
+<p>Por ejemplo, si lanzas el comando <code>git push origin master</code> en tu proyecto y <code>origin</code> está definida como una ubicación que utiliza el protocolo SSH. Git lanzará el proceso <code>send-pack</code> , con el que establece conexión SSH con tu servidor. En el servidor remoto, a través de una llamada SSH, intentará lanzar un comando tal como:</p>
 
-<pre><code>$ git branch -d client
-$ git branch -d server</code></pre>
+<pre><code>$ ssh -x git@github.com &quot;git-receive-pack &#39;schacon/simplegit-progit.git&#39;&quot;
+005bca82a6dff817ec66f4437202690a93763949 refs/heads/master report-status delete-refs
+003e085bb3bcb608e1e84b2432f8ecbe6306e7e7 refs/heads/topic
+0000</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0335-tn.png"></center><br/> Figura 3-35. Registro final de confirmaciones de cambio.</p>
+<p>El comando <code>git-receive-pack</code> responde con una linea por cada una de las referencias que tenga, &#8211;en este caso, la rama <code>master</code> y su SHA&#8211;. La primera linea suele indicar también una lista con las capacidades del servidor, (en este caso <code>report-status</code> &#8211;dar situación&#8211; y <code>delete-refs</code> &#8211;borrar referencias&#8211;).</p>
 
-<h3 id='los_peligros_de_la_reorganizacin'>Los peligros de la reorganización</h3>
+<p>Cada linea comienza con un valor de 4 bytes, en hexadecimal, indicando la longitud del resto de la linea. La primera de las lineas comienza con 005b, 91 en decimal, indicandonos que hay 91 bytes más en esa línea. La siguiente línea comienza con 003e, 62 en decimal, por lo que has de leer otros 62 bytes hasta el final de la linea. Y la última linea comienza con 0000, indicando así que la lista de referencias ha terminado.</p>
 
-<p>Ahh&#8230;., pero la dicha de la reorganización no la alcanzamos sin sus contrapartidas:</p>
+<p>Con esta información, el proceso <code>send-pack</code> ya puede determnar las confirmaciones de cambios (commits) presentes en el servidor. Para cada una de las referencias que se van a actualizar, el proceso <code>send-pack</code> llama al proceso <code>receive-pack</code> con la información pertinente. Por ejemplo, si estás actualizando la rama <code>master</code> y añadiendo otra rama <code>experiment</code>, la respuesta del proceso <code>send-pack</code> será algo así como:</p>
 
-<p><strong>Nunca reorganices confirmaciones de cambio (commits) que hayas enviado (push) a un repositorio público.</strong></p>
+<pre><code>0085ca82a6dff817ec66f44342007202690a93763949  15027957951b64cf874c3557a0f3547bd83b3ff6 refs/heads/master report-status
+00670000000000000000000000000000000000000000 cdfdb42577e2506715f8cfeacdbabc092bf63e8d refs/heads/experiment
+0000</code></pre>
 
-<p>Siguiendo esta recomendación, no tendrás problemas. Pero si no la sigues, la gente te odiará y serás despreciado por tus familiares y amigos.</p>
+<p>Una clave SHA-1 con todo &#8216;0&#8217;s, nos indica que no habia nada anteriormente, y que, por tanto, estamos añadiendo una nueva referencia. Si estuvieras borrando una referencia existente, verias lo contrario: una clave todo &#8216;0&#8217;s en el lado derecho.</p>
 
-<p>Cuando reorganizas algo, estás abandonando las confirmaciones de cambio ya creadas y estás creando unas nuevas; que son similares, pero diferentes. Si envias (push) confirmaciones (commits) a alguna parte, y otros las recogen (pull) de allí. Y después vas tu y las reescribes con &#8216;git rebase&#8217; y las vuelves a enviar (push) de nuevo. Tus colaboradores tendrán que refusionar (re-merge) su trabajo y todo se volverá tremendamente complicado cuando intentes recoger (pull) su trabajo de vuelta sobre el tuyo.</p>
+<p>Git envia una linea por cada referencia a actualizar, indicando el viejo SHA, el nuevo SHA y la referencia a actualizar. La primera linea indica también las capacidades disponibles en el cliente. A continuación, el cliente envia un archivo empaquetado con todos los objetos que faltan en el servidor. Y, por ultimo, el servidor responde con un indicador de éxito (o fracaso) de la operación:</p>
 
-<p>Vamos a verlo con un ejemplo. Imaginate que haces un clon desde un servidor central, y luego trabajas sobre él. Tu registro de cambios puede ser algo como lo de la Figura 3-36.</p>
+<pre><code>000Aunpack ok</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0336-tn.png"></center><br/> Figura 3-36. Clonar un repositorio y trabajar sobre él.</p>
+<h4 id='descargando_datos_downloading'>Descargando datos, (Downloading)</h4>
 
-<p>Ahora, otra persona trabaja también sobre ello, realiza una fusión (merge) y lleva (push) su trabajo al servidor central. Tu te traes (fetch) sus trabajos y los fusionas (merge) sobre una nueva rama en tu trabajo. Quedando tu registro de confirmaciones como en la Figura 3-37.</p>
+<p>Cuando descargas datos, los procesos que se ven envueltos son <code>fetch-pack</code> (recuperar paquete) y <code>upload-pack</code> (enviar paquete). El cliente arranca un proceso <code>fetch-pack</code>, para conectar con un proceso <code>upload-pack</code> en el lado servidor y negociar con él los datos a transferir.</p>
 
-<p><center><img src="/figures/ch3/18333fig0337-tn.png"></center><br/> Figura 3-37. Traer (fetch) algunas confirmaciones de cambio (commits) y fusionarlas (merge) sobre tu trabajo.</p>
+<p>Hay varias maneras de iniciar un proceso <code>upload-pack</code> en el repositorio remoto. Se puede lanzar a través de SSH, de la misma forma que se arrancaba el proceso <code>receive-pack</code>. O se puede arrancar a traves del demonio Git, que suele estar escuchando por el puerto 9418. Tras la conexión, el proceso <code>fetch-pack</code> envia datos de una forma parecida a esta:</p>
 
-<p>A continuación, la persona que habia llevado cambios al servidor central decide retroceder y reorganizar su trabajo; haciendo un &#8216;git push &#8211;force&#8217; para sobreescribir el registro en el servidor. Tu te traes (fetch) esos nuevos cambios desde el servidor.</p>
+<pre><code>003fgit-upload-pack schacon/simplegit-progit.git\0host=myserver.com\0</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0338-tn.png"></center><br/> Figura 3-38. Alguien envia (push) confirmaciones (commits) reorganizadas, abandonando las confirmaciones en las que tu habias basado tu trabajo.</p>
+<p>Como siempre, comienza con 4 bytes indicadores de cuantos datos siguen a continuación, siguiendo con el comando a lanzar, y terminando con un byte nulo, el nombre del servidor y otro byte nulo más. El demonio Git realizará las comprobaciones de si el comando se puede lanzar, si el repositorio existe y si tenemos permisos. Siendo todo correcto, el demonio lanzará el proceso <code>upload-pack</code> y procesara nuestra petición.</p>
 
-<p>En ese momento, tu te ves obligado a fusionar (merge) tu trabajo de nuevo, aunque creias que ya lo habias hecho antes. La reorganización cambia los resumenes (hash) SHA-1 de esas confirmaciones (commits), haciendo que Git se crea que son nuevas confirmaciones. Cuando realmente tu ya tenias el trabajo de C4 en tu registro.</p>
+<p>Si en lugar de utilizar el demonio Git, estás utilizando el protocolo SSH. <code>fetch-pack</code> lanzará algo como esto:</p>
 
-<p><center><img src="/figures/ch3/18333fig0339-tn.png"></center><br/> Figura 3-39. Vuelves a fusionar el mismo trabajo en una nueva fusión confirmada.</p>
+<pre><code>$ ssh -x git@github.com &quot;git-upload-pack &#39;schacon/simplegit-progit.git&#39;&quot;</code></pre>
 
-<p>Te ves obligado a fusionar (merge) ese trabajo en algún punto, para poder seguir adelante con otros desarrollos en el futuro. Tras todo esto, tu registro de confirmaciones de cambio (commit history) contendrá tanto la confirmación C4 como la C4&#8217;; teniendo ambas el mismo contenido y el mismo mensaje de confirmación. Si lanzas un &#8216;git log&#8217; en un registro como este, verás dos confirmaciones con el mismo autor, misma fecha y mismo mensaje. Lo que puede llevar a confusiones. Es más, si luego tu envias (push) ese registro de vuelta al servidor, vas a introducir todas esas confirmaciones reorganizadas en el servidor central. Lo que puede confundir aún más a la gente.</p>
+<p>En cualquier caso, después de establecer conexión, <code>upload-pack</code> responderá:</p>
 
-<p>Si solo usas la reorganización como una vía para hacer limpieza y organizar confirmaciones de cambio antes de enviarlas, y si únicamente reorganizas confirmaciones que nunca han sido públicas. Entonces no tendrás problemas. Si, por el contrario, reorganizas confirmaciones que alguna vez han sido públicas y otra gente ha basado su trabajo en ellas. Entonces estarás en un aprieto.</p>
+<pre><code>0088ca82a6dff817ec66f44342007202690a93763949 HEAD\0multi_ack thin-pack \
+  side-band side-band-64k ofs-delta shallow no-progress include-tag
+003fca82a6dff817ec66f44342007202690a93763949 refs/heads/master
+003e085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7 refs/heads/topic
+0000</code></pre>
+
+<p>La respuesta es muy similar a la dada por <code>receive-pack</code>, pero las capacidades que se indican son diferentes. Además, nos indica la referencia HEAD, para que el cliente pueda saber qué ha de activar (check out) en el caso de estar requiriendo un clon.</p>
+
+<p>En este punto, el proceso <code>fetch-pack</code> revisa los objetos que tiene y responde indicando los objetos que necesita. Enviando &#8220;want&#8221; (quiero) y la clave SHA que necesita. Los objetos que ya tiene, los envia con &#8220;have&#8221; (tengo) y la correspondiente clave SHA. Llegando al final de la lista, escribe &#8220;done&#8221; (hecho). Para indicar al proceso <code>upload-pack</code> que ya puede comenzar a enviar el archivo empaquetado con los datos requeridos:</p>
+
+<pre><code>0054want ca82a6dff817ec66f44342007202690a93763949 ofs-delta
+0032have 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+0000
+0009done</code></pre>
+
+<p>Este es un caso muy sencillo para ilustrar los protocolos de trasferencia. En casos más complejos, el cliente explota las capacidades de <code>multi_ack</code> (multiples confirmaciones) o <code>side-band</code> (banda lateral). Pero este ejemplo muestra los intercambios básicos empleados en los protocolos inteligentes.</p>
 
 <div id='nav'>
 <a href='ch3-5.html'>prev</a> | <a href='ch3-7.html'>next</a>

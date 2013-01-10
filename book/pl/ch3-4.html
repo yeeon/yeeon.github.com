@@ -1,42 +1,69 @@
 ---
 layout: translation
-title: Pro Git 3.4 Gałęzie Gita Sposoby pracy w gałęziami
+title: Pro Git 3.4 Pierwsze kroki Instalacja Git
 ---
-<h2 id='sposoby_pracy_w_gaziami'>Sposoby pracy w gałęziami</h2>
+<h2 id='instalacja_git'>Instalacja Git</h2>
 
-<p>Teraz, kiedy poznałeś już podstawy gałęzi i scalania, co ze zdobytą wiedzą możesz i co powinieneś zrobić? W tej części zajmiemy się typowymi schematami pracy, które stają się dostępne dzięki tak lekkiemu modelowi gałęzi. Pozwoli ci to samemu zdecydować, czy warto stosować je w swoim cyklu rozwoju projektów.</p>
+<p>Czas rozpocząć pracę z Git. Pierwszym krokiem jest instalacja. Można ją przeprowadzić na różne sposoby; po pierwsze można zainstalować Git ze źródeł, po drugie - można skorzystać z pakietu binarnego dla konkretnej platformy.</p>
 
-<h3 id='gazie_dugodystansowe'>Gałęzie długodystansowe</h3>
+<h3 id='instalacja_ze_rde'>Instalacja ze źródeł</h3>
 
-<p>Ponieważ Git używa prostego scalania trójstronnego, scalanie zmian z jednej gałęzi do drugiej kilkukrotnie w długim okresie czasu jest ogólnie łatwe. Oznacza to, że możesz utrzymywać kilka gałęzi, które są zawsze otwarte i których używasz dla różnych faz w cyklu rozwoju; możesz scalać zmiany regularnie z jednych gałęzi do innych.</p>
+<p>Jeśli masz taką możliwość, korzystne jest zainstalowanie Git ze źródeł, ponieważ w ten sposób dostajesz najnowszą wersję. Każda wersja Git zawiera zwykle użyteczne zmiany w interfejsie, zatem chęć skorzystania z najnowszych funkcji stanowi zwykle najlepszy powód by skompilować samodzielnie własną wersję Git. Jest to istotne także z tego powodu, że wiele dystrybucji Linuksa posiada stare wersje pakietów; zatem jeśli nie korzystasz z najświeższej dystrybucji, albo nie aktualizujesz jej nowszymi pakietami, instalacja ze źródeł to najlepsza metoda.</p>
 
-<p>Wielu programistów pracuje z Gitem wykorzystując to podejście, trzymając w gałęzi <code>master</code> jedynie stabilny kod — możliwe, że jedynie kod, który już został albo w najbliższej przyszłości zostanie wydany. Równolegle utrzymują oni inną gałąź o nazwie <code>develop</code> lub <code>next</code>, na której pracują lub używają jej do stabilizacji przyszłych wersji — zawarta w niej praca nie musi być zawsze stabilna, lecz po stabilizacji może być scalona do gałęzi <code>master</code>. Taką gałąź wykorzystuje się także do wciągania zmian z gałęzi tematycznych (gałęzi krótkodystansowych, takich jak wcześniejsza <code>iss53</code>), kiedy są gotowe, aby przetestować je i upewnić się, że nie wprowadzają nowych błędów.</p>
+<p>Aby zainstalować Git, potrzebne są następujące biblioteki: curl, zlib, openssl, expat oraz libiconv. Przykładowo, jeśli korzystasz z systemu, który posiada narzędzie yum (np. Fedora) lub apt-get (np. system oparty na Debianie), możesz skorzystać z następujących poleceń w celu instalacji zależności:</p>
 
-<p>W rzeczywistości mówimy o wskaźnikach przesuwających się w przód po zatwierdzanych przez ciebie zestawach zmian. Stabilne gałęzie znajdują się wcześniej w historii, a gałęzie robocze na jej końcu (patrz Rysunek 3-18).</p>
+<pre><code>$ yum install curl-devel expat-devel gettext-devel \
+  openssl-devel zlib-devel
 
-<p><center><img src="/figures/ch3/18333fig0318-tn.png"></center><br/> Rysunek 3-18. Stabilniejsze gałęzie z reguły znajdują się wcześniej w historii zmian.</p>
+$ apt-get install libcurl4-gnutls-dev libexpat1-dev gettext \
+  libz-dev libssl-dev</code></pre>
 
-<p>Ogólnie łatwiej jest myśleć o nich jak o silosach na zmiany, gdzie grupy zmian są promowane do stabilniejszych silosów, kiedy już zostaną przetestowane (Rysunek 3-19).</p>
+<p>Gdy wszystkie wymagane zależności zostaną zainstalowane, możesz pobrać najnowszą wersję Git ze strony:</p>
 
-<p><center><img src="/figures/ch3/18333fig0319-tn.png"></center><br/> Rysunek 3-19. Może być ci łatwiej myśleć o swoich gałęziach jak o silosach.</p>
+<pre><code>http://git-scm.com/download</code></pre>
 
-<p>Możesz powielić ten schemat na kilka poziomów stabilności. Niektóre większe projekty posiadają dodatkowo gałąź <code>proposed</code> albo <code>pu</code> („proposed updates” — proponowane zmiany), scalającą gałęzie, które nie są jeszcze gotowe trafić do gałęzi <code>next</code> czy <code>master</code>. Zamysł jest taki, że twoje gałęzie reprezentują różne poziomy stabilności; kiedy osiągają wyższy stopień stabilności, są scalane do gałęzi powyżej. Podobnie jak poprzednio, posiadanie takich długodystansowych gałęzi nie jest konieczne, ale często bardzo pomocne, zwłaszcza jeśli pracujesz przy dużych, złożonych projektach.</p>
+<p>A następnie skompilować i zainstalować Git:</p>
 
-<h3 id='gazie_tematyczne'>Gałęzie tematyczne</h3>
+<pre><code>$ tar -zxf git-1.6.0.5.tar.gz
+$ cd git-1.6.0.5
+$ make prefix=/usr/local all
+$ sudo make prefix=/usr/local install</code></pre>
 
-<p>Gałęzie tematyczne, dla odmiany, przydadzą się w każdym projekcie, niezależnie od jego rozmiarów. Gałąź tematyczna to gałąź krótkodystansowa, którą tworzysz i używasz w celu stworzenia pojedynczej funkcji lub innych tego rodzaju zmian. Z całą pewnością nie jest to coś czego chciałbyś używać pracując z wieloma innymi systemami kontroli wersji, ponieważ scalanie i tworzenie nowych gałęzi jest w nich ogólnie mówiąc zbyt kosztowne. W Gicie tworzenie, praca wewnątrz jak i scalanie gałęzi kilkukrotnie w ciągu dnia jest powszechnie stosowane i naturalne.</p>
+<p>Po instalacji masz również możliwość pobrania Git za pomocą samego Git:</p>
 
-<p>Widziałeś to w poprzedniej sekcji, kiedy pracowaliśmy z gałęziami <code>iss53</code> i <code>hotfix</code>. Stworzyłeś wewnątrz nich kilka rewizji, po czym usunąłeś je zaraz po scaleniu zmian z gałęzią główną. Ta technika pozwala na szybkie i efektywne przełączanie kontekstu - ponieważ twój kod jest wyizolowany w osobnych silosach, w których wszystkie zmiany są związane z pracą do jakiej została stworzona gałąź, znacznie łatwiej jest połapać się w kodzie podczas jego przeglądu, recenzowania i temu podobnych. Możesz przechowywać tam swoje zmiany przez kilka minut, dni, miesięcy i scalać je dopiero kiedy są gotowe, bez znaczenia w jakiej kolejności zostały stworzone oraz w jaki sposób przebiegała praca nad nimi.</p>
+<pre><code>$ git clone git://git.kernel.org/pub/scm/git/git.git</code></pre>
 
-<p>Rozważ przykład wykonywania pewnego zadania (na gałęzi głównej), stworzenia gałęzi w celu rozwiązania konkretnego problemu (<code>iss91</code>), pracy na niej przez chwilę, stworzenia drugiej gałęzi w celu wypróbowania innego sposobu rozwiązania tego samego problemu (<code>iss91v2</code>), powrotu do gałęzi głównej i pracy z nią przez kolejną chwilę, a następnie stworzenia tam kolejnej gałęzi do sprawdzenia pomysłu, co do którego nie jesteś pewny, czy ma on sens (gałąź <code>dumbidea</code>). Twoja historia rewizji będzie wygląda mniej więcej tak:</p>
+<h3 id='instalacja_w_systemie_linux'>Instalacja w systemie Linux</h3>
 
-<p><center><img src="/figures/ch3/18333fig0320-tn.png"></center><br/> Rysunek 3-20. Twoja historia rewizji zawierająca kilka gałęzi tematycznych.</p>
+<p>Jeśli chcesz zainstalować Git w systemie Linux z wykorzystaniem pakietów binarnych, możesz to zrobić w standardowy sposób przy użyciu narzędzi zarządzania pakietami, specyficznych dla danej dystrybucji. Jeśli korzystasz z Fedory, możesz użyć narzędzia yum:</p>
 
-<p>Teraz, powiedzmy, że decydujesz się, że najbardziej podoba ci się drugie rozwiązanie twojego problemu (<code>iss91v2</code>); zdecydowałeś się także pokazać gałąź <code>dumbidea</code> swoim współpracownikom i okazało się, że pomysł jest genialny. Możesz wyrzucić oryginalne rozwiązanie problemu znajdujące się w gałęzi <code>iss91</code> (tracąc rewizje C5 i C6) i scalić dwie pozostałe gałęzie. Twoja historia będzie wyglądać tak, jak na Rysunku 3-21.</p>
+<pre><code>$ yum install git-core</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0321-tn.png"></center><br/> Rysunek 3-21. Historia zmian po scaleniu gałęzi dumbidea i iss91v2.</p>
+<p>Jeśli korzystasz z dystrybucji opartej na Debianie (np. Ubuntu), użyj apt-get:</p>
 
-<p>Ważne jest, żeby robiąc to wszystko pamiętać, że są to zupełnie lokalne gałęzie. Tworząc nowe gałęzie i scalając je później, robisz to wyłącznie w ramach własnego repozytorium - bez jakiejkolwiek komunikacji z serwerem.</p>
+<pre><code>$ apt-get install git-core</code></pre>
+
+<h3 id='instalacja_na_komputerze_mac'>Instalacja na komputerze Mac</h3>
+
+<p>Istnieją dwa proste sposoby instalacji Git na komputerze Mac. Najprostszym z nich jest użycie graficznego instalatora, którego można pobrać z witryny Google Code (patrz Ekran 1-7):</p>
+
+<pre><code>http://code.google.com/p/git-osx-installer</code></pre>
+
+<p><center><img src="/figures/ch3/18333fig0107-tn.png"></center><br/> Figure 1-7. Instalator Git dla OS X.</p>
+
+<p>Innym prostym sposobem jest instalacja Git z wykorzystaniem MacPorts (<code>http://www.macports.org</code>). Jeśli masz zainstalowane MacPorts, zainstaluj Git za pomocą</p>
+
+<pre><code>$ sudo port install git-core +svn +doc +bash_completion +gitweb</code></pre>
+
+<p>Nie musisz instalować wszystkich dodatków, ale dobrym pomysłem jest dołączenie +svn w razie konieczności skorzystania z Git podczas pracy z repozytoriami Subversion (patrz Rozdział 8).</p>
+
+<h3 id='instalacja_w_systemie_windows'>Instalacja w systemie Windows</h3>
+
+<p>Instalacja Git w systemie Windows jest bardzo prosta. Projekt msysGit posiada jedną z najprostszych procedur instalacji. Po prostu pobierz program instalatora z witryny Google Code i uruchom go:</p>
+
+<pre><code>http://code.google.com/p/msysgit</code></pre>
+
+<p>Po instalacji masz dostęp zarówno do wersji konsolowej, uruchamianej z linii poleceń (w tym do klienta SSH, który przyda się jeszcze później) oraz do standardowego GUI.</p>
 
 <div id='nav'>
 <a href='ch3-3.html'>prev</a> | <a href='ch3-5.html'>next</a>

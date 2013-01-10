@@ -1,211 +1,257 @@
 ---
 layout: translation
-title: Pro Git 3.2 Branchen in Git Eenvoudig Branchen en Mergen
+title: Pro Git 3.2 Het binnenwerk van Git Git objecten
 ---
-<h2 id='eenvoudig_branchen_en_mergen'>Eenvoudig Branchen en Mergen</h2>
+<h2 id='git_objecten'>Git objecten</h2>
 
-<p>Laten we eens door een eenvoudig voorbeeld van branchen en mergen stappen met een werkwijze die je zou kunnen gebruiken in de echte wereld. Je zult deze stappen volgen:</p>
+<p>Git is een inhouds-adresseerbaar bestandssysteem. Mooi. Wat betekend dat? Het betekend dat in de kern van Git een eenvoudige sleutel-waarde gegevens opslag zit. Je kunt er ieder soort inhoud in stoppen, en het zal je een sleutel geven die je kunt gebruiken om de inhoud op ieder moment terug te krijgen. Om te demonstreren, kun je het sanitaire voorzieningen commando <code>hash-object</code> gebruiken, die wat gegevens aanneemt, het in je <code>.git</code> map opslaat, en je de sleutel teruggeeft waarmee de gegevens zijn opgeslagen. Als eerste initialiseer je een nieuw Git repository en verifieer je dat er niets in de <code>objects</code> map staat:</p>
 
-<ol>
-<li>Werken aan een website.</li>
+<pre><code>$ mkdir test
+$ cd test
+$ git init
+Initialized empty Git repository in /tmp/test/.git/
+$ find .git/objects
+.git/objects
+.git/objects/info
+.git/objects/pack
+$ find .git/objects -type f
+$</code></pre>
 
-<li>Een branch aanmaken voor een nieuw verhaal waar je aan werkt.</li>
+<p>Git heeft de <code>objects</code> map geïnitialiseerd en de <code>pack</code> en <code>info</code> submappen erin aangemaakt, maar er zijn geen reguliere bestanden. Nu sla je wat tekst in je Git databank op:</p>
 
-<li>Wat werk doen in die branch.</li>
-</ol>
+<pre><code>$ echo &#39;test content&#39; | git hash-object -w --stdin
+d670460b4b4aece5915caf5c68d12f560a9fe3e4</code></pre>
 
-<p>Dan ontvang je een telefoontje dat je een ander probleem direct moet repareren. Je zult het volgende doen:</p>
+<p>De <code>-w</code> verteld <code>hash-object</code> dat het object opgeslagen moet worden; anders zal het commando je alleen vertellen wat de sleutel zou zijn. <code>--stdin</code> verteld het commando dat het moet lezen van stdin; als je dit niet specificeert verwatch <code>hash-object</code> een pad naar een bestand. De uitvoer van het commando is een hash checksum van 40 karakters. Dit is de SHA-1 hash – een checksum van de inhoud die je opslaat plus een kop, waarover je zo meteen meer zult leren. Nu kun je zien hoe Git je gegevens opgeslagen heeft:</p>
 
-<ol>
-<li>Terugdraaien naar je productie branch.</li>
+<pre><code>$ find .git/objects -type f
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4</code></pre>
 
-<li>Een branch aanmaken om de snelle reparatie toe te voegen.</li>
+<p>Je kunt een bestand in de <code>objects</code> map zien. Dit is hoe Git de inhoud initieel opslaat – as een enkel bestand per stuk inhoud, vernoemd naar de SHA-1 checksum van de inhoud en z&#8217;n kop. De submap is vernoemd naar de eerste 2 karakters van de SHA, het het bestandsnaam zijn de overige 38 karakters.</p>
 
-<li>Nadat het getest is, de snelle reparatie branch samenvoegen, en dat naar productie terugzetten.</li>
+<p>Je kunt de inhoud terug uit Git halen met het <code>cat-file</code> commando. Dit commando is een soort Zwitsers zakmes om Git objecten mee te inspecteren. Door de <code>-p</code> optie mee te geven, instrueer je het <code>cat-file</code> commando om uit te zoeken van het type van de inhoud is en om het netjes aan je te tonen:</p>
 
-<li>Terugschakelen naar je originele verhaal en doorgaan met werken.</li>
-</ol>
+<pre><code>$ git cat-file -p d670460b4b4aece5915caf5c68d12f560a9fe3e4
+test content</code></pre>
 
-<h3 id='eenvoudig_branchen'>Eenvoudig Branchen</h3>
+<p>Nu kun je inhoud aan Git toevoegen, en het er weer uit halen. Je kunt dit ook doen met inhoud in bestanden. Bijvoorbeeld, je kunt wat eenvoudig versie beheer op een bestand doen. Als eerste maak je een nieuw bestand en slaat de inhoud op in je databank:</p>
 
-<p>Als eerste, laten we zeggen dat je aan je project werkt en al een paar commits hebt (zie Figuur 3-10).</p>
+<pre><code>$ echo &#39;version 1&#39; &gt; test.txt
+$ git hash-object -w test.txt
+83baae61804e65cc73a7201a7252750c76066a30</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0310-tn.png"></center><br/> Figuur 3-10. Een korte en eenvoudige commit historie.</p>
+<p>Daarna schrijf je wat nieuwe inhoud in het bestand en slaat het opnieuw op:</p>
 
-<p>Je hebt besloten dan je gaat werken aan probleem #53 in wat voor probleem beheersysteem je bedrijf ook gebruikt. Om duidelijk te zijn, Git is niet verbonden een een probleem beheersysteem in het bijzonder; maar omdat probleem #53 een beperkt onderwerp is waar je aan werkt, zul je een nieuwe branch aanmaken waarin je gaat werken. Om een branch aan te maken en er meteen naartoe te schakelen, kun je het <code>git checkout</code> commando uitvoeren met de <code>-b</code> optie:</p>
+<pre><code>$ echo &#39;version 2&#39; &gt; test.txt
+$ git hash-object -w test.txt
+1f7a7a472abf3dd9643fd615f6da379c4acb3e3a</code></pre>
 
-<pre><code>$ git checkout -b iss53
-Switched to a new branch &quot;iss53&quot;</code></pre>
+<p>Je databank bevat de twee nieuwe versies van het bestand, samen met de eerste inhoud die je daar opgeslagen hebt:</p>
 
-<p>Dit is een afkorting voor:</p>
+<pre><code>$ find .git/objects -type f
+.git/objects/1f/7a7a472abf3dd9643fd615f6da379c4acb3e3a
+.git/objects/83/baae61804e65cc73a7201a7252750c76066a30
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4</code></pre>
 
-<pre><code>$ git branch iss53
-$ git checkout iss53</code></pre>
+<p>Nu kun je het bestand terugbrengen naar de eerste versie</p>
 
-<p>Figuur 3-11 toont het resultaat.</p>
+<pre><code>$ git cat-file -p 83baae61804e65cc73a7201a7252750c76066a30 &gt; test.txt
+$ cat test.txt
+version 1</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0311-tn.png"></center><br/> Figuur 3-11. Een nieuwe branch verwijzing maken.</p>
+<p>of de tweede versie:</p>
 
-<p>Je doet wat werk aan je web site en doet wat commits. Door dat te doen beweegt de <code>iss53</code> branch vooruit, omdat je het uitgechecked hebt (dat wil zeggen, je HEAD wijst ernaar; zie Figuur 3-12):</p>
+<pre><code>$ git cat-file -p 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a &gt; test.txt
+$ cat test.txt
+version 2</code></pre>
 
-<pre><code>$ vim index.html
-$ git commit -a -m &#39;added a new footer [issue 53]&#39;</code></pre>
+<p>Maar de SHA-1 sleutel voor iedere versie van je bestand onthouden is niet erg praktisch; plus, je bewaard de bestandsnaam niet in je systeem – alleen de inhoud. Dit objecttype heet een blob. Je kunt Git jou het objecttype van ieder object in Git laten vertellen, gegeven de SHA-1 sleutel, met <code>cat-file -t</code>:</p>
 
-<p><center><img src="/figures/ch3/18333fig0312-tn.png"></center><br/> Figuur 3-12. De iss53 branch is vooruit gegaan met je werk.</p>
+<pre><code>$ git cat-file -t 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a
+blob</code></pre>
 
-<p>Nu krijg je het telefoontje dan er een probleem is met de web site, en je moet het meteen repareren. Met Git hoef je je reparatie niet meteen uit te leveren samen met de <code>iss53</code> wijzigingen die je gedaan hebt, en je hoeft ook niet veel moeite te stoppen in het terugdraaien van die wijzigingen voordat je kunt werken aan het toepassen van je reparatie in productie. Het enige dat je moet doen in terugschakelen naar je master branch.</p>
+<h3 id='boom_objecten'>Boom objecten</h3>
 
-<p>Maar, voordat je dat doet, let dan op dat als je werkmap of staging gebied wijzigingen bevat die nog niet gecommit zijn en conflicteren met de branch die je gaat uitchecken, dan laat Git je niet omschakelen. Het is het beste om een schone werk status te hebben als je tussen branches gaat schakelen. Er zijn altijd manieren om hier omheen te gaan (te weten, stashen en commit ammending). die we later gaan behandelen. Voor nu, heb je al je wijzigingen gecommit, zodat je terug kunt schakelen naar je master branch:</p>
+<p>Het volgende type waar je naar gaat kijken is het boom object, wat het probleem van het opslaan van de bestandsnaam oplost en het je ook mogelijk maakt om een groep bestanden samen op te slaan. Git slaat inhoud op in dezelfde wijze als een UNIX bestandssysteem, maar dan wat vereenvoudigd. Alle inhoud wordt opgeslagen als boom- en blob-objecten, waarbij bomen corresponderen met UNIX map vermeldingen en blobs min of meer corresponderen aan inodes of bestandsinhoud. Een enkel boomobject bevat één of meer boom vermeldingen, waarvan ieder een SHA-1 point naar een blob of subboom bevat met zijn geassocieerde mode, type en bestandsnaam. Bijvoorbeeld, de meest recente boom in het simplegit project zou er zo uit kunnen zien:</p>
 
-<pre><code>$ git checkout master
-Switched to branch &quot;master&quot;</code></pre>
+<pre><code>$ git cat-file -p master^{tree}
+100644 blob a906cb2a4a904a152e80877d4088654daad0c859      README
+100644 blob 8f94139338f9404f26296befa88755fc2598c289      Rakefile
+040000 tree 99f1a6d12cb4b6f19c8655fca46c3ecf317074e0      lib</code></pre>
 
-<p>Op dit punt, is je project werkmap precies zoals het was voordat je begon te werken aan probleem #53, en je kunt je concentreren op je snelle reparatie. Dit is een belangrijk punt om te onthouden: Git herstelt je werkmap zodat die eruit ziet als het snapshot van de commit waar de branch die je uitchecked naar wijst. Het voegt toe, verwijdert en wijzigt bestanden automatisch om er zeker van te zijn dat je werkkopie eruit ziet zoals de branch eruit zag toen je er voor het laatst op committe.</p>
+<p>De <code>master^{tree}</code> syntax specificeert het boom object waarnaar gewezen wordt door de laatste commit op je <code>master</code> branch. Zie dat de <code>lib</code> submap geen blob is, maar een pointer naar een andere boom:</p>
 
-<p>Vervolgens heb je een snelle reparatie te doen. Laten we een reparatie branch maken om op te werken totdat het af is (zie Figuur 3-13):</p>
+<pre><code>$ git cat-file -p 99f1a6d12cb4b6f19c8655fca46c3ecf317074e0
+100644 blob 47c6340d6459e05787f644c2447d2595f5d3a54b      simplegit.rb</code></pre>
 
-<pre><code>$ git checkout -b &#39;hotfix&#39;
-Switched to a new branch &quot;hotfix&quot;
-$ vim index.html
-$ git commit -a -m &#39;fixed the broken email address&#39;
-[hotfix]: created 3a0874c: &quot;fixed the broken email address&quot;
- 1 files changed, 0 insertions(+), 1 deletions(-)</code></pre>
+<p>Conceptueel zijn de gegevens die Git opslaat zoiets als in Figuur 9-1.</p>
 
-<p><center><img src="/figures/ch3/18333fig0313-tn.png"></center><br/> Figuur 3-13. snelle reparatie branch gebaseerd op de tip van je master branch.</p>
+<p><center><img src="/figures/ch3/18333fig0901-tn.png"></center><br/> Figuur 9-1. Eenvoudige versie van het Git data model.</p>
 
-<p>Je kunt je tests draaien, er zeker van zijn dat de reparatie is wat je wil, en het samenvoegen met je master branch om het naar productie uit te rollen. Je doet dit met het <code>git merge</code> commando:</p>
+<p>Je kunt je eigen boom maken. Normaal gesproken maakt Git een boom door de status van je staging gebied of index te pakken en daar een boom object mee te schrijven. Dus, om een boomobject te maken moet je eerst een index instellen door een paar bestanden te stagen. Om een index te maken met een enkele vermelding – de eerste versie van je test.txt bestand – kun je het sanitaire voorzieningen commando <code>update-index</code> gebruiken. Je gebruikt dit commando om kunstmatig de eerdere versie van het test.txt bestand toe te voegen aan een nieuw staging gebied. Je moet het de <code>--add</code> optie meegeven, omdat het bestand nog niet bestaat in je staging gebied (je hebt zelfs nog geen staging gebied ingesteld) en <code>--cacheinfo</code> omdat het bestand dat je toevoegt niet in je map staat, maar wel in je databank. Daarna specificeer je de mode, SHA-1 en bestandsnaam:</p>
 
-<pre><code>$ git checkout master
-$ git merge hotfix
-Updating f42c576..3a0874c
-Fast forward
- README |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)</code></pre>
+<pre><code>$ git update-index --add --cacheinfo 100644 \
+  83baae61804e65cc73a7201a7252750c76066a30 test.txt</code></pre>
 
-<p>Je zult de uitdrukking &#8220;Fast forward&#8221; zien in die samenvoeging. Omdat de commit van de branch waar je mee samenvoegde direct stroomopwaarts was van de commit waar je op zit, zal Git de verwijzing vooruit zetten. Om dat op een andere manier te zeggen, als je een commit probeert samen te voegen met een commit die bereikt kan worden door de historie van eerste commit te volgen, zal Git de dingen vereenvoudigen door de verwijzing vooruit te verplaatsen omdat er geen afwijkend werk is om samen te voegen – dit wordt een &#8220;Fast forward&#8221; genoemd.</p>
+<p>In dit geval specificeer je een mode van <code>100644</code>, wat betekend dat het een normaal bestand is. Andere opties zijn <code>100755</code>, wat betekend dat het een uitvoerbaar bestand is; en <code>120000</code>, wat een symbolische link specificeert. De mode is genomen van normale UNIX modes, maar is veel minder flexibel – deze drie modi zijn de enigen die geldig zijn voor bestanden (blobs) in Git (alhoewel andere modi worden gebruikt voor mappen en submodules).</p>
 
-<p>Je wijziging is nu in het snapshot van de commit waar de <code>master</code> branch naar wijst, en je kunt je wijziging uitrollen (zie Figuur 3-14).</p>
+<p>Nu kun je het <code>write-tree</code> commando gebruiken om het staging gebied naar een boomobject te schrijven. Er is geen <code>-w</code> optie nodig – <code>write-tree</code> aanroepen zorgt er automatisch voor dat een boomobject gecreëerd wordt van de status van de index als die boom nog niet bestaat:</p>
 
-<p><center><img src="/figures/ch3/18333fig0314-tn.png"></center><br/> Figuur 3-14. Je master branch wijst naar dezelfde plek als de snelle reparatie branch na de wijziging.</p>
+<pre><code>$ git write-tree
+d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+$ git cat-file -p d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+100644 blob 83baae61804e65cc73a7201a7252750c76066a30      test.txt</code></pre>
 
-<p>Nadat je super-belangrijke reparatie uitgerold is, ben je klaar om terug te schakelen naar het werk dat je deed voordat je onderbroken werd. Maar, eerst zul je de snelle reparatie branch verwijderen, omdat je die niet langer nodig hebt – de <code>master</code> branch wijst naar dezelfde plek. Je kunt het verwijderen met de <code>-d</code> optie op <code>git branch</code>:</p>
+<p>Je kunt ook verifiëren dat dit een boomobject is:</p>
 
-<pre><code>$ git branch -d hotfix
-Deleted branch hotfix (3a0874c).</code></pre>
+<pre><code>$ git cat-file -t d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+tree</code></pre>
 
-<p>Nu kun je terugschakelen naar je werk in uitvoering branch voor probleem #53 en doorgaan met daar aan te werken (zie Figuur 3-15):</p>
+<p>Je zult nu een nieuwe boom aanmaken met de tweede versie van het test.txt bestand en ook een nieuw bestand:</p>
 
-<pre><code>$ git checkout iss53
-Switched to branch &quot;iss53&quot;
-$ vim index.html
-$ git commit -a -m &#39;finished the new footer [issue 53]&#39;
-[iss53]: created ad82d7a: &quot;finished the new footer [issue 53]&quot;
+<pre><code>$ echo &#39;new file&#39; &gt; new.txt
+$ git update-index test.txt
+$ git update-index --add new.txt</code></pre>
+
+<p>Je staging gebied heeft nu een nieuwe versie van test.txt, als ook het nieuwe new.txt bestand. Schrijf de boom (sla de status van het staging gebied of index op als boom object) en kijk hoe het er uit ziet:</p>
+
+<pre><code>$ git write-tree
+0155eb4229851634a0f03eb265b69f5a2d56f341
+$ git cat-file -p 0155eb4229851634a0f03eb265b69f5a2d56f341
+100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
+100644 blob 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a      test.txt</code></pre>
+
+<p>Zie dat deze boom beide bestandsvermeldingen bevat en ook dat de SHA van test.txt dezelfde &#8220;versie 2&#8221; SHA is als eerder (<code>1f7a7a</code>). Je zult nu voor de lol de eerste boom als een subboom toevoegen aan deze. Je kunt bomen in je staging gebied lezen door <code>read-tree</code> aan te roepen. In dit geval kun je een bestaande boom in je staging gebied lezen als een subboom met de <code>--prefix</code> optie aan <code>read-tree</code>:</p>
+
+<pre><code>$ git read-tree --prefix=bak d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+$ git write-tree
+3c4e9cd789d88d8d89c1073707c3585e41b0e614
+$ git cat-file -p 3c4e9cd789d88d8d89c1073707c3585e41b0e614
+040000 tree d8329fc1cc938780ffdd9f94e0d364e0ea74f579      bak
+100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
+100644 blob 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a      test.txt</code></pre>
+
+<p>Als je een werkmap zou maken van de nieuwe boom die je zojuist geschreven hebt, zou je de twee bestanden in het bovenste niveau van de werkmap krijgen en een submap genaamd <code>bak</code> die de eerste versie van het test.txt bestand bevatte. Je kunt over de gegevens die Git bevat voor deze structuren denken zoals getoond in Figuur 9-2.</p>
+
+<p><center><img src="/figures/ch3/18333fig0902-tn.png"></center><br/> Figuur 9-2. De inhoud structuur van je huidige Git gegevens.</p>
+
+<h3 id='commit_objecten'>Commit objecten</h3>
+
+<p>Je hebt drie bomen die de verschillende snapshots specificeren die je wilt volgen, maar het eerdere probleem blijft: je moet alledrie de SHA-1 waarden onthouden om de snapshots weer op te halen. Je hebt ook geen informatie over wie de snapshots opgeslagen heeft, wanneer ze opgeslagen zijn, of waarom ze opgeslagen zijn. Dit is de basale informatie die het commit object voor je opslaat.</p>
+
+<p>Om een commit object te creëren moet je <code>commit-tree</code> aanroepen en één boom SHA-1 specificeren en welke commit objecten, als er die zijn, er direct aan vooraf gingen. Start met de eerste boom, die je geschreven hebt:</p>
+
+<pre><code>$ echo &#39;first commit&#39; | git commit-tree d8329f
+fdf4fc3344e67ab068f836878b6c4951e3b15f3d</code></pre>
+
+<p>Nu kun je je nieuwe commit object bekijken met <code>cat-file</code>:</p>
+
+<pre><code>$ git cat-file -p fdf4fc3
+tree d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+author Scott Chacon &lt;schacon@gmail.com&gt; 1243040974 -0700
+committer Scott Chacon &lt;schacon@gmail.com&gt; 1243040974 -0700
+
+first commit</code></pre>
+
+<p>Het formaat van een commit object is simpel: het specificeert de bovenste boom voor het snapshot van het project op dat punt; de auteur/committer informatie die uit je <code>user.name</code> en <code>user.email</code> configuratie instellingen gehaald is, met de huidige tijd; een lege regel, en dan de commit boodschap.</p>
+
+<p>Nu zul je de twee andere commit objecten schrijven, waarbij ze elk het commit object dat er direct voor komt refereren:</p>
+
+<pre><code>$ echo &#39;second commit&#39; | git commit-tree 0155eb -p fdf4fc3
+cac0cab538b970a37ea1e769cbbde608743bc96d
+$ echo &#39;third commit&#39;  | git commit-tree 3c4e9c -p cac0cab
+1a410efbd13591db07496601ebc7a059dd55cfe9</code></pre>
+
+<p>Ieder van de drie commit objecten wijst naar één van de drie snapshots die je gemaakt hebt. Vreemd genoeg heb je nu een echte Git historie, die je kunt bekijken met het <code>git log</code> commando, als je dat op de SHA-1 van de laatste commit uitvoert:</p>
+
+<pre><code>$ git log --stat 1a410e
+commit 1a410efbd13591db07496601ebc7a059dd55cfe9
+Author: Scott Chacon &lt;schacon@gmail.com&gt;
+Date:   Fri May 22 18:15:24 2009 -0700
+
+    third commit
+
+ bak/test.txt |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit cac0cab538b970a37ea1e769cbbde608743bc96d
+Author: Scott Chacon &lt;schacon@gmail.com&gt;
+Date:   Fri May 22 18:14:29 2009 -0700
+
+    second commit
+
+ new.txt  |    1 +
+ test.txt |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletions(-)
+
+commit fdf4fc3344e67ab068f836878b6c4951e3b15f3d
+Author: Scott Chacon &lt;schacon@gmail.com&gt;
+Date:   Fri May 22 18:09:34 2009 -0700
+
+    first commit
+
+ test.txt |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0315-tn.png"></center><br/> Figuur 3-15. Je iss53 branch kan onafhankelijk vooruit bewegen.</p>
+<p>Verbazingwekkend. Je hebt zojuist de lagere operaties uitgevoerd om een Git history op te bouwen, zonder één van de front ends te gebruiken. Dit is in essentie wat Git doet als je de <code>git add</code> en <code>git commit</code> commando&#8217;s uitvoert – het slaat de blobs voor de gewijzigde bestanden op, ververst de index, schrijft de bomen weg, en schrijft commit objecten die de bovenste bomen en commits refereren die vlak voor ze kwamen. Deze drie hoofd Git-objecten – de blob, de boom en de commit – worden in eerste instantie als aparte bestanden opgeslagen in je <code>.git/objects</code> map. Hier zijn alle objecten die nu in de voorbeeld map staan, voorzien van commentaar met wat ze bevatten:</p>
 
-<p>Het is interessant om hier op te merken dat het werk dat je in je snelle reparatie branch gedaan hebt, niet zit in de bestanden van je <code>iss53</code> branch. Als je dat binnen moet halen, dan kun je je <code>master</code> branch in je <code>iss53</code> branch samenvoegen door <code>git merge master</code> uit te voeren, of je kunt wachten met die wijzigingen te integreren totdat je beslist om je <code>iss53</code> branch later in je <code>master</code> binnen te halen.</p>
+<pre><code>$ find .git/objects -type f
+.git/objects/01/55eb4229851634a0f03eb265b69f5a2d56f341 # tree 2
+.git/objects/1a/410efbd13591db07496601ebc7a059dd55cfe9 # commit 3
+.git/objects/1f/7a7a472abf3dd9643fd615f6da379c4acb3e3a # test.txt v2
+.git/objects/3c/4e9cd789d88d8d89c1073707c3585e41b0e614 # tree 3
+.git/objects/83/baae61804e65cc73a7201a7252750c76066a30 # test.txt v1
+.git/objects/ca/c0cab538b970a37ea1e769cbbde608743bc96d # commit 2
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4 # &#39;test content&#39;
+.git/objects/d8/329fc1cc938780ffdd9f94e0d364e0ea74f579 # tree 1
+.git/objects/fa/49b077972391ad58037050f2a75f74e3671e92 # new.txt
+.git/objects/fd/f4fc3344e67ab068f836878b6c4951e3b15f3d # commit 1</code></pre>
 
-<h3 id='eenvoudig_samenvoegen'>Eenvoudig Samenvoegen</h3>
+<p>Als je alle interne verwijzingen volgt, krijg je een object-graaf die er uitzien zoals Figuur 9-3.</p>
 
-<p>Stel dat je besloten hebt dat je probleem #53 werk compleet is en klaar bent om samen te gaan voegen in je <code>master</code> branch. Om dat te doen, zul je je <code>iss53</code> branch samenvoegen zoals je je snelle reparatie branch eerder hebt samengevoegd. Het enige dat je hoeft te doen is de branch uit te checken waar je in wenst samen te voegen en dan het <code>git merge</code> commando uit te voeren:</p>
+<p><center><img src="/figures/ch3/18333fig0903-tn.png"></center><br/> Figuur 9-3. Alle objecten in je Git map.</p>
 
-<pre><code>$ git checkout master
-$ git merge iss53
-Merge made by recursive.
- README |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
+<h3 id='object_opslag'>Object opslag</h3>
 
-<p>Dit ziet er iets anders uit dan de snelle reparatie samenvoeging die je eerder deed. In dit geval is je ontwikkelings historie afgeweken van een ouder punt. Omdat de commit op de branch waar je op zit geen directe voorouder is van de branch waar je in samenvoegt, moet Git wat werk doen. In dit geval, doet Git een eenvoudige drieweg samenvoeging, gebruikmakend van de twee snapshots waarnaar gewezen wordt door de branch punten en de gezamenlijke voorouder van die twee. Figuur 3-16 markeert de drie snapshots die Git gebruikt om zijn samenvoeging in dit geval te doen.</p>
+<p>Ik vertelde eerder dat er een kop wordt opgeslagen bij de inhoud. Laten we eens een minuutje kijken naar hoe Git zijn objecten opslaat. Je zult zien hoe je interactief een blob object opslaat – in dit geval de tekst &#8220;what is up, doc?&#8221; – in de Ruby scripttaal. Je kunt de interactieve Ruby modus starten met het <code>irb</code> commando:</p>
 
-<p><center><img src="/figures/ch3/18333fig0316-tn.png"></center><br/> Figuur 3-16. Git identificeert automatisch de beste gezamenlijke voorouder samenvoegings basis voor het samenvoegen van de branches.</p>
+<pre><code>$ irb
+&gt;&gt; content = &quot;what is up, doc?&quot;
+=&gt; &quot;what is up, doc?&quot;</code></pre>
 
-<p>In plaats van de branch verwijzing vooruit te bewegen, maakt Git een nieuw snapshot dat resulteert uit deze drieweg samenvoeging en maakt automatisch een nieuwe commit die daar naar wijst (zie Figuur 3-17). Dit wordt een samenvoegings commit genoemd, en is bijzonder in dat het meer dan één ouder heeft.</p>
+<p>Git construeert een kop, die begint met het type van het object, in dit geval een blob. Daarna voegt het een spatie toe, gevolgd door de grootte van de inhoud en als laatste een null byte:</p>
 
-<p>Het is de moeite om te vertellen dat Git de beste gezamenlijke voorouder bepaalt om te gebruiken als samenvoeg basis; dit is anders dan CVS of Subversion (voor versie 1.5), waarbij de ontwikkelaar die de samenvoeging deed zelf de beste samenvoeg basis moest uitzoeken. Dit zorgt er voor dat samenvoegen in Git een serieus stuk eenvoudiger is dan in deze andere systemen.</p>
+<pre><code>&gt;&gt; header = &quot;blob #{content.length}\0&quot;
+=&gt; &quot;blob 16\000&quot;</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0317-tn.png"></center><br/> Figuur 3-17. Git maakt automatisch een nieuw commit object aan die het samengevoegde werk bevat.</p>
+<p>Git voegt de kop en de originele inhoud samen, en berekent vervolgens de SHA-1 checksum van die nieuwe inhoud. Je kunt de SHA-1 waarde van een regel tekst in Ruby berekenen door de SHA1 verwerkingsbibliotheek op te nemen met het <code>require</code> commando en dan <code>Digest::SHA1.hexdigest()</code> aan te roepen met de tekst:</p>
 
-<p>Nu dat je werk samengevoegd is, heb je geen verdere noodzaak voor de <code>iss53</code> branch. Je kunt het verwijderen en dan handmatig het ticket in je ticket-volg systeem sluiten:</p>
+<pre><code>&gt;&gt; store = header + content
+=&gt; &quot;blob 16\000what is up, doc?&quot;
+&gt;&gt; require &#39;digest/sha1&#39;
+=&gt; true
+&gt;&gt; sha1 = Digest::SHA1.hexdigest(store)
+=&gt; &quot;bd9dbf5aae1a3862dd1526723246b20206e5fc37&quot;</code></pre>
 
-<pre><code>$ git branch -d iss53</code></pre>
+<p>Git comprimeert de nieuwe inhoud met zlib, wat je in Ruby kunt doen met de zlib bibliotheek. Als eerste moet je de bibliotheek opnemen, en dan <code>Zlib::Deflate.deflate()</code> op de inhoud uitvoeren:</p>
 
-<h3 id='eenvoudige_samenvoeg_conflicten'>Eenvoudige Samenvoeg Conflicten</h3>
+<pre><code>&gt;&gt; require &#39;zlib&#39;
+=&gt; true
+&gt;&gt; zlib_content = Zlib::Deflate.deflate(store)
+=&gt; &quot;x\234K\312\311OR04c(\317H,Q\310,V(-\320QH\311O\266\a\000_\034\a\235&quot;</code></pre>
 
-<p>Soms, gaat dit proces niet soepel. Als je hetzelfde gedeelte van hetzelfde bestand anders hebt gewijzigd in twee branches die je samenvoegt, dan zal Git niet in staat zijn om ze netjes samen te voegen. Als je reparatie voor probleem #53 hetzelfde gedeelte van een bestand heeft aangepast als de snelle reparatie, dan krijg je een samenvoeg conflict dat er ongeveer zo uit ziet:</p>
+<p>Als laatste schrijf je je zlib-gecomprimeerde inhoud naar een object op de schijf. Je zult het pad van het object dat je wilt wegschrijven moeten bepalen (de eerste twee karakters van de SHA-1 waarde zijn de submap naam, en de laatste 38 karakters zijn de bestandsnaam in die map). In Ruby kun je de <code>FileUtils.mkdir_p()</code> functie gebruiken om de submap aan te maken als hij nog niet bestaat. Daarna open je het bestand met <code>File.open()</code> en schrijft de eerder met zlib gecomprimeerde inhoud in het bestand met een aanroep van <code>write()</code> op het resulterende bestands-aangrijpingspunt.</p>
 
-<pre><code>$ git merge iss53
-Auto-merging index.html
-CONFLICT (content): Merge conflict in index.html
-Automatic merge failed; fix conflicts and then commit the result.</code></pre>
+<pre><code>&gt;&gt; path = &#39;.git/objects/&#39; + sha1[0,2] + &#39;/&#39; + sha1[2,38]
+=&gt; &quot;.git/objects/bd/9dbf5aae1a3862dd1526723246b20206e5fc37&quot;
+&gt;&gt; require &#39;fileutils&#39;
+=&gt; true
+&gt;&gt; FileUtils.mkdir_p(File.dirname(path))
+=&gt; &quot;.git/objects/bd&quot;
+&gt;&gt; File.open(path, &#39;w&#39;) { |f| f.write zlib_content }
+=&gt; 32</code></pre>
 
-<p>Git heeft niet automatisch een nieuwe samenvoeg commit gemaakt. Het heeft het proces gestopt totdat jij het conflict oplost. Als je wilt zien welke bestanden nog niet zijn samengevoegd op ieder punt na een samenvoeg conflict, dan kun je <code>git status</code> uitvoeren:</p>
-
-<pre><code>[master*]$ git status
-index.html: needs merge
-# On branch master
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#   (use &quot;git checkout -- &lt;file&gt;...&quot; to discard changes in working directory)
-#
-#	unmerged:   index.html
-#</code></pre>
-
-<p>Alles dat samenvoeg conflicten heeft en dat nog niet is opgelost wordt getoond als niet-samengevoegd. Git voegt standaard conflict-oplossings markeringen toe aan de bestanden die conflicten hebben, zodat je ze handmatig kunt openen en die conflicten kunt oplossen. Je bestand bevat een sectie die er ongeveer zo uit ziet:</p>
-
-<pre><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD:index.html
-&lt;div id=&quot;footer&quot;&gt;contact : email.support@github.com&lt;/div&gt;
-=======
-&lt;div id=&quot;footer&quot;&gt;
-  please contact us at support@github.com
-&lt;/div&gt;
-&gt;&gt;&gt;&gt;&gt;&gt;&gt; iss53:index.html</code></pre>
-
-<p>Dit betekend dat de versie in HEAD (jouw master branch, omdat dat hetgene was dat je uitgechecked had toen je je samenvoeg commando uitvoerde) is het bovenste gedeelte van dat blok (alles boven de <code>======</code>), terwijl de versie in je <code>iss53</code> branch eruit ziet zoals alles in het onderste gedeelte. Om het conflict op te lossen, moet je één van de twee gedeeltes kiezen of de inhoud zelf samenvoegen. Bijvoorbeeld, je zou dit conflict op kunnen lossen door het hele blok met dit te vervangen:</p>
-
-<pre><code>&lt;div id=&quot;footer&quot;&gt;
-please contact us at email.support@github.com
-&lt;/div&gt;</code></pre>
-
-<p>Deze oplossing bevat een stukje uit elke sectie, en ik heb de <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code>, <code>=======</code>, en <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code> regels volledig verwijderd. Nadat je elk van deze secties opgelost hebt in elk conflicterend bestand, voer dan <code>git add</code> uit op ieder bestand om het als opgelost te markeren. Het bestand stagen markeert het als opgelost in Git. Als je een grafische applicatie wil gebruiken om deze problemen op te lossen, kun je <code>git mergetool</code> uitvoeren, wat een toepasselijk visuele samenvoeg applicatie opstart en je door de conflicten heen loopt:</p>
-
-<pre><code>$ git mergetool
-merge tool candidates: kdiff3 tkdiff xxdiff meld gvimdiff opendiff emerge vimdiff
-Merging the files: index.html
-
-Normal merge conflict for &#39;index.html&#39;:
-  {local}: modified
-  {remote}: modified
-Hit return to start merge resolution tool (opendiff):</code></pre>
-
-<p>Als je een ander samenvoeg applicatie wil gebruiken dan de standaard (Git koos <code>opendiff</code> voor me in dit geval, omdat ik het commando uitvoerde op een Mac), dan kun je alle ondersteunde applicaties zien aan de top na &#8220;merge tool candidates&#8221;. Type de naam van de applicatie die je liever gebruikt. In Hoofdstuk 7 zullen we bespreken hoe je deze standaard waarde voor je omgeving kunt wijzigen.</p>
-
-<p>Nadat je de samenvoeg applicatie afsluit, vraagt Git je of de samenvoeging succesvol was. Als je het script vertelt dat dat zo is, dan staged het het bestand om het voor je als opgelost te markeren.</p>
-
-<p>Je kunt <code>git status</code> nogmaals uitvoeren om er zeker van te zijn dat alle conflicten opgelost zijn:</p>
-
-<pre><code>$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#	modified:   index.html
-#</code></pre>
-
-<p>Als je daar blij mee bent, en je controleert dat alles waar conflicten in zaten gestaged zijn, dan kun je <code>git commit</code> typen om de samenvoeg commit af te ronden. Het commit bericht ziet er standaard ongeveer zo uit:</p>
-
-<pre><code>Merge branch &#39;iss53&#39;
-
-Conflicts:
-  index.html
-#
-# It looks like you may be committing a MERGE.
-# If this is not correct, please remove the file
-# .git/MERGE_HEAD
-# and try again.
-#</code></pre>
-
-<p>Je kunt dat bericht aanpassen met details over hoe je het conflict opgelost hebt, als je denkt dat dat behulpzaam zou zijn voor anderen die in de toekomst naar deze samenvoeging kijken – waarom je deed wat je deed, als dat niet vanzelfsprekend is.</p>
+<p>Dat is het – je hebt nu een geldig Git blob object aangemaakt. Alle Git objecten zijn op dezelfde manier opgeslagen, alleen de types verschillen – in plaats van de tekst blob, zal de kop beginnen met commit of tree. En alhoewel de blob inhoud vrijwel alles kan zijn, hebben de commit en boom inhoud een zeer specifiek formaat.</p>
 
 <div id='nav'>
 <a href='ch3-1.html'>prev</a> | <a href='ch3-3.html'>next</a>

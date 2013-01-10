@@ -1,91 +1,49 @@
 ---
 layout: translation
-title: Pro Git 9.5 Het Binnenwerk van Git De Refspec
+title: Pro Git 9.5 Git op de server Publieke toegang
 ---
-<h2 id='de_refspec'>De Refspec</h2>
+<h2 id='publieke_toegang'>Publieke toegang</h2>
 
-<p>Door dit boek heen heb je eenvoudige verwijzingen van remote branches naar lokale referenties gebruikt; maar ze kunnen complexer zijn. Stel dat je een remote zoals dit toevoegt:</p>
+<p>Wat als je anonieme leestoegang op je project wil? Misschien wil je geen intern privéproject serveren, maar een open source project. Of misschien heb je een serie geautomatiseerde bouwservers of continue integratie servers die vaak wijzigen, en wil je niet doorlopend SSH sleutels hoeven genereren — je wil gewoon eenvoudige leestoegang toevoegen.</p>
 
-<pre><code>$ git remote add origin git@github.com:schacon/simplegit-progit.git</code></pre>
+<p>Waarschijnlijk is de eenvoudigste manier voor kleinschalige opstellingen om een statische webserver in te stellen, waarbij de document root naar de plaats van je Git repositories wijst, en dan die <code>post-update</code> haak aanzetten waar we het in de eerste sectie van dit hoofdstuk over gehad hebben. Laten we eens uitgaan van het vorige voorbeeld. Stel dat je je repositories in de <code>/opt/git</code> map hebt staan, en er draait een Apache server op je machine. Nogmaals, je kunt hiervoor iedere web server gebruiken: maar als voorbeeld zullen we wat basis Apache configuraties laten zien, die je een idee kunnen geven van wat je nodig hebt.</p>
 
-<p>Dit voegt een sectie aan je <code>.git/config</code> bestand toe, wat de naam van de remote (<code>origin</code>) specificeerd, de URL van de remote repository, en de refspec die nodig is om te fetchen:</p>
+<p>Eerst moet je de haak aanzetten:</p>
 
-<pre><code>[remote &quot;origin&quot;]
-       url = git@github.com:schacon/simplegit-progit.git
-       fetch = +refs/heads/*:refs/remotes/origin/*</code></pre>
+<pre><code>$ cd project.git
+$ mv hooks/post-update.sample hooks/post-update
+$ chmod a+x hooks/post-update</code></pre>
 
-<p>Het formaat van de refspec is een optionele <code>+</code>, gevolgd door <code>&lt;src&gt;:&lt;dst&gt;</code>, waarbij <code>&lt;src&gt;</code> het patroon voor referenties aan de remote kant is, en <code>&lt;dst&gt;</code> is de locatie waar die referenties lokaal geschreven worden. De <code>+</code> verteld Git om de referentie zelfs te vernieuwen als het geen fast-forward is.</p>
+<p>Als je een lagere versie dan 1.6 van Git gebruikt, dan is het <code>mv</code> commando niet nodig — Git is recentelijk pas begonnen met de namen van de haak voorbeelden op .sample te laten eindigen.</p>
 
-<p>In het standaard geval dat automatisch geschreven wordt door een <code>git remote add</code> commando, haalt Git alle referenties onder <code>refs/heads/</code> van de server en schrijft ze lokaal naar <code>refs/remotes/origin/</code>. Dus als er een <code>master</code> branch op de server bestaat, kun je de log van die branch lokaal benaderen via</p>
+<p>Wat doet deze <code>post-update</code> haak? Het ziet er ongeveer zo uit:</p>
 
-<pre><code>$ git log origin/master
-$ git log remotes/origin/master
-$ git log refs/remotes/origin/master</code></pre>
+<pre><code>$ cat .git/hooks/post-update
+#!/bin/sh
+exec git-update-server-info</code></pre>
 
-<p>Ze zijn allemaal gelijk, omdat Git elk expandeerd naar <code>refs/remotes/origin/master</code>.</p>
+<p>Dit betekent dat wanneer je naar de server via SSH pushed, Git dit commando uitvoert om de benodigde bestanden voor HTTP fetching te verversen.</p>
 
-<p>Als je wilt dat Git alleen de <code>master</code> branch pulled, en niet alle andere branches op de remote server, kun je de fetch regel veranderen in</p>
+<p>Vervolgens moet je een VirtualHost toevoeging in je Apache configuratie aanmaken, met de document root als de hoofdmap van je Git projecten. Hier nemen we aan dat je joker DNS ingesteld hebt om <code>*.gitserver</code> door te sturen naar waar je dit alles draait:</p>
 
-<pre><code>fetch = +refs/heads/master:refs/remotes/origin/master</code></pre>
+<pre><code>&lt;VirtualHost *:80&gt;
+    ServerName git.gitserver
+    DocumentRoot /opt/git
+    &lt;Directory /opt/git/&gt;
+        Order allow, deny
+        allow from all
+    &lt;/Directory&gt;
+&lt;/VirtualHost&gt;</code></pre>
 
-<p>Dit is alleen de standaard refspec voor <code>git fetch</code> voor die remote. Als je iets alleen eenmalig wilt doen, kun je de refspec ook op de commandoregel specificeren. Om de <code>master</code> branch op de remote naar de lokale <code>origin/mymaster</code> te pullen, kun je dit uitvoeren</p>
+<p>Je zult ook de Unix gebruikers groep van de <code>/opt/git</code> mappen moeten instellen op <code>www-data</code> zodat je web server leestoegang heeft op de repositories, omdat de Apache instantie die het CGI script uitvoert (standaard) als die gebruiker draait:</p>
 
-<pre><code>$ git fetch origin master:refs/remotes/origin/mymaster</code></pre>
+<pre><code>$ chgrp -R www-data /opt/git</code></pre>
 
-<p>Je kunt ook meerdere refspecs specificeren. Met de commandoregel kun je meerdere branches op deze manier pullen:</p>
+<p>Als je Apache herstart, dan zou je je repositories onder die map moeten kunnen clonen door de URL van je project te specificeren:</p>
 
-<pre><code>$ git fetch origin master:refs/remotes/origin/mymaster \
-   topic:refs/remotes/origin/topic
-From git@github.com:schacon/simplegit
- ! [rejected]        master     -&gt; origin/mymaster  (non fast forward)
- * [new branch]      topic      -&gt; origin/topic</code></pre>
+<pre><code>$ git clone http://git.gitserver/project.git</code></pre>
 
-<p>In dit geval wordt de pull van de master branch geweigerd, omdat het geen fast-forward referentie is. Je kunt dat teniet doen door de <code>+</code> voor de refspec te zetten.</p>
-
-<p>Je kun ook meerdere refspecs voor het fetchen specificeren in je configuratie bestand. Als je altijd de master en experiment branches wilt fetchen, voeg dan twee regels toe:</p>
-
-<pre><code>[remote &quot;origin&quot;]
-       url = git@github.com:schacon/simplegit-progit.git
-       fetch = +refs/heads/master:refs/remotes/origin/master
-       fetch = +refs/heads/experiment:refs/remotes/origin/experiment</code></pre>
-
-<p>Je kunt geen gedeeltelijke globs in het patroon gebruiken, dus het volgende zou ongeldig zijn:</p>
-
-<pre><code>fetch = +refs/heads/qa*:refs/remotes/origin/qa*</code></pre>
-
-<p>Maar je kunt wel naamruimtes gebruiken om zoiets voor elkaar te krijgen. Als je een QA team hebt dat naar een serie branches pushed, en je wilt de master branch en alle QA team branches hebben, maar niets anders, kun je een configuratie sectie zoals dit gebruiken:</p>
-
-<pre><code>[remote &quot;origin&quot;]
-       url = git@github.com:schacon/simplegit-progit.git
-       fetch = +refs/heads/master:refs/remotes/origin/master
-       fetch = +refs/heads/qa/*:refs/remotes/origin/qa/*</code></pre>
-
-<p>Als je een ingewikkeld werkproces hebt waarbij het QA team branches pushed, ontwikkelaars branches pushen, en integratie teams pushen en samenwerken op remote branches, kun je ze op deze manier eenvoudig in naamruimten stoppen.</p>
-
-<h3 id='refspecs_pushen'>Refspecs Pushen</h3>
-
-<p>Het is fijn dat je op die manier referenties in naamruimten kunt fetchen, maar hoe krijgt het QA team in de eerste plaats al hun branches in een <code>qa/</code> naamruimte? Je krijgt dat voor elkaar door refspecs te gebruiken om mee te pushen.</p>
-
-<p>Als het QA team hun <code>master</code> branch naar <code>qa/master</code> op de remoter server wil pushen, kunnen ze dit uitvoeren</p>
-
-<pre><code>$ git push origin master:refs/heads/qa/master</code></pre>
-
-<p>Als ze willen dat Git dat automatisch doet iedere keer als ze <code>git push origin</code> uitvoeren, dan kunnen ze een push waarde aan hun configuratie bestand toevoegen:</p>
-
-<pre><code>[remote &quot;origin&quot;]
-       url = git@github.com:schacon/simplegit-progit.git
-       fetch = +refs/heads/*:refs/remotes/origin/*
-       push = refs/heads/master:refs/heads/qa/master</code></pre>
-
-<p>Nogmaals, dit zal zorgen dat <code>git push origin</code> de lokale <code>master</code> branch standaard naar de remote <code>qa/master</code> branch zal pushen.</p>
-
-<h3 id='referenties_verwijderen'>Referenties Verwijderen</h3>
-
-<p>Je kunt de refspec ook gebruiken om referenties te verwijderen van de remote server door zoiets als dit uit te voeren:</p>
-
-<pre><code>$ git push origin :topic</code></pre>
-
-<p>Omdat de refspec <code>&lt;src&gt;:&lt;dst&gt;</code> is, verteld het weglaten van het <code>&lt;src&gt;</code> gedeelte in feite dat de onderwerp branch op de remote niks is, wat het verwijderd.</p>
+<p>Op deze manier kun je HTTP-gebaseerde toegang voor ieder van je projecten voor een groot aantal gebruikers in slechts een paar minuten instellen. Een andere eenvoudige optie om publieke ongeverifieerde toegang in te stellen is een Git daemon starten, alhoewel dat vereist dat je het proces als daemon uitvoert – we beschrijven deze optie in de volgende sectie als je een voorkeur hebt voor die route.</p>
 
 <div id='nav'>
 <a href='ch9-4.html'>prev</a> | <a href='ch9-6.html'>next</a>

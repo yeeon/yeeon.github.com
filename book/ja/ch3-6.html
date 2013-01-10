@@ -1,114 +1,152 @@
 ---
 layout: translation
-title: Pro Git 3.6 Git のブランチ機能 リベース
+title: Pro Git 3.6 Gitの内側 トランスファープロトコル
 ---
-<h2 id='id71'>リベース</h2>
+<h2 id='id440'>トランスファープロトコル</h2>
 
-<p>Git には、あるブランチの変更を別のブランチに統合するための方法が大きく分けて二つあります。<code>merge</code> と <code>rebase</code> です。このセクションでは、リベースについて「どういう意味か」「どのように行うのか」「なぜそんなにもすばらしいのか」「どんなときに使うのか」を説明します。</p>
+<p>Git は2つのレポジトリ間を二つの主要な方法によってデータを移行することができます。ひとつは HTTPによって、もうひとつは、<code>file://</code> や <code>ssh://</code>、また、<code>git://</code> によるトランスポートに使用される、いわゆるスマートプロトコルによって。このセクションでは、これらの主要なプロトコルがどのように機能するのかを駆け足で見ていきます。</p>
 
-<h3 id='id72'>リベースの基本</h3>
+<h3 id='id441'>無口なプロトコル</h3>
 
-<p>マージについての説明で使用した例を振り返ってみましょう (図 3-27 を参照ください)。作業が二つに分岐しており、それぞれのブランチに対してコミットされていることがわかります。</p>
+<p>Git の over HTTPによる移行は、しばしば無口なプロトコル（dumb protocol）と言われます。なぜなら、トランスポートプロセスの最中に、サーバ側に関する Git 固有のコードは何も必要としないからです。フェッチプロセスは、一連の GET リクエストであり、クライアントはサーバ上の Gitレポジトリのレイアウトを推測することができます。simplegit ライブラリに対する <code>http-fetch</code> のプロセスを追ってみましょう。</p>
 
-<p><center><img src="/figures/ch3/18333fig0327-tn.png"></center><br/> 図 3-27. 分岐したコミットの歴史</p>
+<pre><code>$ git clone http://github.com/schacon/simplegit-progit.git</code></pre>
 
-<p>このブランチを統合する最も簡単な方法は、先に説明したように <code>merge</code> コマンドを使うことです。これは、二つのブランチの最新のスナップショット (C3 と C4) とそれらの共通の祖先 (C2) による三方向のマージを行い、新しいスナップショットを作成 (そしてコミット) します。その結果は図 3-28 のようになります。</p>
+<p>最初にこのコマンドが行うことは <code>info/refs</code> ファイルを引き出す（pull down）ことです。このファイルは <code>update-server-info</code> コマンドによって書き込まれます。そのために、HTTPトランスポートが適切に動作するための <code>post-receive</code> フックとして、そのコマンドを有効にする必要があります。</p>
 
-<p><center><img src="/figures/ch3/18333fig0328-tn.png"></center><br/> 図 3-28. 分岐した作業履歴をひとつに統合する</p>
+<pre><code>=&gt; GET info/refs
+ca82a6dff817ec66f44342007202690a93763949     refs/heads/master</code></pre>
 
-<p>しかし、別の方法もあります。C3 で行った変更のパッチを取得し、それを C4 の先端に適用するのです。Git では、この作業のことを <em>リベース (rebasing)</em> と呼んでいます。<code>rebase</code> コマンドを使用すると、一方のブランチにコミットされたすべての変更をもう一方のブランチで再現することができます。</p>
+<p>いまあなたはリモート参照と SHAのハッシュのリストを持っています。 次に、終了時に何をチェックアウトするのかを知るために、HEAD参照が何かを探します。</p>
 
-<p>今回の例では、次のように実行します。</p>
+<pre><code>=&gt; GET HEAD
+ref: refs/heads/master</code></pre>
 
-<pre><code>$ git checkout experiment
-$ git rebase master
-First, rewinding head to replay your work on top of it...
-Applying: added staged command</code></pre>
+<p>プロセスの完了時に、<code>master</code> ブランチをチェックアウトする必要があります。この時点で、あなたは参照を辿るプロセス（the walking process）を開始する準備ができています。開始時点はあなたが <code>info/refs</code> ファイルの中に見た <code>ca82a6</code> のコミットオブジェクトなので、それをフェッチすることによって開始します。</p>
 
-<p>これは、まずふたつのブランチ (現在いるブランチとリベース先のブランチ) の共通の先祖に移動し、現在のブランチ上の各コミットの diff を取得して一時ファイルに保存し、現在のブランチの指す先をリベース先のブランチと同じコミットに移動させ、そして先ほどの変更を順に適用していきます。図 3-29 にこの手順をまとめました。</p>
+<pre><code>=&gt; GET objects/ca/82a6dff817ec66f44342007202690a93763949
+(179 bytes of binary data)</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0329-tn.png"></center><br/> 図 3-29. C3 での変更の C4 へのリベース</p>
+<p>オブジェクトバック（object back）を取得します。それは、サーバ上の緩い形式のオブジェクトで、静的な HTTP GETリクエストを超えてそれをフェッチします。zlib-uncompress を使ってそれを解凍することができます。ヘッダを剥ぎ取り（strip off）それからコミットコンテンツを見てみます。</p>
 
-<p>この時点で、master ブランチに戻って fast-forward マージができるようになりました (図 3-30 を参照ください)。</p>
+<pre><code>$ git cat-file -p ca82a6dff817ec66f44342007202690a93763949
+tree cfda3bf379e4f8dba8717dee55aab78aef7f4daf
+parent 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+author Scott Chacon &lt;schacon@gmail.com&gt; 1205815931 -0700
+committer Scott Chacon &lt;schacon@gmail.com&gt; 1240030591 -0700
 
-<p><center><img src="/figures/ch3/18333fig0330-tn.png"></center><br/> 図 3-30. master ブランチの Fast-forward</p>
+changed the version number</code></pre>
 
-<p>これで、C3 が指しているスナップショットの内容は、先ほどのマージの例で C5 が指すスナップショットと全く同じものになりました。最終的な統合結果には差がありませんが、リベースのほうがよりすっきりした歴史になります。リベース後のブランチのログを見ると、まるで一直線の歴史のように見えます。元々平行稼働していたにもかかわらず、それが一連の作業として見えるようになるのです。</p>
+<p>次に、取り戻すためのオブジェクトがもう二つあります。それは、たった今取り戻したコミットがポイントするコンテンツのツリーである <code>cfda3b</code> と、親のコミットである <code>085bb3</code> です。</p>
 
-<p>リモートブランチ上での自分のコミットをすっきりさせるために、よくこの作業を行います。たとえば、自分がメンテナンスしているのではないプロジェクトに対して貢献したいと考えている場合などです。この場合、あるブランチ上で自分の作業を行い、プロジェクトに対してパッチを送る準備ができたらそれを <code>origin/master</code> にリベースすることになります。そうすれば、メンテナは特に統合作業をしなくても単に fast-forward するだけで済ませられるのです。</p>
+<pre><code>=&gt; GET objects/08/5bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+(179 bytes of data)</code></pre>
 
-<p>あなたが最後に行ったコミットが指すスナップショットは、リベースした結果の最後のコミットであってもマージ後の最終のコミットであっても同じものとなることに注意しましょう。違ってくるのは、そこに至る歴史だけです。リベースは、一方のラインの作業内容をもう一方のラインに順に適用しますが、マージの場合はそれぞれの最終地点を統合します。</p>
+<p>それは次のコミットオブジェクトを与えます。ツリーオブジェクトをつかみます。</p>
 
-<h3 id='id73'>さらに興味深いリベース</h3>
+<pre><code>=&gt; GET objects/cf/da3bf379e4f8dba8717dee55aab78aef7f4daf
+(404 - Not Found)</code></pre>
 
-<p>リベース先のブランチ以外でもそのリベースを再現することができます。たとえば図 3-31 のような歴史を考えてみましょう。トピックブランチ (<code>server</code>) を作成してサーバー側の機能をプロジェクトに追加し、それをコミットしました。その後、そこからさらにクライアント側の変更用のブランチ (<code>client</code>) を切って数回コミットしました。最後に、server ブランチに戻ってさらに何度かコミットを行いました。</p>
+<p>おっと、どうやらそのツリーオブジェクトはサーバ上の緩い形式には存在しないようです。そのため404のレスポンスを受け取っています。これには二つの理由があります。ひとつは、オブジェクトは代替のレポジトリ内に存在し得るため、もうひとつは、このレポジトリ内のパックファイルの中に存在し得るため。Git はまずリストにあるあらゆる代替の URLをチェックします。</p>
 
-<p><center><img src="/figures/ch3/18333fig0331-tn.png"></center><br/> 図 3-31. トピックブランチからさらにトピックブランチを作成した歴史</p>
+<pre><code>=&gt; GET objects/info/http-alternates
+(empty file)</code></pre>
 
-<p>クライアント側の変更を本流にマージしてリリースしたいけれど、サーバー側の変更はまだそのままテストを続けたいという状況になったとします。クライアント側の変更のうちサーバー側にはないもの (C8 と C9) を master ブランチで再現するには、<code>git rebase</code> の <code>--onto</code> オプションを使用します。</p>
+<p>代替の URLのリストと一緒にこれが戻ってくるなら、Git はそこにある緩いファイルとパックファイルをチェックします。これは、ディスク上のオブジェクトを共有するために互いにフォークし合っているプロジェクトにとって素晴らしい機構（mechanism）です。しかし、このケースではリスト化された代替は存在しないため、オブジェクトはパックファイルの中にあるに違いありません。サーバー上の何のパックファイルが利用可能かを知るには、<code>objects/info/packs</code> のファイルを取得することが必要です。そのファイルには（さらに <code>update-server-info</code> によって生成された）それらの一覧が含まれています。</p>
 
-<pre><code>$ git rebase --onto master server client</code></pre>
+<pre><code>=&gt; GET objects/info/packs
+P pack-816a9b2334da9953e530f27bcac22082a9f5b835.pack</code></pre>
 
-<p>これは「client ブランチに移動して <code>client</code> ブランチと <code>server</code> ブランチの共通の先祖からのパッチを取得し、<code>master</code> 上でそれを適用しろ」という意味になります。ちょっと複雑ですが、その結果は図 3-32 に示すように非常にクールです。</p>
+<p>サーバー上にはパックファイルがひとつしかないので、あなたのオブジェクトは明らかにそこにあります。しかし念の為にインデックスファイルをチェックしてみましょう。これが便利でもあるのは、もしサーバー上にパックファイルを複数持つ場合に、どのパックファイルにあなたが必要とするオブジェクトが含まれているのかを知ることができるからです。</p>
 
-<p><center><img src="/figures/ch3/18333fig0332-tn.png"></center><br/> 図 3-32. 別のトピックブランチから派生したトピックブランチのリベース</p>
+<pre><code>=&gt; GET objects/pack/pack-816a9b2334da9953e530f27bcac22082a9f5b835.idx
+(4k of binary data)</code></pre>
 
-<p>これで、master ブランチを fast-forward することができるようになりました (図 3-33 を参照ください)。</p>
+<p>パックファイルのインデックスを持っているので、あなたのオブジェクトがその中にあるのかどうかを知ることができます。なぜならインデックスにはパックファイルの中にあるオブジェクトの SHAハッシュとそれらのオブジェクトに対するオフセットがリストされているからです。あなたのオブジェクトはそこにあります。さあ、すべてのパックファイルを取得してみましょう。</p>
 
-<pre><code>$ git checkout master
-$ git merge client</code></pre>
+<pre><code>=&gt; GET objects/pack/pack-816a9b2334da9953e530f27bcac22082a9f5b835.pack
+(13k of binary data)</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0333-tn.png"></center><br/> 図 3-33. master ブランチを fast-forward し、client ブランチの変更を含める</p>
+<p>あなたはツリーオブジェクトを持っているのでコミットを辿ってみましょう。それらすべてはまた、あなたが丁度ダウンロードしたパックファイルの中にあります。そのため、もはやサーバーに対していかなるリクエストも不要です。Git は <code>master</code> ブランチの作業用コピーをチェックアウトします。そのブランチは最初にダウンロードした HEAD への参照によってポイントされています。</p>
 
-<p>さて、いよいよ server ブランチのほうも取り込む準備ができました。server ブランチの内容を master ブランチにリベースする際には、事前にチェックアウトする必要はなく <code>git rebase [basebranch] [topicbranch]</code> を実行するだけでだいじょうぶです。このコマンドは、トピックブランチ (ここでは <code>server</code>) をチェックアウトしてその変更をベースブランチ (<code>master</code>) 上に再現します。</p>
+<p>このプロセスのすべての出力はこのように見えます。</p>
 
-<pre><code>$ git rebase master server</code></pre>
+<pre><code>$ git clone http://github.com/schacon/simplegit-progit.git
+Initialized empty Git repository in /private/tmp/simplegit-progit/.git/
+got ca82a6dff817ec66f44342007202690a93763949
+walk ca82a6dff817ec66f44342007202690a93763949
+got 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+Getting alternates list for http://github.com/schacon/simplegit-progit.git
+Getting pack list for http://github.com/schacon/simplegit-progit.git
+Getting index for pack 816a9b2334da9953e530f27bcac22082a9f5b835
+Getting pack 816a9b2334da9953e530f27bcac22082a9f5b835
+ which contains cfda3bf379e4f8dba8717dee55aab78aef7f4daf
+walk 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+walk a11bef06a3f659402fe7563abf99ad00de2209e6</code></pre>
 
-<p>これは、<code>server</code> での作業を <code>master</code> の作業に続け、結果は図 3-34 のようになります。</p>
+<h3 id='id442'>スマートプロトコル</h3>
 
-<p><center><img src="/figures/ch3/18333fig0334-tn.png"></center><br/> 図 3-34. server ブランチを master ブランチ上にリベースする</p>
+<p>HTTPメソッドはシンプルですが少し非効率です。スマートプロトコルを使用することはデータ移行のより一般的な手段です。これらのプロトコルは Git をよく知っているリモートエンド上にプロセスを持っています。そのリモートエンドは、ローカルのデータを読んで、クライアントが何を持っているか、または、必要としているか、そして、それに対するカスタムデータを生成するのか知ることができます。データを転送するためのプロセスが2セットあります。データをアップロードするペア、それと、ダウンロードするペアです。</p>
 
-<p>これで、ベースブランチ (<code>master</code>) を fast-forward することができます。</p>
+<h4 id='id443'>データのアップロード</h4>
 
-<pre><code>$ git checkout master
-$ git merge server</code></pre>
+<p>リモートプロセスにデータをアップロードするため、Git は <code>send-pack</code> と <code>receive-pack</code> のプロセスを使用します。<code>send-pack</code> プロセスはクライアント上で実行されリモートサイド上の <code>receive-pack</code> プロセスに接続します。</p>
 
-<p>ここで <code>client</code> ブランチと <code>server</code> ブランチを削除します。すべての作業が取り込まれたので、これらのブランチはもはや不要だからです。これらの処理を済ませた結果、最終的な歴史は図 3-35 のようになりました。</p>
+<p>例えば、あなたのプロジェクトで <code>git push origin master</code> を実行したとしましょう。そして <code>origin</code> は SSHプロトコルを使用する URLとして定義されているとします。Git はあなたのサーバーへの SSHによる接続を開始する <code>send-pack</code> プロセスを実行します。リモートサーバ上で以下のようなSSHの呼び出しを介してコマンドを実行しようとします。</p>
 
-<pre><code>$ git branch -d client
-$ git branch -d server</code></pre>
+<pre><code>$ ssh -x git@github.com &quot;git-receive-pack &#39;schacon/simplegit-progit.git&#39;&quot;
+005bca82a6dff817ec66f4437202690a93763949 refs/heads/master report-status delete-refs
+003e085bb3bcb608e1e84b2432f8ecbe6306e7e7 refs/heads/topic
+0000</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0335-tn.png"></center><br/> 図 3-35. 最終的なコミット履歴</p>
+<p><code>git-receive-pack</code> コマンドは現在持っている各々の参照に対してひとつの行をすぐに返します。このケースでは、<code>master</code> ブランチとその SHAハッシュのみです。最初の行はサーバーの可能性（ここでは、<code>report-status</code> と <code>delete-refs</code>）のリストも持っています。</p>
 
-<h3 id='id74'>ほんとうは怖いリベース</h3>
+<p>各行は 4バイトの 16進数で始まっており、その残りの行がどれくらいの長さなのかを示しています。最初の行は 005b で始まっていますが、これは16進数では 91 であり、その行には 91バイトが残っていることを意味します。次の行は 003e で始まっていて、これは 62 です。そのため残りの 62バイトを読みます。次の行は 0000 であり、サーバーはその参照のリスト表示を終えたことを意味します。</p>
 
-<p>あぁ、このすばらしいリベース機能。しかし、残念ながら欠点もあります。その欠点はほんの一行でまとめることができます。</p>
+<p>サーバーの状態がわかったので、あなたの <code>send-pack</code> プロセスはサーバーが持っていないのは何のコミットかを決定します。このプッシュが更新する予定の各参照に対して、<code>send-pack</code> プロセスは <code>receive-pack</code> プロセスにその情報を伝えます。例えば、もしもあなたが <code>master</code> ブランチを更新していて、さらに、<code>experiment</code> ブランチを追加しているとき、<code>send-pack</code> のレスポンスは次のように見えるかもしれません。</p>
 
-<p><strong>公開リポジトリにプッシュしたコミットをリベースしてはいけない</strong></p>
+<pre><code>0085ca82a6dff817ec66f44342007202690a93763949  15027957951b64cf874c3557a0f3547bd83b3ff6 refs/heads/master report-status
+00670000000000000000000000000000000000000000 cdfdb42577e2506715f8cfeacdbabc092bf63e8d refs/heads/experiment
+0000</code></pre>
 
-<p>この指針に従っている限り、すべてはうまく進みます。もしこれを守らなければ、あなたは嫌われ者となり、友人や家族からも軽蔑されることになるでしょう。</p>
+<p>すべてが <code>&#39;0&#39;</code> の SHA-1ハッシュ値は以前そこには何もなかったことを意味します。それはあなたが experiment の参照を追加しているためです。もしもあなたが参照を削除していたとすると、あなたは逆にすべての <code>&#39;0&#39;</code> が右側にあるのを見るでしょう。</p>
 
-<p>リベースをすると、既存のコミットを破棄して新たなコミットを作成することになります。新たに作成したコミットは破棄したものと似てはいますが別物です。あなたがどこかにプッシュしたコミットを誰かが取得してその上で作業を始めたとしましょう。あなたが <code>git rebase</code> でそのコミットを書き換えて再度プッシュすると、相手は再びマージすることになります。そして相手側の作業を自分の環境にプルしようとするとおかしなことになってしまします。</p>
+<p>Git はあなたが古い SHA1ハッシュで更新している各々の古い参照、新しい参照、そして更新されている参照に対して行を送信します。最初の行はまたクライアントの性能（capabilities）を持っています。次に、クライアントはサーバーが未だ持ったことのないすべてのオブジェクトのパックファイルをアップロードします。最後に、サーバーは成功（あるいは失敗）の表示を返します。</p>
 
-<p>いったん公開した作業をリベースするとどんな問題が発生するのか、例を見てみましょう。中央サーバーからクローンした環境上で何らかの作業を進めたものとします。現在のコミット履歴は図 3-36 のようになっています。</p>
+<pre><code>000Aunpack ok</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0336-tn.png"></center><br/> 図 3-36. リポジトリをクローンし、なんらかの作業をすませた状態</p>
+<h4 id='id444'>データのダウンロード</h4>
 
-<p>さて、誰か他の人が、マージを含む作業をしてそれを中央サーバーにプッシュしました。それを取得し、リモートブランチの内容を作業環境にマージすると、図 3-37 のような状態になります。</p>
+<p>データをダウンロードするときには、<code>fetch-pack</code> と <code>upload-pack</code> プロセスが伴います。クライアントは <code>fetch-pack</code> プロセスを開始します。何のデータが移送されてくるのかを取り決める（negotiate）ため、それはリモートサイド上の <code>upload-pack</code> プロセスに接続します。</p>
 
-<p><center><img src="/figures/ch3/18333fig0337-tn.png"></center><br/> 図 3-37. さらなるコミットを取得し、作業環境にマージした状態</p>
+<p>リモートリポジトリ上の <code>upload-pack</code> プロセスを開始する異なった方法があります。あなたは <code>receive-pack</code> プロセスと同様に SSH経由で実行することができます。さらに、Git デーモンを介してプロセスを開始することもできます。そのデーモンは、デフォルトではサーバ上の 9418ポートを使用します。<code>fetch-pack</code> プロセスはデータを送信します。そのデータは接続後のデーモンに対して、以下のように見えます。</p>
 
-<p>次に、さきほどマージした作業をプッシュした人が、気が変わったらしく新たにリベースし直したようです。なんと <code>git push --force</code> を使ってサーバー上の歴史を上書きしてしまいました。あなたはもう一度サーバーにアクセスし、新しいコミットを手元に取得します。</p>
+<pre><code>003fgit-upload-pack schacon/simplegit-progit.git\0host=myserver.com\0</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0338-tn.png"></center><br/> 図 3-38. 誰かがリベースしたコミットをプッシュし、あなたの作業環境の元になっているコミットが破棄された</p>
+<p>どれくらい多くのデータが続いているのかを示す 4バイトから始まります。それから、ヌルバイトに続いて実行コマンド、そして最後のヌルバイトに続いてサーバーのホスト名が来ます。Git デーモンはコマンドが実行でき、レポジトリが存在して、それがパブリックのパーミッションを持っていることをチェックします。もしすべてが素晴らしいなら、<code>upload-pack</code> プロセスを発行して、それに対するリクエストを渡します。</p>
 
-<p>ここであなたは、新しく取得した内容をまたマージしなければなりません。すでにマージ済みのはずであるにもかかわらず。リベースを行うとコミットの SHA-1 ハッシュが変わってしまうので、Git はそれを新しいコミットと判断します。実際のところ C4 の作業は既に取り込み済みなのですが (図 3-39 を参照ください)。</p>
+<p>もし SSHを介してフェッチを行っているとき、<code>fetch-pack</code> は代わりにこのように実行します。</p>
 
-<p><center><img src="/figures/ch3/18333fig0339-tn.png"></center><br/> 図 3-39. 同じ作業を再びマージして新たなマージコミットを作成する</p>
+<pre><code>$ ssh -x git@github.com &quot;git-upload-pack &#39;schacon/simplegit-progit.git&#39;&quot;</code></pre>
 
-<p>今後の他の開発者の作業を追いかけていくために、今回のコミットもマージする必要があります。そうすると、あなたのコミット履歴には C4 と C4&#8217; の両方のコミットが含まれることになります。これらは SHA-1 ハッシュが異なるだけで、作業内容やコミットメッセージは同じものです。このような状態の歴史の上で <code>git log</code> を実行すると、同じ人による同じ日付で同じメッセージのコミットがふたつ登場することになり、混乱します。さらに、この歴史をサーバーにプッシュすると、リベースしたコミットを再び中央サーバーに戻すことになってしまい、混乱する人がさらに増えます。</p>
+<p>いずれケースでも、<code>fetch-pack</code> の接続のあと、<code>upload-pack</code> はこのように送り返します。</p>
 
-<p>リベースはあくまでもプッシュする前のコミットをきれいにするための方法であるととらえ、リベースするのはまだ公開していないコミットのみに限定するようにしている限りはすべてがうまく進みます。もしいったんプッシュした後のコミットをリベースしてしまい、どこか他のところでそのコミットを元に作業を進めている人がいたとすると、やっかいなトラブルに巻き込まれることになるでしょう。</p>
+<pre><code>0088ca82a6dff817ec66f44342007202690a93763949 HEAD\0multi_ack thin-pack \
+  side-band side-band-64k ofs-delta shallow no-progress include-tag
+003fca82a6dff817ec66f44342007202690a93763949 refs/heads/master
+003e085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7 refs/heads/topic
+0000</code></pre>
+
+<p>これは <code>receive-pack</code> が返答する内容にとても似ていますが、性能は異なります。加えて、これがクローンの場合はクライアントが何をチェックアウトするのかを知るために HEAD への参照を送り返します。</p>
+
+<p>この時点で、<code>fetch-pack</code> プロセスは何のオブジェクトがそれを持っているかを見ます。そして &#8220;want&#8221; とそれが求める SHA1ハッシュを送ることによって、それが必要なオブジェクトを返答します。&#8221;have&#8221; とその SHA1ハッシュで既に持っているオブジェクトすべてを送ります。このリストの最後で、それが必要とするデータのパックファイルを送信する <code>upload-pack</code> プロセスを開始するために &#8220;done&#8221; を書き込みます。</p>
+
+<pre><code>0054want ca82a6dff817ec66f44342007202690a93763949 ofs-delta
+0032have 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+0000
+0009done</code></pre>
+
+<p>これはトランスファープロトコルのとても基本的なケースです。より複雑なケースでは、クライアントは <code>multi_ack</code> または <code>side-band</code> の性能をサポートします。しかしこの例ではスマートプロトコルのプロセスによって使用される基本の部分を示します。</p>
 
 <div id='nav'>
 <a href='ch3-5.html'>prev</a> | <a href='ch3-7.html'>next</a>

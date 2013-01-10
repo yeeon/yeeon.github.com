@@ -1,0 +1,383 @@
+---
+layout: translation
+title: Pro Git 5.2 Git&#8217;in Temelleri Değişiklikleri Yazılım Havuzuna Kaydetmek
+---
+<h2 id='deiiklikleri_yazlm_havuzuna_kaydetmek'>Değişiklikleri Yazılım Havuzuna Kaydetmek</h2>
+
+<p>Gerçek bir Git yazılım havuzuna ve söz konusu proje için gerekli olan bir dosya seçmesine sahipsiniz. Bu proje üzerinde değişiklikler yapmanız ve proje kaydetmek istediğiniz bir seviyeye geldiğinde bu değişikliklerin bir bellek kopyasını kaydetmeniz gerekecek.</p>
+
+<p>Unutmayın, çalışma klasörünüzdeki dosyalar iki halden birinde bulunurlar: <em>izlenenler</em> (_tracked_) ve <em>izlenmeyenler</em> (_untracked_). <em>İzlenen</em> dosyalar, bir önceki bellek kopyasında bulunan dosyalardır; bunlar <em>değişmemiş</em>, <em>değişmiş</em> ya da <em>hazırlanmış</em> olabilirler. Geri kalan her şey —çalışma klasörünüzde bulunan ve bir önceki bellek kopyasında ya da hazırlama alanında bulumayan dosyalar— <em>izlenmeyen</em> dosyalardır. Bir yazılım havuzunu yeni kopyalamışsanız, bütün dosyalar, henüz yeni seçme yaptığınız ve hiçbir şeyi değiştirmediğiniz için, izlenen ve değişmemiş olacaktır.</p>
+
+<p>Dosyaları düzenlemeye başladığınzıda, Git onları değişmiş olarak görecektir, çünkü son kaydınızdan beri üzerlerinde değişiklik yapmış olacaksınız. Değiştirdiğiniz bu dosyaları önce <em>hazırlayıp</em> sonra bütün <em>hazırlanmış</em> değişiklikleri kaydedeceksiniz ve bu döngü böyle sürüp gidecek. Bu döngü, Figür 2-1&#8217;de gösteriliyor.</p>
+
+<p><center><img src="/figures/ch5/18333fig0201-tn.png"></center><br/> Figür 2-1. Dosyalarınızın değişik durumlarının döngüsü.</p>
+
+<h3 id='dosyalarn_durumlarn_kontrol_etmek'>Dosyaların Durumlarını Kontrol Etmek</h3>
+
+<p>Hangi dosyanın hangi durumda olduğunu görmek için kullanılacak temel araç <code>git status</code> komutudur. Bu komutu bir klonlama işleminin hemen sonrasında çalıştıracak olursanız, şöyle bir şey görmelisiniz:</p>
+
+<pre><code>$ git status
+# On branch master
+nothing to commit (working directory clean)</code></pre>
+
+<p>Bu çalışma klasörünüzün temiz olduğu anlamına gelir —başka bir deyişle, izlenmekte olup da değiştirilmiş herhangi bir dosya yoktur. Git&#8217;in saptadığı herhangi bir izlenmeyen dosya da yok, olsaydı burada listelenmiş olurdu. Son olarak, bu komut size hangi dal (_branch_) üzerinde olduğunuzu söylüyor. Şimdilik bu, daima varsayılan dal olan <code>master</code> olacaktır; Şu anda buna kafa yormayın. Sonraki bölüm de dallar ve referanslar konusu derinlemesine ele alınacak.</p>
+
+<p>Diyelim ki projenize yeni bir dosya, basit bir README dosyası eklediniz. Eğer dosya önceden orada bulunmuyorsa, ve <code>git status</code> komutunu çalıştırırsanız, bu izlenmeyen dosyayı şu şekilde görürsünüz:</p>
+
+<pre><code>$ vim README
+$ git status
+# On branch master
+# Untracked files:
+#   (use &quot;git add &lt;file&gt;...&quot; to include in what will be committed)
+#
+#	README
+nothing added to commit but untracked files present (use &quot;git add&quot; to track)</code></pre>
+
+<p>Yeni README dosyanızın izlenmediğini görüyorsunuz, çünkü <code>status</code> çıktısında “Untracked files” başlığı altında listelenmiştir. Bir dosyanın izlenmemesi demek, Git&#8217;in onu bir önceki bellek kopyasında (_commit_) görmemesi demektir; siz açıkça belirtmediğiniz sürece Git bu dosyayı izlemeye başlamayacaktır. Bunun nedeni, derleme çıktısı olan ikili dosyaların ya da projeye dahil etmek istemediğiniz dosyaların yanlışlıkla projeye dahil olmasını engellemektir. README dosyasını projeye eklemek istiyorsunuz, öyleyse dosyayı izlemeye alalım.</p>
+
+<h3 id='yeni_dosyalar_zlemeye_almak'>Yeni Dosyaları İzlemeye Almak</h3>
+
+<p>Yeni bir dosyayı izlemeye almak için <code>git add</code> komutunu kullanmalısınız. README dosyasını izlemeye almak için komutu şu şekilde çalıştırabilirsiniz:</p>
+
+<pre><code>$ git add README</code></pre>
+
+<p><code>status</code> komutunu yeniden çalıştırırsanız, README dosyasının artık izlemeye alındığını ve hazırlık alanında olduğunu göreceksiniz:</p>
+
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#</code></pre>
+
+<p>Hazırlık alanında olduğunu “Changes to be committed” başlığının altında olmasına bakarak söyleyebilirsiniz. Eğer bu noktada bir kayıt (_commit_) yapacak olursanız, dosyanın <code>git add</code> komutunu çalıştırdığınız andaki hali bellek kopyasına kaydedilecektir. Daha önce <code>git init</code> komutunu çalıştırdıktan sonra projenize dosya eklemek için <code>git add (dosya)</code> komutunu çalıştırdığınızı hatırlayacaksınız —bunun amacı klasörünüzdeki dosyaları izlemeye almaktı. <code>git add</code> komutu bir dosya ya da klasörün konumuyla çalışır; eğer söz konusu olan br klasörse, klasördeki bütün dosyaları tekrarlamalı olarak projeye ekler.</p>
+
+<h3 id='deitirilen_dosyalar_hazrlamak'>Değiştirilen Dosyaları Hazırlamak</h3>
+
+<p>Gelin şimdi halihazırda izlenmekte olan bir dosyayı değiştirelim. İzlenmekte olan <code>benchmarks.rb</code> adındaki bir dosyayı değiştirip <code>status</code> komutunu çaıştırdığınızda şöyle bir ekran çıktısıyla karşılaşırsınız:</p>
+
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#	modified:   benchmarks.rb
+#</code></pre>
+
+<p><code>benchmarks.rb</code> dosyası “Changes not staged for commit” başlıklı bir bölümün altında görünüyor —bu başlık izlenmekte olan bir dosyada değişiklik yapılmış olduğu fakat dosyanın henüz hazırlık alanına alınmadığı durumlarda kullanılır. Dosyayı hazırlamak için, <code>git add</code> komutunu çalıştırın (<code>git add</code> çok amaçlı bir komuttur, bir dosyayı izlemeye almak için, kayda hazırlamak için, ya da birleştirme uyuşmazlıklarının çözüldüğünü işaretlemek gibi başka amaçlarla kullanılır). Gelin <code>benchmarks.rb</code> dosyasını kayda hazırlamak için <code>git add</code> komutunu çalıştırıp sonra da <code>git status</code> komutuyla duruma bakalım:</p>
+
+<pre><code>$ git add benchmarks.rb
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#	modified:   benchmarks.rb
+#</code></pre>
+
+<p>Her iki dosya da kayda hazırlanmış durumdadır ve bir sonraki kaydınıza dahil edilecektir. Tam da bu noktada, henüz kaydı gerçekleştirmeden, aklınıza <code>benchmarks.rb</code> dosyasında yapmak istediğiniz küçük bir değişikliğin geldiğini düşünelim. Dosyayı yeniden açıp değişikliği yaptıktan sonra artık kaydı yapmaya hazırsınız. Fakat, <code>git status</code> komutunu bir kez daha çalıştıralım:</p>
+
+<pre><code>$ vim benchmarks.rb
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#	modified:   benchmarks.rb
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#	modified:   benchmarks.rb
+#</code></pre>
+
+<p>Ne oldu? <code>benchmarks.rb</code> dosyası hem kayda hazırlanmış hem de kayda hazırlanmamış görünüyor. Bu nasıl olabiliyor? Git, bir dosyayı <code>git add</code> komutunun alıştırıldığı haliyle kayda hazırlar. Eğer şimdi kayıt yapacak olursanız, <code>benchmarks.rb</code> dosyası, çalışma klasöründe göründüğü haliyle değil, <code>git add</code> komutunu son çalıştırdığınız haliyle kayıt edilecektir. Bir dosyayı <code>git add</code> komutunu çalıştırdıktan sonra değiştirecek olursanız, dosyanın son halini kayda hazırlamak için <code>git add</code> komutunu bir kez daha çalıştırmanız gerekir:</p>
+
+<pre><code>$ git add benchmarks.rb
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#	modified:   benchmarks.rb
+#</code></pre>
+
+<h3 id='dosyalar_grmezden_gelmek'>Dosyaları Görmezden Gelmek</h3>
+
+<p>Çoğu zaman, projenizde Git&#8217;in takip etmesini, hatta size izlenmeyenler arasında göstermesini bile istemediğiniz bir küme dosya olacaktır. Bunlar, genellikle otomatik olarak oluşturulan seyir (_log_) dosyaları ya da yazılım inşa sisteminin çıktılarıdır. Bu durumlarda, bu dosyaların konumlarıyla eşleşen örüntüleri listeleyen <code>.gitignore</code> adında bir dosya oluşturabilirsiniz:</p>
+
+<pre><code>$ cat .gitignore
+*.[oa]
+*~</code></pre>
+
+<p>İlk satır, Git&#8217;e <code>.o</code> ya da <code>.a</code> ile biten dosyaları —yazılım derlemesinin sonucunda ortaya çıkmış olabilecek <em>nesne</em> ve <em>arşiv</em> dosyalarını— görmezden gelmesini söylüyor. İkinci satır, Git&#8217;e Emacs gibi pek çok metin editörü tarafından geçici dosyaları işaretlemek için kullanılan tilda işaretiyle (<code>~</code>) biten bütün dosyaları görmezden gemesini söylüyor. Bu listeye <code>log</code>, <code>tmp</code> ya da <code>pid</code> klasörlerini, otomatik olarak oluşturulan dokümantasyon dosyalarını ve sair dosyayı ekleyebilirsiniz. Daha projenin başlangıcında bir <code>.gitignore</code> dosyası oluşturmak yazılım havuzunuzda istemeyeceğiniz dosyaları yanlışlıkla kaydetmenize engel olacağından oldukça iyi bir fikirdir.</p>
+
+<p><code>.gitignore</code> dosyanızda bulundurabileceğiniz örüntüler şu kurallara bağlıdır:</p>
+
+<ul>
+<li>Boş satırlar ve <code>#</code> ile başlayan satırlar görmezden gelinir.</li>
+
+<li>Stadart <em>glob</em> örüntüleri ayırt edilir (Ç.N.: <em>glob</em> *nix tarafından kullanılan sınırlı bir kurallı ifade (_regular expression_) biçimidir).</li>
+
+<li>Bir klasörü belirtmek üzere örüntüleri bir eğik çizgi (<code>/</code>) ile sonlandırabilirsiniz.</li>
+
+<li>Bir örüntüyü ünlem işaretiyle (<code>!</code>) başlattığınızda, örüntünün tersi gereçli olur.</li>
+</ul>
+
+<p><em>Glob</em> örüntüleri <em>shell</em>&#8216;ler tarafından kullanılan basitleştirilmiş kurallı ifadelerdir (_regular expression_). Bir asterisk işareti (<code>*</code>) sıfır ya da daha fazla karakterle eşleşir; <code>[abc]</code> köşeli parantezin içindeki herhangi bir karakterle eşleşir (buradaki örnekte <code>a</code>, <code>b</code>, ya da <code>c</code> ile); soru işareti (<code>?</code>) bir karakterle eşleşir; tireyle ayrılmış karakterleri içine alan bir köşeli parantez (<code>[0-9]</code>) bu aralıktaki bütün karakterlerle eşleşir (bu örnekte 0&#8217;dan 9&#8217;a kadar olan karakterler).</p>
+
+<p>Bir <code>.gitignore</code> dosyası örneği daha:</p>
+
+<pre><code># bir yorum - bu görmezden gelinir
+*.a       # .a dosyalarını görmezden gel
+!lib.a    # ama yukarıda .a dosyalarını görmezden geliyor olsan bile lib.a dosyasını izlemeye al
+/TODO     # kök dizindeki /TODO dosyasını (TODO adındaki alt klasörü değil) görmezden gel
+build/    # build/ klasöründeki bütün dosyaları görmexden gel
+doc/*.txt # doc/notes.txt dosyasını görmeden gel ama doc/server/arch.txt dosyasını görmezden gelme</code></pre>
+
+<h3 id='kayda_hazrlanm_ve_hazrlanmam_deiiklikleri_grntlemek'>Kayda Hazırlanmış ve Hazırlanmamış Değişiklikleri Görüntülemek</h3>
+
+<p><code>git status</code> komutunu fazla anlaşılmaz buluyorsanız —yalnızca hangi dosyaların deiştiğini değil, bu dosyalarda tam olarak nelerin değiştiğini görmek istiyorsanız— <code>git diff</code> komutunu kullanabilirsiniz. <code>git diff</code> komutunu ileride ayrıntılı olarak inceleyeceğiz; ama bu komutu muhtemelen en çok şu iki soruya cevap bulmak için kullanacaksınız: Değiştirip de henüz kayda hazırlamadığınız neler var? Ve kayda olmak üzere hangi değişikliklerin hazırlığını yaptınız? <code>git status</code> bu soruları genel biçimde cevaplıyor olsa da <code>git diff</code> eklenen ve çıkarılan bütün dosyaları —olduğu gibi yamayı— görsterir.</p>
+
+<p>Diyelim <code>README</code> dosyasını düzenleyip kayda hazırladınız, sonra da <code>benchmarks.rb</code> dosyasını düzenlediniz ama kayda hazırlamadınız. <code>status</code> komutunu çalıştırdığınızda şöyle bir şey görürsünüz:</p>
+
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#	modified:   benchmarks.rb
+#</code></pre>
+
+<p>Henüz kayda hazırlamadığınız değişiklikleri görmek için <code>git diff</code> komutunu (başka hiçbir argüman kullanmadan) çalıştırın:</p>
+
+<pre><code>$ git diff
+diff --git a/benchmarks.rb b/benchmarks.rb
+index 3cb747f..da65585 100644
+--- a/benchmarks.rb
++++ b/benchmarks.rb
+@@ -36,6 +36,10 @@ def main
+           @commit.parents[0].parents[0].parents[0]
+         end
+
++        run_code(x, &#39;commits 1&#39;) do
++          git.commits.size
++        end
++
+         run_code(x, &#39;commits 2&#39;) do
+           log = git.commits(&#39;master&#39;, 15)
+           log.size</code></pre>
+
+<p>Komut, çalışma klasörünüzün içeriğiyle kayda hazırlık alanının içeriğini karşılaştırır. Sonuç size henüz kayda hazırlamadığınız değişiklikleri gösterir.</p>
+
+<p>Kayda hazırlamış olduğunuz değişiklikleri görmek için <code>git diff --cache</code> komutunu kullanabilirsiniz. (1.6.1&#8217;den sonraki Git sürümlerinde hatırlaması daha kolay olabilecek <code>git diff --staged</code> komutunu da kullanabilirsiniz.) Bu komut kayda hazırlanmış değişikliklerle son kaydı karşılatırır.</p>
+
+<pre><code>$ git diff --cached
+diff --git a/README b/README
+new file mode 100644
+index 0000000..03902a1
+--- /dev/null
++++ b/README2
+@@ -0,0 +1,5 @@
++grit
++ by Tom Preston-Werner, Chris Wanstrath
++ http://github.com/mojombo/grit
++
++Grit is a Ruby library for extracting information from a Git repository</code></pre>
+
+<p>Dikkat edilmesi gereken nokta, <code>git diff</code>&#8216;in son kayıttan beri yapılan bütün değişiklikleri değil yalnızca kayda hazırlanmamış değişiklikleri gösteriyor oluşudur. Bu zaman zaman kafa karıştırıcı olabilir, zira, bütün değişikliklerinizi kayda hazırladıysanız, <code>git diff</code>&#8216;in çıktısı boş olacaktır.</p>
+
+<p>Yine, örnek olarak, <code>benchmarks.rb</code> dosyasını kayda hazırlayıp daha sonra üzerinde değişiklik yaparsanız, <code>git diff</code> komutunu kullanarak hangi değişikliklerin kayda hazırlandığını hangilerinin hazırlanmadığını görüntüleyebilirsiniz:</p>
+
+<pre><code>$ git add benchmarks.rb
+$ echo &#39;# test line&#39; &gt;&gt; benchmarks.rb
+$ git status
+# On branch master
+#
+# Changes to be committed:
+#
+#	modified:   benchmarks.rb
+#
+# Changes not staged for commit:
+#
+#	modified:   benchmarks.rb
+#</code></pre>
+
+<p>Şimdi <code>git diff</code> komutuyla hangi değişikliklerin henüz kayda hazırlanmamış olduğunu</p>
+
+<pre><code>$ git diff
+diff --git a/benchmarks.rb b/benchmarks.rb
+index e445e28..86b2f7c 100644
+--- a/benchmarks.rb
++++ b/benchmarks.rb
+@@ -127,3 +127,4 @@ end
+ main()
+
+ ##pp Grit::GitRuby.cache_client.stats
++# test line</code></pre>
+
+<p>ve <code>git diff --cached</code> komutuyla neleri kayda hazırlamış olduğunuzu görebilirsiniz:</p>
+
+<pre><code>$ git diff --cached
+diff --git a/benchmarks.rb b/benchmarks.rb
+index 3cb747f..e445e28 100644
+--- a/benchmarks.rb
++++ b/benchmarks.rb
+@@ -36,6 +36,10 @@ def main
+          @commit.parents[0].parents[0].parents[0]
+        end
+
++        run_code(x, &#39;commits 1&#39;) do
++          git.commits.size
++        end
++
+        run_code(x, &#39;commits 2&#39;) do
+          log = git.commits(&#39;master&#39;, 15)
+          log.size</code></pre>
+
+<h3 id='deiiklikleri_kaydetmek'>Değişiklikleri Kaydetmek</h3>
+
+<p>Yaptığınız değişiklikleri dilediğiniz gibi hazırlık alanına aldığınıza göre artık onları kaydedebilirsiniz (_commit_). Unutmayın, kayda hazırlanmamış —oluşturduğunuz ya da değiştirdiğiniz fakat <code>git add</code> komutunu kullanarak kayda hazırlamadığınız— değişiklikler kaydedilmeyecektir. Onlar sabit diskinizde değiştirilmiş dosyalar olarak kalacaklar.</p>
+
+<p>Bu örnekte, <code>git status</code> komutunu son çalıştırdığınızda her şeyin kayda hazırlanmış olduğunu gördünüz, dolayısıyla değişikliklerinizi kaydetmeye hazırsınız. Kayıt yapmanın en kolay yolu <code>git commit</code> komutunu kullanmaktır:</p>
+
+<pre><code>$ git commit</code></pre>
+
+<p>Bu komutu çalıştırdığınızda sisteminizde seçili bulunan metin editörü açılacaktır. (Editörünüz <em>shell</em>&#8216;inizin <code>$EDITOR</code> çevresel değişkeni tarafından tanımlanır —genellikle vim ya da emacs&#8217;tır, fakat <code>git config --global core.editor</code> komutunu <em>1. Bölüm</em>&#8216;de gördüğünüz gibi çalıştırarak bu ayarı değiştirebilirsiniz.)</p>
+
+<p>Metin editörü aşağıdaki metni görüntüler (bu örnek Vim ekranından):</p>
+
+<pre><code># Please enter the commit message for your changes. Lines starting
+# with &#39;#&#39; will be ignored, and an empty message aborts the commit.
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#       new file:   README
+#       modified:   benchmarks.rb
+~
+~
+~
+&quot;.git/COMMIT_EDITMSG&quot; 10L, 283C</code></pre>
+
+<p>Gördüğünüz gibi hazır kayıt mesajı <code>git status</code> çıktısının <code>#</code> kullanılarak devre dışı bırakılmış haliyle en üstte bir boş satırdan oluşur. Bu devre dışı bırakılmış kayıt mesajını silip yerine kendi kayıt mesajınızı yazabilir, ya da neyi kaydettiğinizi size hatırlatması için orada bırakabilirsiniz. (Neyi değiştirdiğinizin daha ayrıntlı olarak hatırlatılmasını isterseniz, <code>git commit</code> mesajını <code>-v</code> seçeneğiyle kullanabilirsiniz. Bu seçenek kaydetmekte olduğunuz değişikliğin içeriğini de (_diff_) editörde gösterecektir.) Editörü kapattığınızda Git, yazdığınız mesajı kullanarak değişikliği kaydeder (devre dışı bırakılmış bölümü ve değişikliğin içeriğini mesajın dışında bırakır).</p>
+
+<p>Bir başka seçenek de, kayıt mesajınızı <code>commit</code> komutunu <code>-m</code> seçeneğiyle aşağıdaki gibi kullanmaktır:</p>
+
+<pre><code>$ git commit -m &quot;Story 182: Fix benchmarks for speed&quot;
+[master]: created 463dc4f: &quot;Fix benchmarks for speed&quot;
+ 2 files changed, 3 insertions(+), 0 deletions(-)
+ create mode 100644 README</code></pre>
+
+<p>İlk kaydınızı oluşturmuş oldunuz! Görüldüğü gibi kayıt kendisiyle ilgili bilgiler veriyor: hangi dala kayıt yapmmış olduğunuzu (<code>master</code>), kaydın SHA-1 sınama toplamının ne olduğunu (<code>463dc4f</code>), kaç dosyada değişiklik yaptığınızı ve kayıtta kaç satır ekleyip çıkardığınıza dair istatistiklerin çıktısını veriyor.</p>
+
+<p>Unutmayın, kayıt, hazırlık alanında kayda hazırladığınız bellek kopyasının kaydıdır. Kayda hazırlamadığınız değişiklikler, değişiklik olarak duruyor; onları da proje tarihçesine eklemek isterseniz yeni bir kayıt yapabilirsiniz. Her kayıt işleminde projenizin bir bellek kopyasını kaydediyorsunuz; bu bellek kopyalarını daha sonra geriye sarabilir ya da birbiriyle karşılaştırabilirsiniz.</p>
+
+<h3 id='hazrlk_alann_atlamak'>Hazırlık Alanını Atlamak</h3>
+
+<p>Her ne kadar kayıtları tam istediğiniz gibi düzenlemek inanılmaz derecede yararlı bir şey olsa da, hazırlık alanı kimi zaman iş akışınıza fazladan bir yük getirebilir. Git, hazırlık alanını kullanamdan geçmek isteyenler için basit bir kısayol sunuyor. <code>git commit</code> komutunu <code>-a</code> seçeneğiyle kullanırsanız, Git, halihazırda izlenmekte olan bütün dosyaları otomatik olarak kayda hazırlayıp, <code>git add</code> aşamasını atlamanızı sağlar:</p>
+
+<pre><code>$ git status
+# On branch master
+#
+# Changes not staged for commit:
+#
+#	modified:   benchmarks.rb
+#
+$ git commit -a -m &#39;added new benchmarks&#39;
+[master 83e38c7] added new benchmarks
+ 1 files changed, 5 insertions(+), 0 deletions(-)</code></pre>
+
+<p>Gördünüğüz gibi, kayıt işlemi yapmadan önce <code>benchmarks.rb</code> dosyasını <code>git add</code> komutundan geçirmek zorunda kalmadınız.</p>
+
+<h3 id='dosyalar_ortadan_kaldrmak'>Dosyaları Ortadan Kaldırmak</h3>
+
+<p>Bir dosyayı Git&#8217;ten silmek için, önce izlenen dosyaları listesinden çıkarmalı (daha doğrusu, kayda hazırlık alanından kaldırmalı) sonra da kaydetmelisiniz. <code>git rm</code> hem bunu yapar hem de dosyayı çalışma klasörünüzden siler, böylece dosyayı izlenmeyen dosyalar arasında görmezsiniz.</p>
+
+<p>Eğer dosyayı çalışma klasörünüzden silerseniz, <code>git status</code> çıktısının “Changes not staged for commit” (yani <em>kayda hazırlanmamış olanlar</em>) başlığı altında boy gösterecektir:</p>
+
+<pre><code>$ rm grit.gemspec
+$ git status
+# On branch master
+#
+# Changes not staged for commit:
+#   (use &quot;git add/rm &lt;file&gt;...&quot; to update what will be committed)
+#
+#       deleted:    grit.gemspec
+#</code></pre>
+
+<p>Sonrasında <code>git rm</code> komutunu çalıştırırsanız, dosyanın ortadan kaldırılması için kayda hazırlanmasını sağlamış olursunuz:</p>
+
+<pre><code>$ git rm grit.gemspec
+rm &#39;grit.gemspec&#39;
+$ git status
+# On branch master
+#
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#       deleted:    grit.gemspec
+#</code></pre>
+
+<p>Bir sonraki kaydınızda, dosya silinmiş olacak ve artık izlenmeyecektir. Eğer dosyayı değiştirmiş ve halihazırda indekse eklemişseniz, ortadan kaldırma işlemini <code>-f</code> seçeneğini kullanarak zorlamanız gerekecektir. Bu, herhangi bir bellek kopyasına kaydedilmemiş ve Git kullanılarak kurtarılamayacak verilerin kaybolmasını önlemek amacıyla geliştirilmiş bir önlemdir.</p>
+
+<p>Yapmak isteyebileceğiniz bir başka şey de dosyayı çalışma klasörünüzde tutup, kayda hazırlık alanından silmek olabilir. Bir başka deyişle, dosyayı sabit diskinizde bulundurmak ama Git&#8217;in izlenecek dosyalar listesinden çıkarmak isteyebilirsiniz. Bu, özellikle belirli bir dosyayı (büyük bir seyir dosyasını ya da bir küme derlenmiş <code>.a</code> dosyasını) <code>.gitignore</code> dosyanıza eklemeyi unutup yanlışlıkla Git indeksine eklediğinizde kullanışlı olan bir özelliktir. Bunu yapmak için <code>--cached</code> seçeneğini kullanmalısınız:</p>
+
+<pre><code>$ git rm --cached readme.txt</code></pre>
+
+<p><code>git rm</code> komutunu dosyalar, klasörler ya da <em>glob</em> örüntüleri üzerinde kullanabilirsiniz. Yani şöyle şeyler yapabilirsiniz:</p>
+
+<pre><code>$ git rm log/\*.log</code></pre>
+
+<p><code>*</code>&#8216;in önündeki ters eğik çizgi işaretini gözden kaçırmayın. Bu işaret gereklidir, çünkü <em>shell</em>&#8216;inizin dosya adı açımlamasına ek olarak, Git de kendi dosya adı açımlamasını yapar. Yuarıdaki komut, <code>log/</code> klasöründeki <code>.log</code> eklentili bütün dosyaları ortadan kaldıracaktır. Ya da, şöyle bir şey yapabilirsiniz:</p>
+
+<pre><code>$ git rm \*~</code></pre>
+
+<p>Bu komut <code>~</code> ile biten bütün dosyaları ortadan kaldıracaktır.</p>
+
+<h3 id='dosyalar_tamak'>Dosyaları Taşımak</h3>
+
+<p>Çoğu SKS&#8217;nin aksine Git taşınan dosyaları takip etmez. Bir dosyanın adını değiştirirseniz, Git, dosyanın yeniden adlandırıldığına dair herhangi bir üstveri oluşturmaz. Fakat Git, olay olup bittikten sonra neyin ne olduğunu anlamakta oldukça beceriklidir —dosya hareketlerini keşfetme meselesini birazdan ele alacağız.</p>
+
+<p>Bu nedenle Git&#8217;in bir <code>mv</code> komutu olması biraz kafa karıştırıcı olabilir. Git&#8217;te bir dosyanın adını değiştirmek istiyorsanız, şöyle bir komut çalıştırabilirsiniz:</p>
+
+<pre><code>$ git mv eski_dosya yeni_dosya</code></pre>
+
+<p>ve istediğinizi elde edersiniz. Hatta, buna benzer bir komut çalıştırdıktan sonra <code>status</code> çıktısına bakarsanız Git&#8217;in bir dosya adlandırma işlemini (_rename_) listelediğini görürsünüz:</p>
+
+<pre><code>$ git mv README.txt README
+$ git status
+# On branch master
+# Your branch is ahead of &#39;origin/master&#39; by 1 commit.
+#
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#       renamed:    README.txt -&gt; README
+#</code></pre>
+
+<p>Öte yandan bu komut, şu komutları arka arkaya çalıştırmaya eşdeğerdir:</p>
+
+<pre><code>$ mv README.txt README
+$ git rm README.txt
+$ git add README</code></pre>
+
+<p>Git dosya taşıma işlemini dolaylı yollardan anlar, dolayısıyla dosyayı yeniden adlandırmayı bu komutlarla mı yaptığınız yoksa <code>mv</code> komutunu mu kullandığınız Git açısından önemli değildir. Tek gerçek fark arka arkaya üç komut kullanmak yerine tek bir komut kullanıyor olmanızdır —<code>mv</code>bir kullanıcıya kolalık sağlayan bir komuttur. Daha önemlisi, bir dosyanın adını değiştirmek için istediğini her aracı kullanabilir, <code>add/rm</code> işlemlerini sonraya kayıttan hemen öncesine bırakablirsiniz.</p>
+
+<div id='nav'>
+<a href='ch5-1.html'>prev</a> | <a href='ch5-3.html'>next</a>
+</div>

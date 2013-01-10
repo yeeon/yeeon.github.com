@@ -1,72 +1,127 @@
 ---
 layout: translation
-title: Pro Git 1.3 เริ่มต้นใช้งาน Git ขั้นพื้นฐาน
+title: Pro Git 1.3 Git Tools Stashing
 ---
-<h2 id='git_'>Git ขั้นพื้นฐาน</h2>
+<h2 id='stashing'>Stashing</h2>
 
-<p>แล้วสรุปสั้น ๆ ได้ว่า Git คืออะไรล่ะ? ส่วนนี้เป็นส่วนสำคัญที่คุณต้องพยายามทำความเข้าใจเพราะถ้าคุณเข้าใจว่า Git คืออะไรและทำงานอย่างไร คุณจะสามารถใช้งาน Git ได้อย่างมีประสิทธิภาพและง่ายดายมาก เวลาคุณเรียนรู้ Git ให้พยายามลืมสิ่งต่าง ๆ ที่คุณอาจจะรู้อยู่แล้วจาก VCS อื่น ๆ เช่น Subversion หรือ Perforce เพราะคุณอาจสับสนคอนเซ็ปต์จากเครื่องมือเหล่านั้นได้ เหตุผลก็เพราะ Git เก็บและมองข้อมูล่างจากระบบอื่น ๆ เป็นอย่างมากถึงแม้ว่าจะทำงานคล้ายกันก็ตาม</p>
+<p>Often, when you’ve been working on part of your project, things are in a messy state and you want to switch branches for a bit to work on something else. The problem is, you don’t want to do a commit of half-done work just so you can get back to this point later. The answer to this issue is the <code>git stash</code> command.</p>
 
-<h3 id='_snapshot_'>เก็บ Snapshot แทนผลต่าง</h3>
+<p>Stashing takes the dirty state of your working directory — that is, your modified tracked files and staged changes — and saves it on a stack of unfinished changes that you can reapply at any time.</p>
 
-<p>ความแตกต่างมากที่สุดระหว่าง Git และ VCS อื่น ๆ (เช่น Subversion และผองเพื่อน) คือ วิธีที่ Git มองข้อมูลต่าง ๆ โดยทั่วไประบบอื่นมักจะเก็บข้อมูลในรูปแบบของการแก้ไขที่เกิดขึ้นกับไฟล์ต่าง ๆ ระบบเหล่านี้ (เช่น CVS, Subversion, Perforce, Bazaar, ฯลฯ) จะมองข้อมูลในรูปแบบของไฟล์และการแก้ไขต่าง ๆ ที่เกิดขึ้นกับไฟล์แต่ละไฟล์ ดังเช่นในรูปที่ 1-4</p>
+<h3 id='stashing_your_work'>Stashing Your Work</h3>
 
-<p><center><img src="/figures/ch1/18333fig0104-tn.png"></center><br/> รูปที่ 1-4. ระบบอื่น ๆ มักจะเก็บข้อมูลโดยอิงกับการแก้ไขที่เกิดขึ้นกับไฟล์</p>
+<p>To demonstrate, you’ll go into your project and start working on a couple of files and possibly stage one of the changes. If you run <code>git status</code>, you can see your dirty state:</p>
 
-<p>Git ไม่ได้มองและจัดเก็บข้อมูลในลักษณะนี้ แต่จะคิดว่าข้อมูลของมันเป็นเสมือนภาพถ่าย(snapshot)ของระบบไฟล์ขนาดเล็กๆ ทุกครั้งที่มีการ commit หรือบันทึกสถานะของโปรเจคลงใน Git มันจะทำการถ่ายภาพของไฟล์ทั้งหมดในตอนนั้นและบันทึกการอ้างอิงไปยัง snapshot นั้น เพื่อให้การจัดเก็บนั้นมีประสิทธิภาพ ถ้าไฟล์ใดที่ไม่ได้มีการเปลี่ยนแปลง Git ก็จะไม่บันทึกไฟล์นั้นอีกครั้ง เพียงแต่จะทำการเชื่อมโยงไปยังไฟล์เดิมที่เคยถูกบันทึกเอาไว้อยู่แล้ว Git จะมองข้อมูลดังรูปที่ 1-5</p>
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#      modified:   index.html
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   lib/simplegit.rb
+#</code></pre>
 
-<p><center><img src="/figures/ch1/18333fig0105-tn.png"></center><br/> รูปที่ 1-5. Git เก็บข้อมูลเป็น snapshot ของโปรเจค</p>
+<p>Now you want to switch branches, but you don’t want to commit what you’ve been working on yet; so you’ll stash the changes. To push a new stash onto your stack, run <code>git stash</code>:</p>
 
-<p>นี่คือความแตกต่างที่สำคัญระหว่าง Git กับ VCSs ตัวอื่นๆ มันทำให้ Git ทำได้เกือบทุกด้านของระบบ VCS อื่นๆ ซึ่งส่วนใหญ่ก็คัดลอกมาจากรุ่นก่อนๆ นี่ทำให้ Git เป็นเหมือนกับระบบไฟล์ขนาดเล็กที่มีเครื่องมือ(tools)อันทรงพลังอย่างน่าเหลือเชื่อครอบอยู่ แทนที่จะเป็น VCS แบบทั่วไป เราจะมาสำรวจข้อดีที่คุณจะได้รับจากแนวคิดแบบนี้เมื่อเรากล่าวถึงเรื่อง การแตกสาขา(Git branching) ในบทที่ 3</p>
+<pre><code>$ git stash
+Saved working directory and index state \
+  &quot;WIP on master: 049d078 added the index file&quot;
+HEAD is now at 049d078 added the index file
+(To restore them type &quot;git stash apply&quot;)</code></pre>
 
-<h3 id='id243'>การทำงานเกือบทุกอย่างเป็นการทำงานในเครื่องตัวเอง</h3>
+<p>Your working directory is clean:</p>
 
-<p>การทำงานโดยส่วนใหญ่ของ Git จะใช้ไฟล์และทรัพยากรในเครื่องของเราเท่านั้น ปกติจะไม่มีข้อมูลใดๆ ที่จำเป็นต้องใช้จากคอมพิวเตอร์เครื่องอื่นๆ ในเน็ตเวิร์ก แต่หากคุณเคยใช้ CVCS อื่นที่การทำงานส่วนใหญ่ต้องใช้ข้อมูลบนเน็ตเวิร์กจำนวนมาก ในแง่นี้ก็จะทำให้คุณรู้สึกมีความสุขกับความเร็วในการทำงานของ Git เพราะว่าคุณจะมีประวัติการเปลี่ยนแปลงทั้งหมดของโปรเจคอยู่ในเครื่องของคุณอยู่แล้วและพร้อมที่จะทำงานได้ทันที</p>
+<pre><code>$ git status
+# On branch master
+nothing to commit (working directory clean)</code></pre>
 
-<p>ตัวอย่างเช่น ถ้าจะดูประวัติย้อนหลังของโปรเจค Git ไม่จำเป็นที่จะต้องไปดึงข้อมูลจากเซิร์ฟเวอร์แล้วจึงแสดงผลให้คุณได้ มันแค่อ่านโดยตรงจากฐานข้อมูลในเครื่องของคุณ หมายความว่าคุณสามารที่จะดูประวัติของโปรเจคได้ทันที หากคุณจะดูความเปลี่ยนแปลงของไฟล์ในรุ่นปัจจุบันกับเมื่อหนึ่งเดือนที่แล้ว Git ก็สามารถค้นหาไฟล์เมื่อเดือนก่อนในเครื่องของเราแล้วทำการคำนวณความแตกต่าง แทนที่จะถามเครื่องเซิร์ฟเวอร์ให้ดึงไฟล์เก่ามาให้</p>
+<p>At this point, you can easily switch branches and do work elsewhere; your changes are stored on your stack. To see which stashes you’ve stored, you can use <code>git stash list</code>:</p>
 
-<p>ซึ่งก็มีโอกาสน้อยมากที่คุณไม่สามารถทำงานได้ถ้าหากออฟไลน์อยู่ หากคุณต้องเดินทางอยู่บนเครื่องหรือบนรถไฟและอยากจะทำงานสักหน่อย คุณก็สามารถ commit ได้อย่างมีความสุขจนกว่าจะเชื่อมต่อเน็ตเวิร์กได้แล้วอัพโหลด หากที่บ้านของคุณมีปัญหาเรื่องเน็ตเวิร์กคุณก็ยังคงทำงานได้ ถ้าเป็นระบบอื่นทำแบบนี้ไม่ได้แน่ และจะทำอะไรแทบจะไม่ได้เลยหากคุณเชื่อมต่อไปยังเซิร์ฟเวอร์ไม่ได้ ยิ่งในโปรแกรม Subversion และ CVS คุณสามารถแก้ไขไฟล์ต่างๆ ได้แต่จะไม่สามารถ commit ได้เพราะฐานข้อมูลมันออฟไล์อยู่ นี่อาจจะไม่ใช้เรื่องใหญ่อะไรแต่ก็ได้แต่คุณจะแปลกใจในความสามารถนี้ที่ Git ทำได้</p>
+<pre><code>$ git stash list
+stash@{0}: WIP on master: 049d078 added the index file
+stash@{1}: WIP on master: c264051... Revert &quot;added file_size&quot;
+stash@{2}: WIP on master: 21d80a5... added number to log</code></pre>
 
-<h3 id='git_'>Git มีความเที่ยงตรง</h3>
+<p>In this case, two stashes were done previously, so you have access to three different stashed works. You can reapply the one you just stashed by using the command shown in the help output of the original stash command: <code>git stash apply</code>. If you want to apply one of the older stashes, you can specify it by naming it, like this: <code>git stash apply stash@{2}</code>. If you don’t specify a stash, Git assumes the most recent stash and tries to apply it:</p>
 
-<p>ทุกอย่างที่ Git ทำการบันทึกเอาไว้จะถูกทำการ Checksum แล้วนำมาใช้เป็นตัวอ้างอิง นั่นทำให้ไม่มีทางที่เราจะแก้ไขข้อมูลของไฟล์และไดเร็กทอรี่ใดโดยที่ Git จะไม่รู้ ซึ่งฟังก์ชันนี้จะอยู่ในระดับล่างและเป็นหลักการของ Git คุณจะไม่มีทางที่จะทำข้อมูลสูญหายระหว่างการโยกย้ายหรือรับไฟล์ที่เสียหายโดย Git จะสามารถตรวจพบได้</p>
+<pre><code>$ git stash apply
+# On branch master
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   index.html
+#      modified:   lib/simplegit.rb
+#</code></pre>
 
-<p>กลไกที่ Git ใช้ในการทำ Checksum คือการแฮช(hash)แบบ SHA-1 ซึ่งผลลัพธ์จะได้ออกมาเป็นตัวอักษร 40 ตัวที่แทนเลขฐานสิบหก(0-9 และ a-f)จากการคำนวณเนื้อหาในไฟล์หรือโครงสร้างของไดเร็กทอรี่ของ Git ซึ่ง SHA-1 มีลักษณะดังนี้</p>
+<p>You can see that Git re-modifies the files you uncommitted when you saved the stash. In this case, you had a clean working directory when you tried to apply the stash, and you tried to apply it on the same branch you saved it from; but having a clean working directory and applying it on the same branch aren’t necessary to successfully apply a stash. You can save a stash on one branch, switch to another branch later, and try to reapply the changes. You can also have modified and uncommitted files in your working directory when you apply a stash — Git gives you merge conflicts if anything no longer applies cleanly.</p>
 
-<pre><code>24b9da6552252987aa493b52f8696cd6d3b00373</code></pre>
+<p>The changes to your files were reapplied, but the file you staged before wasn’t restaged. To do that, you must run the <code>git stash apply</code> command with a <code>--index</code> option to tell the command to try to reapply the staged changes. If you had run that instead, you’d have gotten back to your original position:</p>
 
-<p>คุณจะเห็นว่าผลของการแฮช(hash)เหล่านี้อยู่ในทุกที่ใน Git เพราะจะถูกใช้บ่อยครั้ง ซึ่งจริงๆแล้ว Git ไม่ได้เก็บบันทึกข้อมูลทุกอย่างตามชื่อไฟล์แต่เก็บในฐานข้อมูลของ Git แล้วสามารถอ้างถึงด้วยค่าแฮช(hash)ของข้อมูลของไฟล์</p>
+<pre><code>$ git stash apply --index
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#      modified:   index.html
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   lib/simplegit.rb
+#</code></pre>
 
-<h3 id='git_'>Git เพียงแต่เพิ่มข้อมูล</h3>
+<p>The apply option only tries to apply the stashed work — you continue to have it on your stack. To remove it, you can run <code>git stash drop</code> with the name of the stash to remove:</p>
 
-<p>เมื่อคุณกระทำอะไรสักอย่างใน Git เนื้อหาเกือบทั้งหมดนั้นก็จะถูกเพิ่มเข้าไปในฐานข้อมูลของ Git เท่านั้น มันเป็นเรื่องยากมากๆ ที่เราจะใช้ระบบที่ทำอะไรลงไปแล้วไม่สามารถย้อนคืนกลับมาได้หรือลบแล้วลบเลย เช่นเดียวกันกับ VCS ตัวอื่นๆ คุณสามารถสูญเสียข้อมูลหรือแก้ไขผิดพลาดได้โดยที่ยังไม่ทันได้ commit แต่ถ้าคุณ commit ลงใน snapshot ของ Git แล้วมันก็ยากที่จะสูญหายได้โดยเฉพาะอย่างยิ่งถ้าคุณทำการผลัก(push)ฐานข้อมูลของคุณไปไว้ที่อื่นๆ</p>
+<pre><code>$ git stash list
+stash@{0}: WIP on master: 049d078 added the index file
+stash@{1}: WIP on master: c264051... Revert &quot;added file_size&quot;
+stash@{2}: WIP on master: 21d80a5... added number to log
+$ git stash drop stash@{0}
+Dropped stash@{0} (364e91f3f268f0900bc3ee613f9f733e82aaed43)</code></pre>
 
-<p>สิ่งนี้ทำให้การใช้ Git ได้อย่างมีความสุข เพราะเรารู้ว่าเราสามารถทำการทดลองได้โดยที่ไม่มีอันตรายร้ายแรง เราจะดูเนื้อหาลึกๆว่า Git จัดเก็บข้อมูลอย่างไร และเราสามารถกู้ข้อมูลที่สูญหายไปได้อย่างไร ในบทที่ 9</p>
+<p>You can also run <code>git stash pop</code> to apply the stash and then immediately drop it from your stack.</p>
 
-<h3 id='id244'>สามสถานะ</h3>
+<h3 id='unapplying_a_stash'>Un-applying a Stash</h3>
 
-<p>ทีนี้เราต้องให้ความสนใจหน่อย เพราะนี่คือสิ่งสำคัญของ Git ที่จะต้องจำให้ได้ ถ้าคุณต้องการจะศึกษาส่วนอื่นๆต่อไปของ Git อย่างราบรื่น ไฟล์ของคุณใน Git จะมีอยู่ 3 สถานะ คือ ยืนยันแล้ว(committed), ถูกแก้ไข(modified) และ อยู่ในขั้นตอน(staged) ซึ่ง Committed หมายถึงข้อมูลที่ถูกบันทึกเรียบร้อยแล้วในฐานข้อมูลในเครื่องของคุณ Modified หมายถึงไฟล์ของคุณได้ถูกแก้ไขแล้วแต่ยังไม่ได้ยืนยัน(commit)ลงในฐานข้อมูลของคุณ Staged หมายถึงคุณได้ทำเครื่องหมายไว้ที่ไฟล์ที่ถูกแก้ไขในเวอร์ชันปัจจุบันเพื่อที่จะรอการ commit ใน snapshot ถัดไป</p>
+<p>In some use case scenarios you might want to apply stashed changes, do some work, but then un-apply those changes that originally came form the stash. Git does not provide such a <code>stash unapply</code> command, but it is possible to achieve the effect by simply retrieving the patch associated with a stash and applying it in reverse:</p>
 
-<p>นี่ทำให้โปรเจคที่ใช้ Git มี 3 ส่วน คือ the Git directory, working directory, และ staging area.</p>
+<pre><code>$ git stash show -p stash@{0} | git apply -R</code></pre>
 
-<p><center><img src="/figures/ch1/18333fig0106-tn.png"></center><br/> Figure 1-6. Working directory, staging area, และ git directory.</p>
+<p>Again, if you don’t specify a stash, Git assumes the most recent stash:</p>
 
-<p>Git directory เป็นที่ที่ Git ใช้เก็บ metadata และออปเจ็คของฐานข้อมูลของโปรเจคของคุณ นี่คือส่วนสำคัญที่สุดของ Git และเป็นส่วนที่จะถูกคัดลอกมาเมื่อคุณทำการโคลน(clone)คลังข้อมูลจากคอมพิวเตอร์เครื่องอื่น</p>
+<pre><code>$ git stash show -p | git apply -R</code></pre>
 
-<p>working directory เป็นเวอร์ชันนึงของไฟล์ในโปรเจคที่ถูกดึงออกมาจากฐานข้อมูลที่ถูกบีบอัดไว้ใน Git directory แล้วเก็บไว้ในดิสก์เพื่อให้คุณนำไปใช้หรือเอามาแก้ไข</p>
+<p>You may want to create an alias and effectively add a <code>stash-unapply</code> command to your git. For example:</p>
 
-<p>staging area เป็นไฟล์ธรรมดาไฟล์นึง โดยทั่วไปก็อยู่ใน Git directory ของคุณ ซึ่งเก็บข้อมูลส่วนที่คุณจะทำการ commit ในครั้งถัดไป บางครั้งก็เรียกว่าดัชนี(index) แต่ปกติก็จะเรียกว่า staging area</p>
+<pre><code>$ git config --global alias.stash-unapply &#39;!git stash show -p | git apply -R&#39;
+$ git stash
+$ #... work work work
+$ git stash-unapply</code></pre>
 
-<p>กระบวนการขั้นตอนพื้นฐานของ Git มีลักษณะดังนี้</p>
+<h3 id='creating_a_branch_from_a_stash'>Creating a Branch from a Stash</h3>
 
-<ol>
-<li>คุณทำการแก้ไขไฟล์ใน working directory ของคุณ</li>
+<p>If you stash some work, leave it there for a while, and continue on the branch from which you stashed the work, you may have a problem reapplying the work. If the apply tries to modify a file that you’ve since modified, you’ll get a merge conflict and will have to try to resolve it. If you want an easier way to test the stashed changes again, you can run <code>git stash branch</code>, which creates a new branch for you, checks out the commit you were on when you stashed your work, reapplies your work there, and then drops the stash if it applies successfully:</p>
 
-<li>แล้วทำการ stage ไฟล์เหล่านั้นเพื่อให้มีการใส่ snapshot ลงไปใน staging area ของคุณ</li>
+<pre><code>$ git stash branch testchanges
+Switched to a new branch &quot;testchanges&quot;
+# On branch testchanges
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#      modified:   index.html
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   lib/simplegit.rb
+#
+Dropped refs/stash@{0} (f0dfc4d5dc332d1cee34a634182e168c4efc3359)</code></pre>
 
-<li>ทำการยืนยัน(commit)ซึ่งนำไฟล์ที่อยู่ใน staging area ไปเก็บอย่างถาวรใน Git directory</li>
-</ol>
-
-<p>เมื่อไฟล์อยู่ใน Git directory มันจะถือว่าเป็นสถานะ committed ถ้าไฟล์ถูกแก้ไขแล้วถูกเพิ่มลงใน staging area สถานะจะเป็น staged และถ้าไฟล์ถูกแก้ไขแล้วหลังถูกดึงออกมาแต่ไม่ได้เป็นสถานะ staged ก็จะเป็นสถานะ modified ในบทที่ 2 คุณจะได้เรียนรู้เกี่ยวกับสถานะมากกว่านี้และวิธีการที่คุณสามารถใช้ประโยชน์จากสถานะเหล่านี้หรือการข้ามสถานะ staged ได้อย่างไร</p>
+<p>This is a nice shortcut to recover stashed work easily and work on it in a new branch.</p>
 
 <div id='nav'>
 <a href='ch1-2.html'>prev</a> | <a href='ch1-4.html'>next</a>

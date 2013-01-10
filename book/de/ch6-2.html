@@ -1,346 +1,416 @@
 ---
 layout: translation
-title: Pro Git 6.2 Git Tools Revision Auswahl
+title: Pro Git 6.2 Customizing Git Git Konfiguration
 ---
-<h2 id='revision_auswahl'>Revision Auswahl</h2>
+<h2 id='git_konfiguration'>Git Konfiguration</h2>
 
-<p>Git allows you to specify specific commits or a range of commits in several ways. They aren’t necessarily obvious but are helpful to know.</p>
+<p>Wie Du in Kapitel 1 kurz gesehen hast, kann man die Konfiguration von Git mit dem Befehl <code>git config</code> steuern. Eine Deiner ersten Aktionen war es, Deinen Namen und Deine e-mail Adresse anzugeben:</p>
 
-<p>Git erlaubt dir, Commits auf verschiedenste Art und Weise auszuwählen. Diese sind nicht immer offensichtlich, aber es ist hilfreich diese zu kennen.</p>
+<p>As you briefly saw in the Chapter 1, you can specify Git configuration settings with the <code>git config</code> command. One of the first things you did was set up your name and e-mail address:</p>
 
-<h3 id='single_revisions'>Single Revisions</h3>
+<pre><code>$ git config --global user.name &quot;John Doe&quot;
+$ git config --global user.email johndoe@example.com</code></pre>
 
-<h3 id='einzelne_revisionen'>Einzelne Revisionen</h3>
+<p>Jetzt wirst Du einige weitere, interessantere Optionen lernen, die Du genauso benutzen kannst, um Git Deiner Arbeitsumgebung anzupassen.</p>
 
-<p>You can obviously refer to a commit by the SHA-1 hash that it’s given, but there are more human-friendly ways to refer to commits as well. This section outlines the various ways you can refer to a single commit.</p>
+<p>Now you’ll learn a few of the more interesting options that you can set in this manner to customize your Git usage.</p>
 
-<p>Du kannst offensichtlich mithilfe des SHA-1 hash einen commit auswählen, aber es gibt auch Menschen freundlichere Methoden auf ein commit zu verweisen. Dieser Bereich skizziert die verschiedenen Wege, die man gehen kann um auf ein einzelnen commit zu referenzieren.</p>
+<p>In Kapitel 1 hast Du bereits einige einfache Konfigurationsdetails von Git kennengelernt, aber ich möchte sie hier noch einmal schnell wiederholen. Git benutzt eine Reihe von Konfigurationsdateien, um nicht-Standard Verhalten zu kontrollieren, an dem Du interessiert sein könntest. Der erste Ort, an dem Git danach sucht ist in der Datei <code>/etc/gitconfig</code>. Diese Datei enthält Werte fuer alle Benutzer des Systems und alle ihre Repositories. Wenn Du <code>git config</code> mit der Option <code>--system</code> benutzt, liest und schreibt Git speziell in dieser Datei.</p>
 
-<h3 id='short_sha'>Short SHA</h3>
+<p>You saw some simple Git configuration details in the first chapter, but I’ll go over them again quickly here. Git uses a series of configuration files to determine non-default behavior that you may want. The first place Git looks for these values is in an <code>/etc/gitconfig</code> file, which contains values for every user on the system and all of their repositories. If you pass the option <code>--system</code> to <code>git config</code>, it reads and writes from this file specifically.</p>
 
-<h3 id='abgekrztes_sha'>Abgekürztes SHA</h3>
+<p>Als nächstes sucht Git in der benutzerspezifischen Datei <code>~/.gitconfig</code> nach Kofigurationsdaten. Damit Git diese Date zum Lesen und Schreiben nutzt, kannst Du die Option <code>--global</code> benutzen.</p>
 
-<p>Git is smart enough to figure out what commit you meant to type if you provide the first few characters, as long as your partial SHA-1 is at least four characters long and unambiguous — that is, only one object in the current repository begins with that partial SHA-1.</p>
+<p>The next place Git looks is the <code>~/.gitconfig</code> file, which is specific to each user. You can make Git read and write to this file by passing the <code>--global</code> option.</p>
 
-<p>Git ist intelligent genug, den richtigen commit herauszufinden, wenn man nur die ersten paar Zeichen angibt aber nur unter der Bedingung, dass der SHA-1 hash mindestens vier Zeichen lang und einzigartig ist — das bedeutet, dass es nur ein Objekt im derzeitigen Repository gibt, das mit diesem bestimmten SHA-1 hash beginnt.</p>
+<p>Als letztes sucht Git in der Konfigurationsdatei im Git Verzeichnis (<code>.git/config</code>) des aktuell benutzten Repositories nach Konfigurationsdaten. Diese Daten sind dann speziell fuer dieses Repository gueltig. Jede der erwähnten Ebenen ueberschreibt die vorhergehende, das heisst also das zum Beispiel die Konfiguration aus <code>.git/config</code> Vorrang vor derjenigen aus <code>/etc/gitconfig</code> hat. Du kannst alle Konfigurationen auch surch manuelles Editieren dieser Dateien mit der korrekten Syntax vornehmen, aber in der Regel ist es einfacher den Befehl <code>git config</code> zu benutzen.</p>
 
-<p>For example, to see a specific commit, suppose you run a <code>git log</code> command and identify the commit where you added certain functionality:</p>
+<p>Finally, Git looks for configuration values in the config file in the Git directory (<code>.git/config</code>) of whatever repository you’re currently using. These values are specific to that single repository. Each level overwrites values in the previous level, so values in <code>.git/config</code> trump those in <code>/etc/gitconfig</code>, for instance. You can also set these values by manually editing the file and inserting the correct syntax, but it’s generally easier to run the <code>git config</code> command.</p>
 
-<p>Um zum Beispiel einen bestimmten commit zu sehen, kann man das <code>git log</code> Kommando ausführen und den commit identifizieren in dem man eine bestimmte Funktionalität hinzugefügt hat:</p>
+<h3 id='basic_client_configuration'>Basic Client Configuration</h3>
 
-<pre><code>$ git log
-commit 734713bc047d87bf7eac9674765ae793478c50d3
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Fri Jan 2 18:32:33 2009 -0800
+<h3 id='grundlegende_client_konfiguration'>Grundlegende Client Konfiguration</h3>
 
-    fixed refs handling, added gc auto, updated tests
+<p>Die von Git verwendeten Konfigurationsoptionen teilen sich in zwei Kategorien: den Client und den Server. Der Grossteil der Optionen beziehen sich auf den Client — zur Konfiguration Deines persönlichen Arbeitsflusses. Auch wenn es eine grosse Menge an Optionen gibt werde ich nur die wenigen besprechen, die sehr gebräuchlich sind oder die Deine Arbeitsweise bedeutend beeinflussen können. Viele Optionen sind nur fuer Spezialfälle nuetzlich, die ich hier nicht auffuehren werde. Falls Du eine Liste aller Optionen sehen willst, fuehre den folgenden Befehl aus</p>
 
-commit d921970aadf03b3cf0e71becdaab3147ba71cdef
-Merge: 1c002dd... 35cfb2b...
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Thu Dec 11 15:08:43 2008 -0800
+<p>The configuration options recognized by Git fall into two categories: client side and server side. The majority of the options are client side—configuring your personal working preferences. Although tons of options are available, I’ll only cover the few that either are commonly used or can significantly affect your workflow. Many options are useful only in edge cases that I won’t go over here. If you want to see a list of all the options your version of Git recognizes, you can run</p>
 
-    Merge commit &#39;phedders/rdocs&#39;
+<pre><code>$ git config --help</code></pre>
 
-commit 1c002dd4b536e7479fe34593e72e6c6c1819e53b
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Thu Dec 11 14:58:32 2008 -0800
+<p>Die Hilfeseite zu <code>git config</code> listet alle möglichen Optionen sehr detailiert auf.</p>
 
-    added some blame and merge stuff</code></pre>
+<p>The manual page for <code>git config</code> lists all the available options in quite a bit of detail.</p>
 
-<p>In this case, choose <code>1c002dd....</code> If you <code>git show</code> that commit, the following commands are equivalent (assuming the shorter versions are unambiguous):</p>
+<h4 id='coreeditor'>core.editor</h4>
 
-<p>In diesem Fall wählt man <code>1c002dd....</code> wenn du diesen commit mit <code>git show</code> anzeigen lassen willst, die folgenden Kommandos sind äquivalent (vorausgesetzt die verkürzte Version ist einzigartig):</p>
+<p>In der Grundeinstellung benutzt Git Deinen Standard Texteditor oder greift auf den Vi Editor zurueck, um Deine Commit und Tag Nachrichten zu editieren. Um einen andern Editor als Standard einzurichten kannst Du die Option <code>core.editor</code> benutzen:</p>
 
-<pre><code>$ git show 1c002dd4b536e7479fe34593e72e6c6c1819e53b
-$ git show 1c002dd4b536e7479f
-$ git show 1c002d</code></pre>
+<p>By default, Git uses whatever you’ve set as your default text editor or else falls back to the Vi editor to create and edit your commit and tag messages. To change that default to something else, you can use the <code>core.editor</code> setting:</p>
 
-<p>Git can figure out a short, unique abbreviation for your SHA-1 values. If you pass <code>--abbrev-commit</code> to the <code>git log</code> command, the output will use shorter values but keep them unique; it defaults to using seven characters but makes them longer if necessary to keep the SHA-1 unambiguous:</p>
+<pre><code>$ git config --global core.editor emacs</code></pre>
 
-<p>Git kann auch selber eine Kurzform für deine einzigartigen SHA-1 Werte erzeugen. Wenn du <code>--abbrev-commit</code> dem <code>git log</code> Kommando übergibst, wird es den kürzeren Wert benutzen diesen aber einzigartig halten; die Standardeinstellung sind sieben Zeichen aber es werden automatisch mehr benutzt wenn dies nötig ist um den SHA-1 hash eindeutig zu bezeichnen.</p>
+<p>Hiermit wird Git nun immer unabhängig von Deinem Standard Shell-Editor Emacs starten, um Nachrichten zu editieren.</p>
 
-<pre><code>$ git log --abbrev-commit --pretty=oneline
-ca82a6d changed the version number
-085bb3b removed unnecessary test code
-a11bef0 first commit</code></pre>
+<p>Now, no matter what is set as your default shell editor variable, Git will fire up Emacs to edit messages.</p>
 
-<p>Generally, eight to ten characters are more than enough to be unique within a project. One of the largest Git projects, the Linux kernel, is beginning to need 12 characters out of the possible 40 to stay unique.</p>
+<h4 id='committemplate'>commit.template</h4>
 
-<p>Generell kann man sagen das acht bis zehn Zeichen mehr als ausreichend in einem Projekt sind, um eindeutig zu bleiben. Eines der größten Git Projekte, der Linux kernel, fängt langsam an 12 von maximal 40 Zeichen zu nutzen um eindeutig zu bleiben.</p>
+<p>Wenn Du diese Einstellung auf einen Pfad zu einer Datei auf Deinem System einstellst, wird Git diese Datei als Standard-Nachricht fuer Deine Commits verwenden. Nehmen wir zum Beispiel an, Du hättest eine Vorlage unter dem Namen <code>$HOME/.gitmessage.txt</code> erstellst, die aussieht wie folgt:</p>
 
-<h3 id='a_short_note_about_sha1'>A SHORT NOTE ABOUT SHA-1</h3>
+<p>If you set this to the path of a file on your system, Git will use that file as the default message when you commit. For instance, suppose you create a template file at <code>$HOME/.gitmessage.txt</code> that looks like this:</p>
 
-<h3 id='eine_kurve_notiz_ber_sha1'>EINE KURVE NOTIZ ÜBER SHA-1</h3>
+<pre><code>subject line
 
-<p>A lot of people become concerned at some point that they will, by random happenstance, have two objects in their repository that hash to the same SHA-1 value. What then?</p>
+what happened
 
-<p>Eine Menge Leute machen sich Sorgen, dass ab einem zufälligen Punkt zwei Objekte im Repository vorhanden sind, die den gleichen SHA-1 hash wert haben. Was Dann?</p>
+[ticket: X]</code></pre>
 
-<p>If you do happen to commit an object that hashes to the same SHA-1 value as a previous object in your repository, GIt will see the previous object already in your Git database and assume it was already written. If you try to check out that object again at some point, you’ll always get the data of the first object.</p>
+<p>Damit Git nun diese Datei als Standard-Nachricht benutzt, die in Deinem Editor erscheint, wenn Du <code>git commit</code> aufrufst, richte die Option <code>commit.template</code> ein:</p>
 
-<p>Wenn es passiert, dass bei einem commit, ein Objekt mit dem gleichen SHA-1 hash Wert im Repository vorhanden ist, wird Git sehen, dass das vorherige Objekt bereits in der Datenbank vorhanden ist und davon ausgehen, dass es bereits geschrieben wurde. Wenn du versuchst das Objekt später wieder auszuchecken wirst du immer die Daten des ersten Objekts bekommen.</p>
+<p>To tell Git to use it as the default message that appears in your editor when you run <code>git commit</code>, set the <code>commit.template</code> configuration value:</p>
 
-<p>However, you should be aware of how ridiculously unlikely this scenario is. The SHA-1 digest is 20 bytes or 160 bits. The number of randomly hashed objects needed to ensure a 50% probability of a single collision is about 2^80 (the formula for determining collision probability is <code>p = (n(n-1)/2) * (1/2^160))</code>. 2^80 is 1.2 x 10^24 or 1 million billion billion. That’s 1,200 times the number of grains of sand on the earth.</p>
+<pre><code>$ git config --global commit.template $HOME/.gitmessage.txt
+$ git commit</code></pre>
 
-<p>Allerdings solltest du dir bewusst machen wie unglaublich unwahrscheinlich dieses Szenario ist. Die Länge des SHA-1 hashs beträgt 20 bytes oder 160bits. Die Anzahl der Objekte die benötigt werden, um eine 50% Chance einer Kollision zu haben, beträgt ungefähr 2^80 (die Formel zum berechnen der Kollisionswahrscheinlichkeit lautet ‚p = (n(n-1)/2) * (1/2^160))‘. 2^80 ist somit 1.2 x 10^24 oder eine Trilliarden. Das ist 1200 mal die Anzahl der Sandkörner die es auf der Erde gibt.</p>
+<p>Wenn Du dann das nächste Mal ein Commit ausfuehrst, wird Dein Editor mit etwas ähnlichem wie dieser Nachricht starten: Then, your editor will open to something like this for your placeholder commit message when you commit:</p>
 
-<p>Here’s an example to give you an idea of what it would take to get a SHA-1 collision. If all 6.5 billion humans on Earth were programming, and every second, each one was producing code that was the equivalent of the entire Linux kernel history (1 million Git objects) and pushing it into one enormous Git repository, it would take 5 years until that repository contained enough objects to have a 50% probability of a single SHA-1 object collision. A higher probability exists that every member of your programming team will be attacked and killed by wolves in unrelated incidents on the same night.</p>
+<pre><code>subject line
 
-<p>Hier ist ein Beispiel welches dir eine Vorstellung davon geben wird was nötig ist um in SHA-1 eine Kollision zu bekommen. Wenn alle 6,5 Milliarden Menschen auf der Erde Programmieren würden und jeder jede Sekunde Code schreiben würde, der der gesamten Geschichte des Linux Kernels (1 Millionen Git Objekte) entspricht und diesen dann in ein gigantisches Git Repository übertragen würden, würde es fünf Jahre dauern bis das Repository genügend Objekte hätte um eine 50% Wahrscheinlichkeit für eine einzige SHA-1 Kollision aufzuweisen. Es ist wahrscheinlicher das jedes Mitglied deines Programmierer Teams, unabhängig voneinander, in einer Nacht von Wölfen angegriffen und getötet wird.</p>
+what happened
 
-<h3 id='branch_references'>Branch References</h3>
+[ticket: X]
+# Please enter the commit message for your changes. Lines starting
+# with &#39;#&#39; will be ignored, and an empty message aborts the commit.
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+# modified:   lib/test.rb
+#
+~
+~
+&quot;.git/COMMIT_EDITMSG&quot; 14L, 297C</code></pre>
 
-<h3 id='branch_referenzen'>Branch Referenzen</h3>
+<p>Falls Du eine Richtlinie fuer Commit Nachrichten hast, erhöht es die Chance, dass diese Richtlinie auch eingehalten wird, wenn Du dazu eine Vorlage erstellst und Git so konfigurierst, dass sie als Standard geladen wird.</p>
 
-<p>The most straightforward way to specify a commit requires that it have a branch reference pointed at it. Then, you can use a branch name in any Git command that expects a commit object or SHA-1 value. For instance, if you want to show the last commit object on a branch, the following commands are equivalent, assuming that the <code>topic1</code> branch points to <code>ca82a6d</code>:</p>
+<p>If you have a commit-message policy in place, then putting a template for that policy on your system and configuring Git to use it by default can help increase the chance of that policy being followed regularly.</p>
 
-<p>Am direktesten kannst du einen Commit spezifizieren, wenn eine Branch Referenz direkt auf ihn zeigt. In dem Fall kannst du in allen Git Befehlen, die ein Commit Objekt oder einen SHA-1 Wert erwarten, statt dessen den Branch Namen verwenden. Wenn du z.B. den letzten Commit in einem Branch sehen willst, sind die folgenden Befehle äquivalent (vorausgesetzt der <code>topic1</code> Branch zeigt auf den Commit <code>ca82a6d</code>):</p>
+<h4 id='corepager'>core.pager</h4>
 
-<pre><code>$ git show ca82a6dff817ec66f44342007202690a93763949
-$ git show topic1</code></pre>
+<p>Die Einstellung <code>core.pager</code> legt fest, welche Anwendung zur Seitenanzeige benutzt wird, wenn Git Text ausgib, wie zum Beispiel bei <code>log</code> und <code>diff</code>. Du kannst es zum Beispiel auf <code>more</code> einstellen oder eine andere Seitenznzeige Deiner Wahl (der Standard ist <code>less</code>), oder Du kannst es mittels eines leeren Strings ganz ausschalten:</p>
 
-<p>If you want to see which specific SHA a branch points to, or if you want to see what any of these examples boils down to in terms of SHAs, you can use a Git plumbing tool called <code>rev-parse</code>. You can see Chapter 9 for more information about plumbing tools; basically, <code>rev-parse</code> exists for lower-level operations and isn’t designed to be used in day-to-day operations. However, it can be helpful sometimes when you need to see what’s really going on. Here you can run <code>rev-parse</code> on your branch.</p>
+<p>The core.pager setting determines what pager is used when Git pages output such as <code>log</code> and <code>diff</code>. You can set it to <code>more</code> or to your favorite pager (by default, it’s <code>less</code>), or you can turn it off by setting it to a blank string:</p>
 
-<p>Wenn du sehen willst, auf welchen SHA-1 Wert ein Branch zeigt, oder wie unsere Beispiele intern in SHA-1 Werte übersetzt aussähen, kannst du den Git Plumbing Befehl <code>rev-parse</code> verwenden. In Kapitel 9 werden wir genauer auf Plumbing Befehle eingehen. Kurz gesagt ist <code>rev-parse</code> als eine Low-Level Operation gedacht und nicht dafür, im tagtäglichen Gebrauch eingesetzt zu werden. Aber es kann manchmal hilfreich sein, wenn man wissen muß, was unter der Haube vor sich geht:</p>
+<pre><code>$ git config --global core.pager &#39;&#39;</code></pre>
 
-<pre><code>$ git rev-parse topic1
-ca82a6dff817ec66f44342007202690a93763949</code></pre>
+<p>Wenn Du dies ausfuehrst wird Git immer die komplette Ausgabe aller Befehle anzeigen, egal wie lang sie ist.</p>
 
-<h3 id='reflog_shortnames'>RefLog Shortnames</h3>
+<p>If you run that, Git will page the entire output of all commands, no matter how long they are.</p>
 
-<h3 id='reflog_kurznamen'>RefLog Kurznamen</h3>
+<h4 id='usersigningkey'>user.signingkey</h4>
 
-<p>One of the things Git does in the background while you’re working away is keep a reflog — a log of where your HEAD and branch references have been for the last few months.</p>
+<p>Falls Du signierte annotierte Tags erstellst (wie in Kapitel 2 diskutiert) so macht es die Arbeit leichter, wenn Du Deinen GPG Signier-Schluessel als Konfiguration einstellst. Du kannst Deine Schluessel ID wie folgt festlegen:</p>
 
-<p>Eine andere Sache, die während deiner täglichen Arbeit im Hintergrund passiert ist, daß Git ein sogenanntes Reflog führt, d.h. ein Log darüber, wohin deine HEAD und Branch Referenzen in den letzten Monaten jeweils gezeigt haben.</p>
+<p>If you’re making signed annotated tags (as discussed in Chapter 2), setting your GPG signing key as a configuration setting makes things easier. Set your key ID like so:</p>
 
-<p>You can see your reflog by using <code>git reflog</code>:</p>
+<pre><code>$ git config --global user.signingkey &lt;gpg-key-id&gt;</code></pre>
 
-<p>Du kannst das Reflog mit <code>git reflog</code> anzeigen:</p>
+<p>Jetzt kannst Du Tags signieren, ohne Deinen Schluessel bei jedem <code>git tag</code> angeben zu muessen:</p>
 
-<pre><code>$ git reflog
-734713b... HEAD@{0}: commit: fixed refs handling, added gc auto, updated
-d921970... HEAD@{1}: merge phedders/rdocs: Merge made by recursive.
-1c002dd... HEAD@{2}: commit: added some blame and merge stuff
-1c36188... HEAD@{3}: rebase -i (squash): updating HEAD
-95df984... HEAD@{4}: commit: # This is a combination of two commits.
-1c36188... HEAD@{5}: rebase -i (squash): updating HEAD
-7e05da5... HEAD@{6}: rebase -i (pick): updating HEAD</code></pre>
+<p>Now, you can sign tags without having to specify your key every time with the <code>git tag</code> command:</p>
 
-<p>Every time your branch tip is updated for any reason, Git stores that information for you in this temporary history. And you can specify older commits with this data, as well. If you want to see the fifth prior value of the HEAD of your repository, you can use the <code>@{n}</code> reference that you see in the reflog output:</p>
+<pre><code>$ git tag -s &lt;tag-name&gt;</code></pre>
 
-<p>Immer dann, wenn ein Branch in irgendeiner Weise aktualisiert wird oder du den aktuellen Branch wechselst, speichert Git diese Information ebenso im Reflog wie Commits und anderen Informationen. Wenn du wissen willst, welches der fünfte Wert vor dem HEAD war, kannst du die <code>@{n}</code> Referenz angeben, die du in Reflog Ausgabe sehen kannst:</p>
+<h4 id='coreexcludesfile'>core.excludesfile</h4>
 
-<pre><code>$ git show HEAD@{5}</code></pre>
+<p>Du kannst Muster in der <code>.gitignore</code> Datei Deines Projektes einrichten, damit Git passende Dateien ignoriert und nicht als nicht-verfolgte Dateien ansieht oder versucht, sie zu Stagen, wenn Du fuer sie ein <code>git add</code> ausfuehrst, wie in Kapitel 2 besprochen. Falls Du jedoch eine andere Datei ausserhalb des Projektes hast, die diese Werte enthält, oder zusätzliche Muster definiert, dann kannst Du Git mit der Option <code>core.excludesfile</code> mitteilen, wo diese Datei zu finden ist. Stelle hier einfach den Pfad zu einer Datei ein, die Einträge enthält, welche denen in <code>.gitignore</code> entsprechen.</p>
 
-<p>You can also use this syntax to see where a branch was some specific amount of time ago. For instance, to see where your <code>master</code> branch was yesterday, you can type</p>
+<p>You can put patterns in your project’s <code>.gitignore</code> file to have Git not see them as untracked files or try to stage them when you run <code>git add</code> on them, as discussed in Chapter 2. However, if you want another file outside of your project to hold those values or have extra values, you can tell Git where that file is with the <code>core.excludesfile</code> setting. Simply set it to the path of a file that has content similar to what a <code>.gitignore</code> file would have.</p>
 
-<p>Außerdem kannst du dieselbe Syntax verwenden, um eine Zeitspanne anzugeben. Um z.B. zu sehen, wo dein <code>master</code> Branch gestern war, kannst du eingeben:</p>
+<h4 id='helpautocorrect'>help.autocorrect</h4>
 
-<pre><code>$ git show master@{yesterday}</code></pre>
+<p>Diese Option ist nur in Git 1.6.1 und neueren Versionen verfuegbar. Wenn Du in Git 1.6 einen Befehl falsch schreibst, bekommst Du eine Meldung wie diese:</p>
 
-<p>That shows you where the branch tip was yesterday. This technique only works for data that’s still in your reflog, so you can’t use it to look for commits older than a few months.</p>
+<p>This option is available only in Git 1.6.1 and later. If you mistype a command in Git 1.6, it shows you something like this:</p>
 
-<p>Das zeigt dir, wo der <code>master</code> Branch gestern war. Diese Technik funktioniert nur mit Daten, die noch im Reflog sind, d.h. man kann sie nicht für Commits verwenden, die ein älter sind als ein paar Monate.</p>
+<pre><code>$ git com
+git: &#39;com&#39; is not a git-command. See &#39;git --help&#39;.
 
-<p>To see reflog information formatted like the <code>git log</code> output, you can run <code>git log -g</code>:</p>
+Did you mean this?
+     commit</code></pre>
 
-<p>Um Reflog Informationen in einem Format wie in <code>git log</code> anzeigen, kannst du <code>git log -g</code> verwenden:</p>
+<p>Wenn Du auf 1 setzt wird Git den vorgeschlagenen Befehl automatisch ausfuehren, falls es in dieser Situation die einzige passende Alternative ist.</p>
 
-<pre><code>$ git log -g master
-commit 734713bc047d87bf7eac9674765ae793478c50d3
-Reflog: master@{0} (Scott Chacon &lt;schacon@gmail.com&gt;)
-Reflog message: commit: fixed refs handling, added gc auto, updated 
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Fri Jan 2 18:32:33 2009 -0800
+<p>If you set <code>help.autocorrect</code> to 1, Git will automatically run the command if it has only one match under this scenario.</p>
 
-    fixed refs handling, added gc auto, updated tests
+<h3 id='colors_in_git'>Colors in Git</h3>
 
-commit d921970aadf03b3cf0e71becdaab3147ba71cdef
-Reflog: master@{1} (Scott Chacon &lt;schacon@gmail.com&gt;)
-Reflog message: merge phedders/rdocs: Merge made by recursive.
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Thu Dec 11 15:08:43 2008 -0800
+<p>Git kann fuer die Textanzeige im Terminal Farben benuutzen, die Dir helfen können, die Ausgabe schnell und einfach zu Ueberfliegen. Mit einer Anzahl Optionen kannst Du die Farben an Deine Vorlieben anpassen.</p>
 
-    Merge commit &#39;phedders/rdocs&#39;</code></pre>
+<p>Git can color its output to your terminal, which can help you visually parse the output quickly and easily. A number of options can help you set the coloring to your preference.</p>
 
-<p>It’s important to note that the reflog information is strictly local — it’s a log of what you’ve done in your repository. The references won’t be the same on someone else’s copy of the repository; and right after you initially clone a repository, you&#8217;ll have an empty reflog, as no activity has occurred yet in your repository. Running <code>git show HEAD@{2.months.ago}</code> will work only if you cloned the project at least two months ago — if you cloned it five minutes ago, you’ll get no results.</p>
+<h4 id='colorui'>color.ui</h4>
 
-<p>Es ist wichtig zu verstehen, daß das Reflog ausschließlich lokale Daten enthält. Es ist ein Log darüber, was du in deinem Repository getan hast, und es ist nie dasselbe wie in einem anderen Clone des selben Repositories. Direkt nachdem du ein Repository geklont hast, ist das Reflog leer, weil noch keine weitere Aktivität stattgefunden hat. <code>git show HEAD@{2.months.ago}</code> funktioniert nur dann, wenn das Projekt mindestens zwei Monate alt ist - wenn du es vor fünf Minuten erst geklont hast, erhältst du keine Ergebnisse.</p>
+<p>Wenn Du Git entsprechend anweist, wird es den Grossteil der Ausgaben automatisch farblich darstellen. Du kannst sehr detailiert einstellen, wofuer Git Farben verwendet und welche; aber um alle Standard Terminalfarben zu aktivieren, setze <code>color.ui</code> auf &#8216;true&#8217;:</p>
 
-<h3 id='ancestry_references'>Ancestry References</h3>
+<p>Git automatically colors most of its output if you ask it to. You can get very specific about what you want colored and how; but to turn on all the default terminal coloring, set <code>color.ui</code> to true:</p>
 
-<h3 id='vorfahren_referenzen'>Vorfahren Referenzen</h3>
+<pre><code>$ git config --global color.ui true</code></pre>
 
-<p>The other main way to specify a commit is via its ancestry. If you place a <code>^</code> at the end of a reference, Git resolves it to mean the parent of that commit. Suppose you look at the history of your project:</p>
+<p>Wenn dieser Wert gesetzt wurde benutzt Git fuer seine Ausgaben Farben, sofern diese zu einem Terminal geleitet werden. Weitere mögliche Einstellungen sind &#8216;false&#8217;, wodurch alle Farben deaktiviert werden, sowie &#8216;always&#8217;, wodurch Farben immer aktiviert sind, slebst wenn Du Git Befehle in eine Datei umleitest oder ueber eine Pipe zu einem anderen Befehl umleitest. Diese Option wurde in Git 1.5.5 hinzugefuegt. Solltest Du eine ältere Git Version benutzen, so musst Du alle Farbeinstellungen einzeln vornehmen.</p>
 
-<p>Außerdem kann man Commits über ihre Vorfahren spezifizieren. Wenn du ein <code>^</code> ans Ende einer Referenz setzt, schlägt Git den direkten Vorfahren dieses Commits nach. Nehmen wir an, deine Historie sieht so aus:</p>
+<p>When that value is set, Git colors its output if the output goes to a terminal. Other possible settings are false, which never colors the output, and always, which sets colors all the time, even if you’re redirecting Git commands to a file or piping them to another command. This setting was added in Git version 1.5.5; if you have an older version, you’ll have to specify all the color settings individually.</p>
 
-<pre><code>$ git log --pretty=format:&#39;%h %s&#39; --graph
-* 734713b fixed refs handling, added gc auto, updated tests
-*   d921970 Merge commit &#39;phedders/rdocs&#39;
-|\  
-| * 35cfb2b Some rdoc changes
-* | 1c002dd added some blame and merge stuff
-|/  
-* 1c36188 ignore *.gem
-* 9b29157 add open3_detach to gemspec file list</code></pre>
+<p>Du wirst selten die Einstellung <code>color.ui = always</code> benötigen. In den meisten Situationen in denen Du Farben in Deiner umgeleiteten Ausgabe haben willst, kannst Du stattdessen die Option <code>--color</code> auf der Kommandozeile benutzen, um Git anzuweisen die Farbkodierung fuer die Ausgabe zu verwenden. Die Einstellung sollte fast immer das sein, was Du benutzen willst.</p>
 
-<p>Then, you can see the previous commit by specifying <code>HEAD^</code>, which means &#8220;the parent of HEAD&#8221;:</p>
+<p>You’ll rarely want <code>color.ui = always</code>. In most scenarios, if you want color codes in your redirected output, you can instead pass a <code>--color</code> flag to the Git command to force it to use color codes. The <code>color.ui = true</code> setting is almost always what you’ll want to use.</p>
 
-<p>Du kannst jetzt den vorletzten Commit mit <code>HEAD^</code> referenzieren, d.h. &#8220;den direkten Vorfahren von HEAD&#8221;.</p>
+<h4 id='id189'><code>color.*</code></h4>
 
-<pre><code>$ git show HEAD^
-commit d921970aadf03b3cf0e71becdaab3147ba71cdef
-Merge: 1c002dd... 35cfb2b...
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Thu Dec 11 15:08:43 2008 -0800
+<p>Falls Du im Detail kontrollieren willst welche Befehle wie gefärbt werden, oder wenn Du eine ältere Version benutzt, dann stellt Git Verb-spezifische Farbeinstellungen zur Verfuegung. Jede dieser Optionen kann auf <code>true</code>, <code>false</code>, oder <code>always</code> eingestellt werden:</p>
 
-    Merge commit &#39;phedders/rdocs&#39;</code></pre>
+<p>If you want to be more specific about which commands are colored and how, or you have an older version, Git provides verb-specific coloring settings. Each of these can be set to <code>true</code>, <code>false</code>, or <code>always</code>:</p>
 
-<p>You can also specify a number after the <code>^</code> — for example, <code>d921970^2</code> means &#8220;the second parent of d921970.&#8221; This syntax is only useful for merge commits, which have more than one parent. The first parent is the branch you were on when you merged, and the second is the commit on the branch that you merged in:</p>
+<pre><code>color.branch
+color.diff
+color.interactive
+color.status</code></pre>
 
-<p>Außerdem kannst du nach dem <code>^</code> eine Zahl angeben. Beispielsweise heißt <code>d921970^2</code>: &#8220;der zweite Vorfahr von d921970&#8221;. Diese Syntax ist allerdings nur für Merge Commits nützlich, die mehr als einen Vorfahren haben. Der erste Vorfahr ist der Branch auf dem du dich beim Merge befandest, der zweite ist der Commit auf dem Branch den du gemergt hast.</p>
+<p>Jede von diesen hat zusätzliche Unteroptionen, die Du benutzen kannst, um spezifische Farben fuer Telie der Ausgabe einzustellen, falls Du jede Farbe zu ueberschreiben. Um zum Beispiel die Meta Informationen in Deiner Diff Ausgabe mit blauem Text auf schwarzem Hintergrund in Fettschrift darstellen willst, kannst Du folgenden Befehl ausfuehren:</p>
 
-<pre><code>$ git show d921970^
-commit 1c002dd4b536e7479fe34593e72e6c6c1819e53b
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Thu Dec 11 14:58:32 2008 -0800
+<p>In addition, each of these has subsettings you can use to set specific colors for parts of the output, if you want to override each color. For example, to set the meta information in your diff output to blue foreground, black background, and bold text, you can run</p>
 
-    added some blame and merge stuff
+<pre><code>$ git config --global color.diff.meta “blue black bold”</code></pre>
 
-$ git show d921970^2
-commit 35cfb2b795a55793d7cc56a6cc2060b4bb732548
-Author: Paul Hedderly &lt;paul+git@mjr.org&gt;
-Date:   Wed Dec 10 22:22:03 2008 +0000
+<p>Du kannst als Farben jeden der folgenden Werte verwenden: <code>normal</code>, <code>black</code>, <code>red</code>, <code>green</code>, <code>yellow</code>, <code>blue</code>, <code>magenta</code>, <code>cyan</code>, oder <code>white</code>. Falls Du ein Attribute wie Fettschrift im vorigen Beispiel willst kannst Du aus <code>bold</code>, <code>dim</code>, <code>ul</code>, <code>blink</code>, und <code>reverse</code> auswählen.</p>
 
-    Some rdoc changes</code></pre>
+<p>You can set the color to any of the following values: normal, black, red, green, yellow, blue, magenta, cyan, or white. If you want an attribute like bold in the previous example, you can choose from bold, dim, ul, blink, and reverse.</p>
 
-<p>The other main ancestry specification is the <code>~</code>. This also refers to the first parent, so <code>HEAD~</code> and <code>HEAD^</code> are equivalent. The difference becomes apparent when you specify a number. <code>HEAD~2</code> means &#8220;the first parent of the first parent,&#8221; or &#8220;the grandparent&#8221; — it traverses the first parents the number of times you specify. For example, in the history listed earlier, <code>HEAD~3</code> would be</p>
+<p>Auf der Manpage zu <code>git config</code> findest Du eine Liste aller Unteroptionen, die Du konfigurieren kannst, falls Du das tun möchtest. See the <code>git config</code> manpage for all the subsettings you can configure, if you want to do that.</p>
 
-<p>Eine andere Vorfahren Spezifikation ist <code>~</code>. Dies bezieht sich ebenfalls auf den ersten Vorfahren, d.h. <code>HEAD~</code> und <code>HEAD^</code> sind äquivalent. Einen Unterschied macht es allerdings, wenn du außerdem eine Zahl angibst. <code>HEAD~2</code> bedeutet z.B. &#8220;der Vorfahr des Vorfahren von HEAD&#8221; oder &#8220;der n-te Vorfahr von HEAD&#8221;. Beispielsweise würde <code>HEAD~3</code> in der obigen Historie auf den folgenden Commit zeigen:</p>
+<h3 id='external_merge_and_diff_tools'>External Merge and Diff Tools</h3>
 
-<pre><code>$ git show HEAD~3
-commit 1c3618887afb5fbcbea25b7c013f4e2114448b8d
-Author: Tom Preston-Werner &lt;tom@mojombo.com&gt;
-Date:   Fri Nov 7 13:47:59 2008 -0500
+<p>Git besitzt zwar eine interne Implementierung von diff, das Du bisher benutzt hast, aber Du kannst stattdessen auch eine externe Anwendung benutzen. Du kannst auch ein grafisches Merge Werkzeug zur Auflösung von Konflikten benutzen, statt diese manuell zu lösen. Ich werde demonstrieren, wie man das visuelle Merge Tool von Perforce (P4Merge) installiert, um Diffs und Merges zu bearbeiten. Ich habe P4Merge gewählt, da es ein freies und nettes grafisches Werkzeug ist.</p>
 
-    ignore *.gem</code></pre>
+<p>Although Git has an internal implementation of diff, which is what you’ve been using, you can set up an external tool instead. You can also set up a graphical merge conflict–resolution tool instead of having to resolve conflicts manually. I’ll demonstrate setting up the Perforce Visual Merge Tool (P4Merge) to do your diffs and merge resolutions, because it’s a nice graphical tool and it’s free.</p>
 
-<p>This can also be written <code>HEAD^^^</code>, which again is the first parent of the first parent of the first parent:</p>
+<p>Falls Du dies testen willst, sollte es kein Problem sein, da P4Merge auf allen ueblichen Plattformen arbeitet. Ich werde Pfadnamen benutzen, die auf Mac und Linux Systemen funktionieren; fuer Windows musst Du <code>/usr/local/bin</code> durch einen Pfad ersetzen, der in der Umgebungsvariablen <code>PATH</code> gelistet ist.</p>
 
-<p>Dasselbe kannst du mit <code>HEAD^^^</code> angeben, was wiederum den &#8220;Vorfahren des Vorfahren des Vorfahren&#8221; referenziert:</p>
+<p>If you want to try this out, P4Merge works on all major platforms, so you should be able to do so. I’ll use path names in the examples that work on Mac and Linux systems; for Windows, you’ll have to change <code>/usr/local/bin</code> to an executable path in your environment.</p>
 
-<pre><code>$ git show HEAD^^^
-commit 1c3618887afb5fbcbea25b7c013f4e2114448b8d
-Author: Tom Preston-Werner &lt;tom@mojombo.com&gt;
-Date:   Fri Nov 7 13:47:59 2008 -0500
+<p>Du kannst P4Merge hier herunterladen:</p>
 
-    ignore *.gem</code></pre>
+<p>You can download P4Merge here:</p>
 
-<p>You can also combine these syntaxes — you can get the second parent of the previous reference (assuming it was a merge commit) by using <code>HEAD~3^2</code>, and so on.</p>
+<pre><code>http://www.perforce.com/perforce/downloads/component.html</code></pre>
 
-<p>Du kannst diese Schreibweisen auch kombinieren und z.B. auf den zweiten Vorfahren der obigen Referenz mit <code>HEAD~3^2</code> zugreifen.</p>
+<p>Als erstes solltes Du einige Wrapper (????) Skripten erstellen, um Deine Befehle auszufuehren. Ich benutze den Mac Pfad fuer die ausfuehrbare Datei; auf anderen Systemen ist dies der Ort, an dem die <code>p4merge</code> Binärdatei installiert ist. Erstelle ein Skript namens <code>extMerge</code>, das die Binärdatei mit allen angegebenen Argumenten aufruft:</p>
 
-<h3 id='commit_ranges'>Commit Ranges</h3>
+<p>To begin, you’ll set up external wrapper scripts to run your commands. I’ll use the Mac path for the executable; in other systems, it will be where your <code>p4merge</code> binary is installed. Set up a merge wrapper script named <code>extMerge</code> that calls your binary with all the arguments provided:</p>
 
-<h3 id='commit_reihen'>Commit Reihen</h3>
+<pre><code>$ cat /usr/local/bin/extMerge
+#!/bin/sh
+/Applications/p4merge.app/Contents/MacOS/p4merge $*</code></pre>
 
-<p>Now that you can specify individual commits, let’s see how to specify ranges of commits. This is particularly useful for managing your branches — if you have a lot of branches, you can use range specifications to answer questions such as, &#8220;What work is on this branch that I haven’t yet merged into my main branch?&#8221;</p>
+<p>Der Diff Wrapper (????) stellt sicher, dass es mit sieben Parametern aufgerufen wird und gibt dann zwei davon an das Merge Skript weiter. Standardmässig uebergibt Git die folgenden Argumente an das diff Programm:</p>
 
-<p>Nachdem du jetzt einzelne Commits spezifizieren kannst, schauen wir uns an, wie man auf Commit Reihen zugreift. Dies ist vor allem nützlich, um Branches zu verwalten, z.B. wenn man viele Branches hat und solche Fragen beantworten will wie &#8220;Welche Änderungen befinden sich in diesem Branch, die ich noch nicht in meinen Hauptbranch gemergt habe&#8221;.</p>
+<p>The diff wrapper checks to make sure seven arguments are provided and passes two of them to your merge script. By default, Git passes the following arguments to the diff program:</p>
 
-<h4 id='double_dot'>Double Dot</h4>
+<pre><code>path old-file old-hex old-mode new-file new-hex new-mode</code></pre>
 
-<h4 id='zweipunkte_syntax'>Zwei-Punkte Syntax</h4>
+<p>Da Du nur die Parameter <code>old-file</code> und <code>new-file</code> benötigst, wirst Du das Wrapper Skript benutzen, um nur die notwendigen weiterzugeben.</p>
 
-<p>The most common range specification is the double-dot syntax. This basically asks Git to resolve a range of commits that are reachable from one commit but aren’t reachable from another. For example, say you have a commit history that looks like Figure 6-1.</p>
+<p>Because you only want the <code>old-file</code> and <code>new-file</code> arguments, you use the wrapper script to pass the ones you need.</p>
 
-<p>Die gängigste Weise, Commit Reihen anzugeben, ist die Zwei-Punkte Notation. Allgemein gesagt evaluiert Git eine Reihe von Commits, die von einem Commit aus erreichbar sind, nicht aber von einem anderen (xxx ??? xxx). Nehmen wir z.B. an, du hättest eine Commit Historie wie die folgende (Bild 6-1).</p>
+<pre><code>$ cat /usr/local/bin/extDiff 
+#!/bin/sh
+[ $# -eq 7 ] &amp;&amp; /usr/local/bin/extMerge &quot;$2&quot; &quot;$5&quot;</code></pre>
 
-<p><center><img src="/figures/ch6/18333fig0601-tn.png"></center><br/> Figure 6-1. Example history for range selection.</p>
+<p>Du musst ausserdem sicherstellen, dass die Skripten ausfuehrbar sind:</p>
 
-<p>You want to see what is in your experiment branch that hasn’t yet been merged into your master branch. You can ask Git to show you a log of just those commits with <code>master..experiment</code> — that means &#8220;all commits reachable by experiment that aren’t reachable by master.&#8221; For the sake of brevity and clarity in these examples, I’ll use the letters of the commit objects from the diagram in place of the actual log output in the order that they would display:</p>
+<p>You also need to make sure these tools are executable:</p>
 
-<p>Du willst jetzt herausfinden, welche Änderungen in deinem <code>experiment</code> Branch sind, die noch nicht in den <code>master</code> Branch gemergt wurden. Dann kannst du ein Log dieser Commits mit <code>master..experiment</code> anzeigen, d.h. &#8220;alle Commits, die von <code>experiment</code> aus erreichbar sind, aber nicht von <code>master</code>&#8221;. Um die folgenden Beispiele ein bißchen abzukürzen und deutlicher zu machen, verwende ich für die Commit Objekte die Buchstaben aus dem Diagramm an stelle der tatsächlichen Log Ausgabe:</p>
+<pre><code>$ sudo chmod +x /usr/local/bin/extMerge 
+$ sudo chmod +x /usr/local/bin/extDiff</code></pre>
 
-<pre><code>$ git log master..experiment
-D
-C</code></pre>
+<p>Jetzt kannst Du Git so konfigurieren, dass es deine persönlichen Merge und Diff Werkzeuge benutzt. Dazu sind einige angepasste Einstellungen nötig: <code>merge.tool</code>, um Git zu sagen welche Merge Strategie es nutzen soll, <code>mergetool.*.cmd</code>, um festzulegen, wie der Befehl auszufuehren ist, <code>mergetool.trustExitCode</code>, damit Git weiss ob der Antwortcode des Programms eine erfolgreiche Merge Auflösung anzeigt oder nicht, und <code>diff.external</code>, um einzustellen welches Diff Kommando Git benutzen soll. Also kannst Du entweder vier Konfigrationsbefehle ausfuehren</p>
 
-<p>If, on the other hand, you want to see the opposite — all commits in <code>master</code> that aren’t in <code>experiment</code> — you can reverse the branch names. <code>experiment..master</code> shows you everything in <code>master</code> not reachable from <code>experiment</code>:</p>
+<p>Now you can set up your config file to use your custom merge resolution and diff tools. This takes a number of custom settings: <code>merge.tool</code> to tell Git what strategy to use, <code>mergetool.*.cmd</code> to specify how to run the command, <code>mergetool.trustExitCode</code> to tell Git if the exit code of that program indicates a successful merge resolution or not, and <code>diff.external</code> to tell Git what command to run for diffs. So, you can either run four config commands</p>
 
-<p>Wenn Du allerdings - anders herum - diejenigen Commits anzeigen willst, die in <code>master</code>, aber noch nicht in <code>experiment</code> sind, kannst du die Branch Namen umdrehen: <code>experiment..master</code> zeigt &#8220;alles in <code>master</code>, das nicht in <code>experiment</code> enthalten ist&#8221;.</p>
+<pre><code>$ git config --global merge.tool extMerge
+$ git config --global mergetool.extMerge.cmd \
+    &#39;extMerge &quot;$BASE&quot; &quot;$LOCAL&quot; &quot;$REMOTE&quot; &quot;$MERGED&quot;&#39;
+$ git config --global mergetool.trustExitCode false
+$ git config --global diff.external extDiff</code></pre>
 
-<pre><code>$ git log experiment..master
-F
-E</code></pre>
+<p>oder Du editierst Deine <code>~/.gitconfig</code> Datei und fuegst dort folgende Zeilen hinzu:</p>
 
-<p>This is useful if you want to keep the <code>experiment</code> branch up to date and preview what you’re about to merge in. Another very frequent use of this syntax is to see what you’re about to push to a remote:</p>
+<p>or you can edit your <code>~/.gitconfig</code> file to add these lines:</p>
 
-<p>Dies ist nützlich, wenn du vorhast, den <code>experiment</code> Branch zu aktualisieren, und anzeigen willst, was du dazu mergen wirst. Oder wenn du vorhast, in ein Remote Repository zu pushen und sehen willst, welche Commits betroffen sind:</p>
+<pre><code>[merge]
+  tool = extMerge
+[mergetool &quot;extMerge&quot;]
+  cmd = extMerge &quot;$BASE&quot; &quot;$LOCAL&quot; &quot;$REMOTE&quot; &quot;$MERGED&quot;
+  trustExitCode = false
+[diff]
+  external = extDiff</code></pre>
 
-<pre><code>$ git log origin/master..HEAD</code></pre>
+<p>Wenn all dies eingestellt ist und Du Diff Befehle wie diesen ausfuehrst:</p>
 
-<p>This command shows you any commits in your current branch that aren’t in the <code>master</code> branch on your <code>origin</code> remote. If you run a <code>git push</code> and your current branch is tracking <code>origin/master</code>, the commits listed by <code>git log origin/master..HEAD</code> are the commits that will be transferred to the server. You can also leave off one side of the syntax to have Git assume HEAD. For example, you can get the same results as in the previous example by typing <code>git log origin/master..</code> — Git substitutes HEAD if one side is missing.</p>
+<p>After all this is set, if you run diff commands such as this:</p>
 
-<p>Dieser Befehl zeigt dir alle Commits im gegenwärtigen, lokalen Branch, die noch nicht im <code>master</code> Branch des <code>origin</code> Repositories sind. D.h., der Befehl listet diejenigen Commits auf, die auf den Server transferiert würden, wenn du <code>git push</code> benutzt und der aktuelle Branch <code>origin/master</code> trackt. Du kannst mit dieser Syntax außerdem eine Seite der beiden Punkte leer lassen. Git nimmt dann an, du meinst an dieser Stelle HEAD. Z.B. kannst du dieselben Commits wie im vorherigen Beispiel auch mit <code>git log origin/master..</code> anzeigen lassen. Git fügt dann HEAD auf der rechten Seite ein.</p>
+<pre><code>$ git diff 32d1776b1^ 32d1776b1</code></pre>
 
-<h4 id='multiple_points'>Multiple Points</h4>
+<p>wird Git statt einer Diff Ausgabe auf der Kommandozeile P4Merge starten, was ähnlich aussehen wird wie Abbildung 7-1.</p>
 
-<h4 id='mehrfache_punkte_xxx'>Mehrfache Punkte (xxx)</h4>
+<p>Instead of getting the diff output on the command line, Git fires up P4Merge, which looks something like Figure 7-1.</p>
 
-<p>The double-dot syntax is useful as a shorthand; but perhaps you want to specify more than two branches to indicate your revision, such as seeing what commits are in any of several branches that aren’t in the branch you’re currently on. Git allows you to do this by using either the <code>^</code> character or <code>--not</code> before any reference from which you don’t want to see reachable commits. Thus these three commands are equivalent:</p>
+<p><center><img src="/figures/ch6/18333fig0701-tn.png"></center><br/> Figure 7-1. P4Merge.</p>
 
-<p>Die Zwei-Punkte Syntax ist eine nützliche Abkürzung, aber möglicherweise willst du mehr als nur zwei Branches angeben, um z.B. herauszufinden, welche Commits in einem beliebigen anderen Branch enthalten sind, ausgenommen in demjenigen, auf dem du dich gerade befindest. Dazu kannst du in Git das <code>^</code> Zeichen oder <code>--not</code> verwenden, um Commits auszuschließen, die von den angegebenen Referenzen aus erreichbar sind. D.h., die folgenden drei Befehle sind äquivalent:</p>
+<p>Wenn Du versuchst zwei Branches zu Mergen und darauffolgende Merge Konflikte hast, kannst Du den Befehl <code>git mergetool</code> ausfuehren; das startet P4Merge und erlaubt Dir, die Konflikte mit dem GUI Werkzeug aufzulösen.</p>
 
-<pre><code>$ git log refA..refB
-$ git log ^refA refB
-$ git log refB --not refA</code></pre>
+<p>If you try to merge two branches and subsequently have merge conflicts, you can run the command <code>git mergetool</code>; it starts P4Merge to let you resolve the conflicts through that GUI tool.</p>
 
-<p>This is nice because with this syntax you can specify more than two references in your query, which you cannot do with the double-dot syntax. For instance, if you want to see all commits that are reachable from <code>refA</code> or <code>refB</code> but not from <code>refC</code>, you can type one of these:</p>
+<p>Das Angenehme an diesem Wrapper Ansatz ist, dass Du Deine Diff und Merge Werkzeuge sehr leicht ändern kannst. Wenn Du zum Beispiel Deine <code>extDiff</code> und <code>extMerge</code> Programme ändern möchtest, um stattdessen KDiff3 zu benutzen, musst Du lediglich Dein <code>extMerge</code> Datei ändern:</p>
 
-<p>Das ist praktisch, weil du auf diese Weise mehr als nur zwei Referenzen angeben kannst, was mit der Zwei-Punkte Notation nicht geht. Wenn du beispielsweise alle Commits sehen willst, die von <code>refA</code> oder <code>refB</code> erreichbar sind, nicht aber von <code>refC</code>, dann kannst du folgende (äquivalente) Befehle benutzen:</p>
+<p>The nice thing about this wrapper setup is that you can change your diff and merge tools easily. For example, to change your <code>extDiff</code> and <code>extMerge</code> tools to run the KDiff3 tool instead, all you have to do is edit your <code>extMerge</code> file:</p>
 
-<pre><code>$ git log refA refB ^refC
-$ git log refA refB --not refC</code></pre>
+<pre><code>$ cat /usr/local/bin/extMerge
+#!/bin/sh	
+/Applications/kdiff3.app/Contents/MacOS/kdiff3 $*</code></pre>
 
-<p>This makes for a very powerful revision query system that should help you figure out what is in your branches.</p>
+<p>Nun wird Git KDiff3 zur Anzeige von Diffs und zur Auflösung von Merge Konflikten verwenden.</p>
 
-<p>Damit hast du ein sehr mächtiges System von Abfragen zur Verfügung, mit denen du herausfinden kannst, was in welchen deiner Branches enthalten ist.</p>
+<p>Now, Git will use the KDiff3 tool for diff viewing and merge conflict resolution.</p>
 
-<h4 id='triple_dot'>Triple Dot</h4>
+<p>Git hat Voreinstellungen, um einige andere Merge-Auflösungswerkzeuge zu verwenden, ohne dass Du die Kommando Konfiguration einstellen musst. Du kannst Dein Merge Werkzeug auf kdiff3, opendiff, tkdiff, meld, xxdiff, emerge, vimdiff, oder gvimdiff einstellen. Wenn Du zum Beispiel nicht daran interessiert bist KDiff3 fuer Diffs zu verwenden, sondern nur zur Auflösung von Merge Konflikten, dann kannst Du den folgenden Befehl ausfuehren, wenn sich kdiff3 im Pfad befindet</p>
 
-<h4 id='dreipunkte_syntax'>Drei-Punkte Syntax</h4>
+<p>Git comes preset to use a number of other merge-resolution tools without your having to set up the cmd configuration. You can set your merge tool to kdiff3, opendiff, tkdiff, meld, xxdiff, emerge, vimdiff, or gvimdiff. If you’re not interested in using KDiff3 for diff but rather want to use it just for merge resolution, and the kdiff3 command is in your path, then you can run</p>
 
-<p>The last major range-selection syntax is the triple-dot syntax, which specifies all the commits that are reachable by either of two references but not by both of them. Look back at the example commit history in Figure 6-1. If you want to see what is in <code>master</code> or <code>experiment</code> but not any common references, you can run</p>
+<pre><code>$ git config --global merge.tool kdiff3</code></pre>
 
-<p>Die letzte wichtige Syntax, mit der man Commit Reihen spezifizieren kann, ist die Drei-Punkte Syntax, die alle Commits anzeigt, die in einer der beiden Referenzen enthalten sind, aber nicht in beiden. Schau dir noch mal die Commit Historie in Bild 6-1- an. Wenn du diejenigen Commits anzeigen willst, die in den <code>master</code> und <code>experiment</code> Branches, nicht aber in beiden Branches gleichzeitig enthalten sind, dann kannst du folgendes tun:</p>
+<p>Wenn Du diesen Befehl ausfuehrst statt die <code>extMerge</code> und <code>extDiff</code> Dateien zu erstellen, dann wird Git KDiff3 fuer Merge Auflösungen verwenden, und das normale Git Diff Werkzeug fuer Diffs.</p>
 
-<pre><code>$ git log master...experiment
-F
-E
-D
-C</code></pre>
+<p>If you run this instead of setting up the <code>extMerge</code> and <code>extDiff</code> files, Git will use KDiff3 for merge resolution and the normal Git diff tool for diffs.</p>
 
-<p>Again, this gives you normal <code>log</code> output but shows you only the commit information for those four commits, appearing in the traditional commit date ordering.</p>
+<h3 id='formatting_and_whitespace'>Formatting and Whitespace</h3>
 
-<p>Dies gibt dir wiederum ein normale <code>log</code> Ausgabe, aber zeigt nur die Informationen dieser vier Commits - wie üblich sortiert nach dem Commit Datum.</p>
+<h3 id='formatierung_und_fuellzeichen'>Formatierung und Fuellzeichen</h3>
 
-<p>A common switch to use with the <code>log</code> command in this case is <code>--left-right</code>, which shows you which side of the range each commit is in. This helps make the data more useful:</p>
+<p>Formatierungen und Fuellzeichen &#8211; also Tabulatorzeichen, Leerzeichen und Steuerzeichen fuer Zeilenwechsel (LF) und Zeilen- oder Wagenruecklauf (CR) &#8211; fuehren zu einigen der frustrierendsten und subtilsten Probleme denen viele Entwickler begegnen, wenn sie mit anderen zusammenarbeiten, speziell ueber Plattformgrenzen hinweg. Es kann sehr leicht passieren, dass bei Patches oder anderer gemeinsamer Arbeit kaum merklich Fuellzeichen hinzugefuegt werden, sei es weil ein Entwickler sie unnwissentlich einfuegt, oder weil ein Windows Programmierer bei plattformuebergreifenden Projekten einen Zeilenruecklauf am Zeilenende von Dateien anfuegt. Git hat einige Konfigurationseinstellungen die bei diesen Problemen helfen.</p>
 
-<p>Eine nützliche Option für den <code>log</code> Befehl ist in diesem Fall <code>--left-right</code>. Sie zeigt dir an, in welchem der beiden Branches der jeweilige Commit enthalten ist, so daß die Ausgabe noch nützlicher ist:</p>
+<p>Formatting and whitespace issues are some of the more frustrating and subtle problems that many developers encounter when collaborating, especially cross-platform. It’s very easy for patches or other collaborated work to introduce subtle whitespace changes because editors silently introduce them or Windows programmers add carriage returns at the end of lines they touch in cross-platform projects. Git has a few configuration options to help with these issues.</p>
 
-<pre><code>$ git log --left-right master...experiment
-&lt; F
-&lt; E
-&gt; D
-&gt; C</code></pre>
+<h4 id='coreautocrlf'>core.autocrlf</h4>
 
-<p>With these tools, you can much more easily let Git know what commit or commits you want to inspect.</p>
+<p>Falls Du unter Windows programmierst oder ein anderes System benutzt und mit anderen zusammenarbeitest, die unter Windows programmieren, wirst Du sehr wahrscheinlich irgendwann dem Problem der Zeilenenden begegnen. Dies liegt daran, dass Windows sowohl ein CR-Zeichen als auch ein LF-Zeichen zum Signalisieren einer neuen Zeile in einer Datei benutzt, während Mac und Linux nur ein LF-Zeichen benutzen. Dies ist eine kleine aber extrem störende Tatsache beim Arbeiten ueber Plattformgrenzen hinweg.</p>
 
-<p>Mit diesen Hilfsmitteln kannst du noch einfacher und genauer angeben, welche Commits du nachschlagen willst.</p>
+<p>If you’re programming on Windows or using another system but working with people who are programming on Windows, you’ll probably run into line-ending issues at some point. This is because Windows uses both a carriage-return character and a linefeed character for newlines in its files, whereas Mac and Linux systems use only the linefeed character. This is a subtle but incredibly annoying fact of cross-platform work.</p>
+
+<p>Git kann dies vermeiden, indem es CR-LF Zeichen am Zeilenende automatisch zu LF konvertiert, wenn Du ein Commit machst, und umgekehrt wenn es bei einem Checkout Code mit Deinem lokalen Dateisystem synchronisiert. Du kannst diese Funktionalität mittels der Option <code>core.autocrlf</code> aktivieren. Falls Du auf einem Windows System arbeitest, setze sie auf <code>true</code> — dies konvertiert LF Zeichen zu CRLF Zeichen, wenn Du Code mit einem Checkout synchronisierst:</p>
+
+<p>Git can handle this by auto-converting CRLF line endings into LF when you commit, and vice versa when it checks out code onto your filesystem. You can turn on this functionality with the <code>core.autocrlf</code> setting. If you’re on a Windows machine, set it to <code>true</code> — this converts LF endings into CRLF when you check out code:</p>
+
+<pre><code>$ git config --global core.autocrlf true</code></pre>
+
+<p>Falls Du auf einem Linux oder Mac System arbeitest, das LF Zeilenenden benutzt, dann soll Git keine Dateien automatisch konvertieren, wenn sie per Checkout vom Server kommen; wenn allerdings versehentlich eine Datei mit CR-LF Zeichen auf Dein System gelangt, dann möchtest Du vielleicht, dass Git es fuer Dich repariert. Du kannst Git anweisen CR-LF automatisch in LF Zeichen umzuwandeln, wenn Du ein Commit machst, aber nicht in der anderen Richtung, indem Du <code>core.autocrlf</code> auf input setzt:</p>
+
+<p>If you’re on a Linux or Mac system that uses LF line endings, then you don’t want Git to automatically convert them when you check out files; however, if a file with CRLF endings accidentally gets introduced, then you may want Git to fix it. You can tell Git to convert CRLF to LF on commit but not the other way around by setting <code>core.autocrlf</code> to input:</p>
+
+<pre><code>$ git config --global core.autocrlf input</code></pre>
+
+<p>Mit dieser Einstellung solltest Du CR-LF Zeilenenden bei Dateien haben, die auf Windows synchronisiert wurden, und mit LF Zeilenenden auf Mac und Linux Sytemen und im Repository.</p>
+
+<p>This setup should leave you with CRLF endings in Windows checkouts but LF endings on Mac and Linux systems and in the repository.</p>
+
+<p>Falls Du ein Windows Programmierer bist, mit einem Projekt, dass nur unter Windows entwickelt wird, dann kannst Du diese Funktionalität deaktivieren, so dass die CR Zeilenenden im Repository gespeichert werden. Dazu setzt Du diese Option auf <code>false</code>:</p>
+
+<p>If you’re a Windows programmer doing a Windows-only project, then you can turn off this functionality, recording the carriage returns in the repository by setting the config value to <code>false</code>:</p>
+
+<pre><code>$ git config --global core.autocrlf false</code></pre>
+
+<h4 id='corewhitespace'>core.whitespace</h4>
+
+<p>Git ist so voreingestellt, dass es einige Leerzeichen Probleme erkennen und beheben kann. Es kann nach vier vorrangigen Problemen mit Leerzeichen suchen — Zwei davon sind standardmässig aktiviert und kann deaktiviert werden, und zwei sind inaktiv, können aber aktiviert werden.</p>
+
+<p>Git comes preset to detect and fix some whitespace issues. It can look for four primary whitespace issues — two are enabled by default and can be turned off, and two aren’t enabled by default but can be activated.</p>
+
+<p>Die zwei standardmässig aktiven Optionen sind <code>trailing-space</code>, das nach Leerzeichen am Ende einer Zeile sucht, und <code>space-before-tab</code>, das nach Leerzeichen vor Tabulatoren am Anfang einer Zeile sucht.</p>
+
+<p>The two that are turned on by default are <code>trailing-space</code>, which looks for spaces at the end of a line, and <code>space-before-tab</code>, which looks for spaces before tabs at the beginning of a line.</p>
+
+<p>Die beiden aktivierbaren, aber normalerweise deaktivierten Optionen sind <code>indent-with-non-tab</code>, dass nach Zeilen sucht, die mit acht oder mehr Leerzeichen anstelle von Tabulatoren beginnt, und <code>cr-at-eol</code>, wodurch Git angewiesen wird, dass CR Zeichen am Zeilenende in Ordnung sind.</p>
+
+<p>The two that are disabled by default but can be turned on are <code>indent-with-non-tab</code>, which looks for lines that begin with eight or more spaces instead of tabs, and <code>cr-at-eol</code>, which tells Git that carriage returns at the end of lines are OK.</p>
+
+<p>Du kannst Git mitteilen welche dieser Optionen es aktivieren soll, indem Du <code>core.whitespace</code> auf die Werte setzt, durch Kommas getrennt, die Du an- oder abgeschaltet haben möchtest. Du kannst Optionen deaktivieren, indem Du sie entweder aus der Parameterliste weglässt, oder ihnen ein <code>-</code> Zeichen voranstellst. Wenn Du zum Beispiel alle Optionen ausser <code>cr-at-eol</code> aktivieren willst, kannst Du folgendes ausfuehren:</p>
+
+<p>You can tell Git which of these you want enabled by setting <code>core.whitespace</code> to the values you want on or off, separated by commas. You can disable settings by either leaving them out of the setting string or prepending a <code>-</code> in front of the value. For example, if you want all but <code>cr-at-eol</code> to be set, you can do this:</p>
+
+<pre><code>$ git config --global core.whitespace \
+    trailing-space,space-before-tab,indent-with-non-tab</code></pre>
+
+<p>Git wird diese möglichen Problemstellen erkennen, wenn Du einen <code>git diff</code> Befehl ausfuehrst, und es wird versuchen, sie farblich hervorzuheben, damit Du sie vor einem Commit beheben kannst. Git wird diese Einstellungen auch benutzen, um Dir zu helfen, wenn Du mit <code>git apply</code> Patches anwendest. Wenn Du Patches ausfuehrst kannst Du Git anweisen eine Warnung auszugeben, falls es beim Patchen die spezifizierten Leerzeichenprobleme erkennt:</p>
+
+<p>Git will detect these issues when you run a <code>git diff</code> command and try to color them so you can possibly fix them before you commit. It will also use these values to help you when you apply patches with <code>git apply</code>. When you’re applying patches, you can ask Git to warn you if it’s applying patches with the specified whitespace issues:</p>
+
+<pre><code>$ git apply --whitespace=warn &lt;patch&gt;</code></pre>
+
+<p>Oder Du kannst Git versuchen lassen, diese Probleme automatisch zu beheben, bevor es den Patch anwendet:</p>
+
+<p>Or you can have Git try to automatically fix the issue before applying the patch:</p>
+
+<pre><code>$ git apply --whitespace=fix &lt;patch&gt;</code></pre>
+
+<p>Diese Optionen sind auch fuer den Rebase Befehl gueltig. Falls Du einen Commit gemacht hast, der problematische Leerzeichen enthält, aber Du die Änderungen noch nicht auf den Server gepusht hast, kannst Du ein <code>rebase</code> mit dem Parameter <code>--whitespace=fix</code> ausfuehren, damit Git automatisch die Leerzeichenfehler behebt, wenn es dir Patches aktualisiert.</p>
+
+<p>These options apply to the git rebase option as well. If you’ve committed whitespace issues but haven’t yet pushed upstream, you can run a <code>rebase</code> with the <code>--whitespace=fix</code> option to have Git automatically fix whitespace issues as it’s rewriting the patches.</p>
+
+<h3 id='server_configuration'>Server Configuration</h3>
+
+<p>Es gibt nicht annähernd so viele Konfigurationsmöglichkeiten fuer die Server Seite von Git, aber es gibt dabei einige interessante, die Du in Betracht ziehen solltest.</p>
+
+<p>Not nearly as many configuration options are available for the server side of Git, but there are a few interesting ones you may want to take note of.</p>
+
+<h4 id='receivefsckobjects'>receive.fsckObjects</h4>
+
+<p>Standardmässig prueft Git nicht alle Objekte auf Konsistenz, die es durch einen Push erhält. Auch wenn Git sicherstellen kann, dass jedes Objekt dessen SHA-1 Checksumme entspricht und auf gueltige Objekte verweist, so wird dies nicht als Standard bei jedem Push ausgefuehrt. Dies ist eine sehr kostspielige Operation und kann bei jedem Push eine Menge Zeit kosten, abhängig von der Grösse des Repositories oder des Pushes. Wenn Du die Objektkonsistenz bei jedem Push durch Git pruefen lassen willst, so kannst Du das erzwingen, indem Du <code>receive.fsckObjects</code> auf &#8216;true&#8217; setzt:</p>
+
+<p>By default, Git doesn’t check for consistency all the objects it receives during a push. Although Git can check to make sure each object still matches its SHA-1 checksum and points to valid objects, it doesn’t do that by default on every push. This is a relatively expensive operation and may add a lot of time to each push, depending on the size of the repository or the push. If you want Git to check object consistency on every push, you can force it to do so by setting <code>receive.fsckObjects</code> to true:</p>
+
+<pre><code>$ git config --system receive.fsckObjects true</code></pre>
+
+<p>Jetzt wird Git die Integrität Deines Repositories jedesmal pruefen, bevor ein Push akzeptiert wird, um sicherzustellen, dass kein Client korrupte Daten einspeist.</p>
+
+<p>Now, Git will check the integrity of your repository before each push is accepted to make sure faulty clients aren’t introducing corrupt data.</p>
+
+<h4 id='receivedenynonfastforwards'>receive.denyNonFastForwards</h4>
+
+<p>Falls Du auf Commits, die Du bereits hochgeladen hast, ein Rebase anwendest, und dann erneut einen Push mit ihnen versuchst, wird Dir dies verwehrt. Genauso verhält es sich, wenn Du versuchst ein Commit auf einen entfernten Server zu pushen, wenn der Commit nicht mit dem uebereinstimmt, auf den der entfernte Server momentan verweist. Ueblicherweise ist das eine gute Richtlinie; aber im Falle des Rebase könnte es sein, dass Du weisst, was Du tust. Dann kannst Du die Aktualisierung des entfernten Branches erzwingen, indem Du einen <code>-f</code> Parameter zu dem Push Kommando hinzufuegst.</p>
+
+<p>If you rebase commits that you’ve already pushed and then try to push again, or otherwise try to push a commit to a remote branch that doesn’t contain the commit that the remote branch currently points to, you’ll be denied. This is generally good policy; but in the case of the rebase, you may determine that you know what you’re doing and can force-update the remote branch with a <code>-f</code> flag to your push command.</p>
+
+<p>Um die Möglichkeit des erzwungenen Updates von entfernten Branches auf Referenzen, die nicht <code>fast-forward</code> Status haben, zu deaktivieren, setze <code>receive.denyNonFastForwards</code> auf &#8216;true&#8217;:</p>
+
+<p>To disable the ability to force-update remote branches to non-fast-forward references, set <code>receive.denyNonFastForwards</code>:</p>
+
+<pre><code>$ git config --system receive.denyNonFastForwards true</code></pre>
+
+<p>Eine andere Möglichkeit ist die Einrichtung von serverseitigen Empfangsschnittstellen, die ich etwas später beschreiben werde. Dieser Ansatz erlaubt noch komplexere Dinge wie zum Beispiel Nicht-<code>fast-forward</code> Referenzen nur bestimmten Benutzergruppen zu verweigern.</p>
+
+<p>The other way you can do this is via server-side receive hooks, which I’ll cover in a bit. That approach lets you do more complex things like deny non-fast-forwards to a certain subset of users.</p>
+
+<h4 id='receivedenydeletes'>receive.denyDeletes</h4>
+
+<p>Eine Möglichkeit fuer den Benutzer <code>denyNonFastForwards</code> zu umgehen, ist es den Branch zu löschen und dann mit der neuen Referenz erneut zu pushen. In neueren Versionsn von Git (ab Version 1.6.1) kannst Du <code>receive.denyDeletes</code> auf &#8216;true&#8217; setzen:</p>
+
+<p>One of the workarounds to the <code>denyNonFastForwards</code> policy is for the user to delete the branch and then push it back up with the new reference. In newer versions of Git (beginning with version 1.6.1), you can set <code>receive.denyDeletes</code> to true:</p>
+
+<pre><code>$ git config --system receive.denyDeletes true</code></pre>
+
+<p>Dies verbietet grundsätzlich das Löschen eines Branches oder einer Marke (Tag) — kein Benutzer hat dann dazu die Erlaubnis. Um einen entfernten Branch zu löschen musst Du die ref Dateien manuell vom Server entfernen. Es gibt aber auch noch ein paar interessantere Möglichkeiten dies auf Benutzerbasis ueber ACLs zu tun, wie Du am Ende dieses Kapitels lernen wirst.</p>
+
+<p>This denies branch and tag deletion over a push across the board — no user can do it. To remove remote branches, you must remove the ref files from the server manually. There are also more interesting ways to do this on a per-user basis via ACLs, as you’ll learn at the end of this chapter.</p>
 
 <div id='nav'>
 <a href='ch6-1.html'>prev</a> | <a href='ch6-3.html'>next</a>

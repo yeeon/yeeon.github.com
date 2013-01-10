@@ -1,13 +1,27 @@
 ---
 layout: translation
-title: Pro Git 3.0 Git Branching
+title: Pro Git 3.0 Git Internals
 ---
-<h1>Chapter 3</h1><h1 id='git_branching'>Git Branching</h1>
+<h1>Chapter 3</h1><h1 id='git_internals'>Git Internals</h1>
 
-<p>Fast jedes VCS hat irgendeine Form von branching Unterstützung. Als branching versteht man dabei, die Fähigkeit von der Hauptentwicklungslinie abzuweichen ohne diese zu beeinflussen. Bei vielen VCS ist das ein umständlicher und komplizierter Prozess. Nicht selten ist es notwendig, eine Kopie des kompletten Arbeitsverzeichnisses zu erstellen, was bei grossen Projekten eine Weile dauern kann. Nearly every VCS has some form of branching support. Branching means you diverge from the main line of development and continue to do work without messing with that main line. In many VCS tools, this is a somewhat expensive process, often requiring you to create a new copy of your source code directory, which can take a long time for large projects.</p>
+<h1 id='git_internas'>Git Internas</h1>
 
-<p>Es gibt Leute, die bezeichnen das branching Modell in Git als sein &#8220;killer feature&#8221;, weshalb sich Git dadurch zweifellos innerhalb der VCS Community abhebt. Aber warum ist es so besonders? Die Art wie Git Branches behandelt ist unglaublich leichtgewichtig, macht das branching dadurch blitzschnell und ermöglicht so einfaches vor und zurück Schalten der einzelnen Versionen. Anders als andere VCS ermutigt Gít ausdrücklich zur Verwendung von häufigem branching und merging. Das Verständnis und die Fähigkeit im Umgang mit diesem Feature gibt dir ein machtvolles und einzigartiges Werkzeug in die Hand, dass deinen Weg zu entwicklen buchstäblich ändern wird. Some people refer to the branching model in Git as its “killer feature,” and it certainly sets Git apart in the VCS community. Why is it so special? The way Git branches is incredibly lightweight, making branching operations nearly instantaneous and switching back and forth between branches generally just as fast. Unlike many other VCSs, Git encourages a workflow that branches and merges often, even multiple times in a day. Understanding and mastering this feature gives you a powerful and unique tool and can literally change the way that you develop.</p>
+<p>You may have skipped to this chapter from a previous chapter, or you may have gotten here after reading the rest of the book — in either case, this is where you’ll go over the inner workings and implementation of Git. I found that learning this information was fundamentally important to understanding how useful and powerful Git is, but others have argued to me that it can be confusing and unnecessarily complex for beginners. Thus, I’ve made this discussion the last chapter in the book so you could read it early or later in your learning process. I leave it up to you to decide.</p>
+
+<p>Möglicherweise hast du dieses Kapitel hier direkt aufgeschlagen, vorherige Kapitel ausgelassen, oder bist hierher gelangt, nachdem du alle vorherigen Kapitel gelesen hast. Wie auch immer, in diesem Kapitel wirst du mit mit den internen (xxx) und der Implementation von Git befassen. Meine eigene Erfahrung damit, diese Dinge zu lernen, war daß sie unerläßlich ist, um zu verstehen, wie unheimlich mächtig und flexibel Git ist. Allerdings gibt es Leute, die der Ansicht sind, daß sie auch verwirrend und unnötig komplex für Anfänger sein könne. Deshalb habe ich mich entschieden, dieses Kapitel an das Ende des Buches zu verlegen. Du kannst es, ganz wie es dir beliebt, früher oder später einschieben.</p>
+
+<p>Now that you’re here, let’s get started. First, if it isn’t yet clear, Git is fundamentally a content-addressable filesystem with a VCS user interface written on top of it. You’ll learn more about what this means in a bit.</p>
+
+<p>Laß uns also loslegen. Zunächst will ich betonen, falls das bisher noch nicht klargeworden ist, daß Git im seinen Grundzügen ein Dateisystem ist, dessen Inhalte addressierbar sind (xxx content-addressable filesystem ??? xxx) und auf dem ein VCS Interface sitzt. Wir werden gleich genauer darauf eingehen, was das heißt.</p>
+
+<p>In the early days of Git (mostly pre 1.5), the user interface was much more complex because it emphasized this filesystem rather than a polished VCS. In the last few years, the UI has been refined until it’s as clean and easy to use as any system out there; but often, the stereotype lingers about the early Git UI that was complex and difficult to learn.</p>
+
+<p>In den frühen Tagen von Git (d.h. vor der Version 1.5.) war das Interface sehr viel komplexer, weil es diese Dateisystem Eigenschaften stark betonte - im Gegensatz zu einem ausgearbeiteten VCS. In den letzten Jahren wurde das Interface dann stückweise verbessert und verfeinert, so daß es heute so einfach verständlich und einfach zu verwenden ist, wie alle möglichen vergleichbaren Systeme, die es gibt. Allerdings besteht scheinbar weiterhin das Vorurteil, daß das Git Interface komplex und schwer zu erlernen sei.</p>
+
+<p>The content-addressable filesystem layer is amazingly cool, so I’ll cover that first in this chapter; then, you’ll learn about the transport mechanisms and the repository maintenance tasks that you may eventually have to deal with.</p>
+
+<p>Die Dateisystem Ebene ist erstaunlich cool, weshalb ich in diesem Kapitel zuerst darauf eingehen werde. Als nächstes lernst du etwas über die Transport Mechanismen und Repository Wartungsaufgaben, mit denen du möglicherweise irgendwann zu tun bekommen wirst.</p>
 
 <div id='nav'>
-<a href='ch2-16.html'>prev</a> | <a href='ch3-1.html'>next</a>
+<a href='ch2-8.html'>prev</a> | <a href='ch3-1.html'>next</a>
 </div>

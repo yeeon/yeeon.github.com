@@ -1,20 +1,244 @@
 ---
 layout: translation
-title: Pro Git 1.6 Úvod První pomoc
+title: Pro Git 1.6 Nástroje systému Git Submoduly
 ---
-<h2 id='prvn_pomoc'>První pomoc</h2>
+<h2 id='submoduly'>Submoduly</h2>
 
-<p>Pokud náhodou potřebujete pomoct s používáním Gitu, jsou tři možnosti, jak získat manuál (manpage) pro každý jeden příkaz Gitu:</p>
+<p>Často se stává, že pracujete na jednom projektu, ale na chvíli si potřebujete odskočit do jiného. Jedná se třeba o knihovnu, kterou vyvinula třetí strana, nebo kterou vyvíjíte odděleně a používáte ji v několika nadřazených projektech. V obou případech se budete potýkat se stejným problémem: oba projekty chcete zachovat samostatné, a přesto potřebujete používat jeden v rámci druhého.</p>
 
-<pre><code>$ git help &lt;verb&gt;
-$ git &lt;verb&gt; --help
-$ man git-&lt;verb&gt;</code></pre>
+<p>Uveďme malý příklad. Programujete webové stránky a vytváříte kanály Atom. Místo abyste psali vlastní zdrojový kód ke kanálům Atom, rozhodnete se použít knihovnu. Pravděpodobně budete muset použít tento kód ze sdílené knihovny, jako CPAN install nebo Ruby gem, nebo zkopírovat zdrojový kód do vlastního stromu projektu. Problém s použitím knihovny je ten, že je obtížné knihovnu jakýmkoli způsobem upravit a často ještě těžší ji nasadit, protože se musíte ujistit, že ji má k dispozici každý klient. Problémem s převzetím zdrojového kódu do vlastního projektu bývá, že jakékoli uživatelské změny, které provedete, se obtížně začleňují, pokud se objeví novější změny.</p>
 
-<p>Například manpage pro příkaz config získáte spuštěním</p>
+<p>Git nabízí jako řešení tohoto problému nástroj submodulů. Submoduly umožňují uchovávat repozitář Git jako podadresář jiného repozitáře Git. Do svého projektu tak můžete naklonovat jiný repozitář a uchovávat revize oddělené.</p>
 
-<pre><code>$ git help config</code></pre>
+<h3 id='zatek_prce_se_submoduly'>Začátek práce se submoduly</h3>
 
-<p>Tyto příkazy jsou užitečné zejména proto, že je můžete spustit kdykoli &#8211; i offline. Pokud by ani manuálové stránky, ani tato kniha neposkytly to, co potřebujete, zkuste IRC kanály <code>#git</code> nebo <code>#github</code> na Freenode IRC serveru (irc.freenode.net). Tyto kanály jsou pravidelně zaplněny stovkami lidí, kteří o Gitu ví opravdu mnoho a často vám rádi pomohou.</p>
+<p>Předpokládejme, že budete chtít vložit do svého projektu knihovnu Rack (rozhraní brány webového serveru Ruby), udržovat v ní vlastní změny, ale nadále začleňovat i změny ze serveru. První věcí, kterou byste měli udělat, je naklonovat externí repozitář do vlastního podadresáře. Externí projekty přidáte do svého projektu jako submoduly příkazem <code>git submodule add</code>:</p>
+
+<pre><code>$ git submodule add git://github.com/chneukirchen/rack.git rack
+Initialized empty Git repository in /opt/subtest/rack/.git/
+remote: Counting objects: 3181, done.
+remote: Compressing objects: 100% (1534/1534), done.
+remote: Total 3181 (delta 1951), reused 2623 (delta 1603)
+Receiving objects: 100% (3181/3181), 675.42 KiB | 422 KiB/s, done.
+Resolving deltas: 100% (1951/1951), done.</code></pre>
+
+<p>Nyní máte projekt Rack uložen ve svém projektu v podadresáři <code>rack</code>. Můžete přejít do tohoto podadresáře, provést změny, přidat vlastní vzdálený repozitář s oprávněním k zápisu, kam budete změny odesílat, vyzvednout a začlenit data z původního repozitáře atd. Pokud byste bezprostředně po přidání submodulu spustili příkaz <code>git status</code>, viděli byste dvě věci:</p>
+
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#      new file:   .gitmodules
+#      new file:   rack
+#</code></pre>
+
+<p>Zaprvé si všimnete souboru <code>.gitmodules</code>. Jedná se o konfigurační soubor, v němž je uloženo mapování mezi adresou URL projektu a lokálním podadresářem, do nějž jste stáhli repozitář.</p>
+
+<pre><code>$ cat .gitmodules
+[submodule &quot;rack&quot;]
+      path = rack
+      url = git://github.com/chneukirchen/rack.git</code></pre>
+
+<p>Máte-li submodulů více, bude v tomto souboru několik záznamů. Za zmínku stojí, že je tento soubor verzován spolu s ostatními soubory, podobně jako třeba soubor <code>.gitignore</code>. Soubor se odesílá a stahuje se zbytkem projektu. Ostatní uživatelé, kteří budou tento projekt klonovat, díky tomu zjistí, kde najdou projekty submodulů.</p>
+
+<p>Tím dalším, co se objevuje ve výstupu příkazu <code>git status</code>, je položka rack. Pokud na ni použijete příkaz <code>git diff</code>, uvidíte zajímavou věc:</p>
+
+<pre><code>$ git diff --cached rack
+diff --git a/rack b/rack
+new file mode 160000
+index 0000000..08d709f
+--- /dev/null
++++ b/rack
+@@ -0,0 +1 @@
++Subproject commit 08d709f78b8c5b0fbeb7821e37fa53e69afcf433</code></pre>
+
+<p>Ačkoli je <code>rack</code> podadresářem ve vašem pracovním adresáři, Git ví, že se jedná o submodul, a dokud se v tomto adresáři nenacházíte, nesleduje jeho obsah. Místo toho zaznamenává Git konkrétní revizi z tohoto adresáře. Provedete-li v tomto podadresáři změny a zapíšete revizi, superprojekt (tedy celkový, nadřízený projekt) zjistí, že se tu ukazatel HEAD změnil, a zaznamená přesnou revizi, na níž právě pracujete. Pokud pak tento projekt naklonují jiní uživatelé, budou schopni přesně obnovit původní prostředí.</p>
+
+<p>Toto je důležitá vlastnost submodulů: zaznamenáváte je jako přesné revize, na nichž se nacházejí. Submodul nelze zaznamenat na větvi <code>master</code> nebo na jiné symbolické referenci.</p>
+
+<p>Jestliže zapíšete revizi, zobrazí se přibližně toto:</p>
+
+<pre><code>$ git commit -m &#39;first commit with submodule rack&#39;
+[master 0550271] first commit with submodule rack
+ 2 files changed, 4 insertions(+), 0 deletions(-)
+ create mode 100644 .gitmodules
+ create mode 160000 rack</code></pre>
+
+<p>Všimněte si režimu (mode) 160000 u záznamu rack. Jedná se o speciální režim systému Git, který udává, že revizi zaznamenáváte jako adresář, ne jako podadresář nebo soubor.</p>
+
+<p>S adresářem <code>rack</code> můžete pracovat jako se samostatným projektem a čas od času aktualizovat superprojekt ukazatelem na nejnovější revizi v tomto subprojektu. Všechny příkazy Git pracují v obou adresářích nezávisle:</p>
+
+<pre><code>$ git log -1
+commit 0550271328a0038865aad6331e620cd7238601bb
+Author: Scott Chacon &lt;schacon@gmail.com&gt;
+Date:   Thu Apr 9 09:03:56 2009 -0700
+
+    first commit with submodule rack
+$ cd rack/
+$ git log -1
+commit 08d709f78b8c5b0fbeb7821e37fa53e69afcf433
+Author: Christian Neukirchen &lt;chneukirchen@gmail.com&gt;
+Date:   Wed Mar 25 14:49:04 2009 +0100
+
+    Document version change</code></pre>
+
+<h3 id='klonovn_projektu_se_submoduly'>Klonování projektu se submoduly</h3>
+
+<p>Nyní naklonujeme projekt, jehož součástí je submodul. Pokud takový projekt obdržíte, získáte adresáře, které tyto submoduly obsahují, ale zatím žádný soubor:</p>
+
+<pre><code>$ git clone git://github.com/schacon/myproject.git
+Initialized empty Git repository in /opt/myproject/.git/
+remote: Counting objects: 6, done.
+remote: Compressing objects: 100% (4/4), done.
+remote: Total 6 (delta 0), reused 0 (delta 0)
+Receiving objects: 100% (6/6), done.
+$ cd myproject
+$ ls -l
+total 8
+-rw-r--r--  1 schacon  admin   3 Apr  9 09:11 README
+drwxr-xr-x  2 schacon  admin  68 Apr  9 09:11 rack
+$ ls rack/
+$</code></pre>
+
+<p>Máte sice adresář <code>rack</code>, ten je však prázdný. Budete muset použít dva příkazy: <code>git submodule init</code> k inicializaci lokálního konfiguračního souboru a <code>git submodule update</code> k vyzvednutí všech dat z tohoto projektu a checkoutu příslušné revize uvedené ve vašem superprojektu:</p>
+
+<pre><code>$ git submodule init
+Submodule &#39;rack&#39; (git://github.com/chneukirchen/rack.git) registered for path &#39;rack&#39;
+$ git submodule update
+Initialized empty Git repository in /opt/myproject/rack/.git/
+remote: Counting objects: 3181, done.
+remote: Compressing objects: 100% (1534/1534), done.
+remote: Total 3181 (delta 1951), reused 2623 (delta 1603)
+Receiving objects: 100% (3181/3181), 675.42 KiB | 173 KiB/s, done.
+Resolving deltas: 100% (1951/1951), done.
+Submodule path &#39;rack&#39;: checked out &#39;08d709f78b8c5b0fbeb7821e37fa53e69afcf433&#39;</code></pre>
+
+<p>Váš podadresář <code>rack</code> je nyní přesně ve stejném stavu, jako když jste předtím zapisovali revizi. Jestliže jiný vývojář provede změny v kódu adresáře rack a zapíše je do revize a vy poté tuto referenci stáhnete a začleníte, dostanete něco, co bude vypadat poněkud zvláštně:</p>
+
+<pre><code>$ git merge origin/master
+Updating 0550271..85a3eee
+Fast forward
+ rack |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+[master*]$ git status
+# On branch master
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#   (use &quot;git checkout -- &lt;file&gt;...&quot; to discard changes in working directory)
+#
+#      modified:   rack
+#</code></pre>
+
+<p>Začlenili jste něco, co je v podstatě změna ukazatele vašeho submodulu. Neaktualizovali jste tím však zdrojový kód v adresáři submodulu, takže to vypadá, jako že je váš pracovní adresář v chaotickém stavu:</p>
+
+<pre><code>$ git diff
+diff --git a/rack b/rack
+index 6c5e70b..08d709f 160000
+--- a/rack
++++ b/rack
+@@ -1 +1 @@
+-Subproject commit 6c5e70b984a60b3cecd395edd5b48a7575bf58e0
++Subproject commit 08d709f78b8c5b0fbeb7821e37fa53e69afcf433</code></pre>
+
+<p>A tak to opravdu je. Ukazatel, který máte pro submodul, není to, co máte skutečně v adresáři submodulu. Abyste tento problém vyřešili, spusťte ještě jednou příkaz <code>git submodule update</code>:</p>
+
+<pre><code>$ git submodule update
+remote: Counting objects: 5, done.
+remote: Compressing objects: 100% (3/3), done.
+remote: Total 3 (delta 1), reused 2 (delta 0)
+Unpacking objects: 100% (3/3), done.
+From git@github.com:schacon/rack
+   08d709f..6c5e70b  master     -&gt; origin/master
+Submodule path &#39;rack&#39;: checked out &#39;6c5e70b984a60b3cecd395edd5b48a7575bf58e0&#39;</code></pre>
+
+<p>To budete muset udělat pokaždé, když stáhnete změnu v submodulu v hlavním projektu. Je to sice trochu zvláštní, ale opravdu to tak funguje.</p>
+
+<p>K tradičním problémům dochází, jestliže vývojář provede lokální změnu v submodulu, ale neodešle ji na veřejný server. Poté zapíše ukazatel do tohoto neveřejného stavu a superprojekt odešle na server. Když se pak ostatní vývojáři pokusí spustit příkaz <code>git submodule update</code>, systém submodulu nemůže najít revizi, k níž se vztahuje jedna z referencí, protože existuje pouze v prvním systému vývojáře. Pokud dojde k něčemu takovému, zobrazí se následující chyba:</p>
+
+<pre><code>$ git submodule update
+fatal: reference isn’t a tree: 6c5e70b984a60b3cecd395edd5b48a7575bf58e0
+Unable to checkout &#39;6c5e70b984a60b3cecd395edd5ba7575bf58e0&#39; in submodule path &#39;rack&#39;</code></pre>
+
+<p>Musíte zjistit, kdo změnil submodul jako poslední:</p>
+
+<pre><code>$ git log -1 rack
+commit 85a3eee996800fcfa91e2119372dd4172bf76678
+Author: Scott Chacon &lt;schacon@gmail.com&gt;
+Date:   Thu Apr 9 09:19:14 2009 -0700
+
+    added a submodule reference I will never make public. hahahahaha!</code></pre>
+
+<p>Nyní znáte provinilcovu e-mailovou adresu a můžete mu vyčinit.</p>
+
+<h3 id='superprojekty'>Superprojekty</h3>
+
+<p>Vývojáři někdy chtějí získat kombinaci podadresářů velkého projektu podle toho, v jakém týmu pracují. K tomu může dojít, pokud přecházíte ze systému CVS nebo Subversion, kde jste definovali modul nebo několik podadresářů, a chcete v tomto typu pracovního postupu pokračovat.</p>
+
+<p>Dobrým způsobem, jak to v systému Git provést, je učinit ze všech podsložek oddělené repozitáře Git a vytvořit repozitáře superprojektu Git, které budou obsahovat několik submodulů. Výhodou tohoto postupu je, že můžete podrobněji definovat vztah mezi projekty se značkami a větvemi v superprojektech.</p>
+
+<h3 id='problmy_se_submoduly'>Problémy se submoduly</h3>
+
+<p>Používání submodulů se však vždy neobejde bez zádrhelů. Zaprvé je třeba, abyste si v adresáři submodulu počínali opatrně. Spustíte-li příkaz <code>git submodule update</code>, provedete tím checkout konkrétní verze projektu, avšak nikoli v rámci větve. Říká se tomu oddělená hlava (detached head) – znamená to, že soubor HEAD ukazuje přímo na revizi, ne na symbolickou referenci. Problém je, že většinou nechcete pracovat v prostředí oddělené hlavy, protože tu velmi snadno přijdete o provedené změny. Jestliže nejprve spustíte příkaz <code>submodule update</code>, zapíšete v adresáři tohoto submodulu revizi, aniž byste na tuto práci vytvořili novou větev, a poté ze superprojektu znovu spustíte příkaz <code>git submodule update</code>, aniž byste mezitím zapisovali revize, Git vaše revize bez varování přepíše. Technicky vzato práci neztratíte, ale nebude žádná větev, která by na ni ukazovala, a tak bude poněkud obtížené získat práci zpět.</p>
+
+<p>Aby ve vašem projektu k tomuto problému nedošlo, vytvořte během práce v adresáři submodulu příkazem <code>git checkout -b work</code> nebo podobným novou větev. Až budete podruhé provádět příkaz submodule update, i tentokrát sice vrátí vaši práci, ale přinejmenším budete mít ukazatel, k němuž se budete moci vrátit.</p>
+
+<p>Problematické může být také přepínání větví obsahujících submoduly. Vytvoříte-li novou větev, přidáte do ní submodul a poté přepnete zpět na větev bez tohoto submodulu, není adresář submodulu stále ještě sledován:</p>
+
+<pre><code>$ git checkout -b rack
+Switched to a new branch &quot;rack&quot;
+$ git submodule add git@github.com:schacon/rack.git rack
+Initialized empty Git repository in /opt/myproj/rack/.git/
+...
+Receiving objects: 100% (3184/3184), 677.42 KiB | 34 KiB/s, done.
+Resolving deltas: 100% (1952/1952), done.
+$ git commit -am &#39;added rack submodule&#39;
+[rack cc49a69] added rack submodule
+ 2 files changed, 4 insertions(+), 0 deletions(-)
+ create mode 100644 .gitmodules
+ create mode 160000 rack
+$ git checkout master
+Switched to branch &quot;master&quot;
+$ git status
+# On branch master
+# Untracked files:
+#   (use &quot;git add &lt;file&gt;...&quot; to include in what will be committed)
+#
+#      rack/</code></pre>
+
+<p>Budete ho muset buď přemístit, nebo odstranit. V druhém případě ho budete muset znovu naklonovat, až přepnete zpět, navíc hrozí, že ztratíte lokální změny nebo větve, které jste neodeslali.</p>
+
+<p>Poslední velký problém s nímž se uživatelé často setkávají, souvisí s přepínáním z podadresářů na submoduly. Pokud jste ve svém projektu sledovali soubory a chcete je přesunout do submodulu, musíte být velmi opatrní, abyste si Git proti sobě nepoštvali. Řekněme, že máte soubory rack v podadresáři svého projektu a chcete ho přepnout do submodulu. Jestliže odstraníte podadresář a spustíte příkaz <code>submodule add</code>, Git vám vynadá:</p>
+
+<pre><code>$ rm -Rf rack/
+$ git submodule add git@github.com:schacon/rack.git rack
+&#39;rack&#39; already exists in the index</code></pre>
+
+<p>Adresář <code>rack</code> už byl připraven k zapsání. Proto ho musíte nejprve vrátit, až potom můžete přidat submodul:</p>
+
+<pre><code>$ git rm -r rack
+$ git submodule add git@github.com:schacon/rack.git rack
+Initialized empty Git repository in /opt/testsub/rack/.git/
+remote: Counting objects: 3184, done.
+remote: Compressing objects: 100% (1465/1465), done.
+remote: Total 3184 (delta 1952), reused 2770 (delta 1675)
+Receiving objects: 100% (3184/3184), 677.42 KiB | 88 KiB/s, done.
+Resolving deltas: 100% (1952/1952), done.</code></pre>
+
+<p>Nyní předpokládejme, že toto vše se odehrálo ve větvi. Pokud se pokusíte přepnout zpět do větve, kde jsou tyto soubory v aktuálním stromu, a ne v submodulu, zobrazí se tato chyba:</p>
+
+<pre><code>$ git checkout master
+error: Untracked working tree file &#39;rack/AUTHORS&#39; would be overwritten by merge.</code></pre>
+
+<p>Nejprve budete muset přemístit adresář submodulu <code>rack</code>, než vám Git dovolí přepnout na větev, která adresář neobsahuje:</p>
+
+<pre><code>$ mv rack /tmp/
+$ git checkout master
+Switched to branch &quot;master&quot;
+$ ls
+README	rack</code></pre>
+
+<p>Až poté přepnete zpět, bude adresář <code>rack</code> prázdný. Buď můžete spustit příkaz <code>git submodule update</code> a provést nové klonování, nebo můžete přesunout adresář <code>/tmp/rack</code> zpět do prázdného adresáře.</p>
 
 <div id='nav'>
 <a href='ch1-5.html'>prev</a> | <a href='ch1-7.html'>next</a>

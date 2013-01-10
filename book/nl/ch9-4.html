@@ -1,118 +1,75 @@
 ---
 layout: translation
-title: Pro Git 9.4 Het Binnenwerk van Git Packfiles
+title: Pro Git 9.4 Git op de server De server instellen
 ---
-<h2 id='packfiles'>Packfiles</h2>
+<h2 id='de_server_instellen'>De server instellen</h2>
 
-<p>Laten we eens terug gaan naar de object-databank van je test Git repository. Op dit punt heb je 11 objecten – 4 blobs, 3 bomen, 3 commits en 1 tag:</p>
+<p>Laten we het instellen van SSH toegang aan de server kant eens doorlopen. In dit voorbeeld zul je de <code>authorized_keys</code> methode gebruiken om je gebruikers te verifiëren. We gaan er ook vanuit dat je een standaard Linux distributie gebruikt zoals Ubuntu. Als eerste creëer je een &#8216;git&#8217; gebruiker een een <code>.ssh</code> map voor die gebruiker.</p>
 
-<pre><code>$ find .git/objects -type f
-.git/objects/01/55eb4229851634a0f03eb265b69f5a2d56f341 # tree 2
-.git/objects/1a/410efbd13591db07496601ebc7a059dd55cfe9 # commit 3
-.git/objects/1f/7a7a472abf3dd9643fd615f6da379c4acb3e3a # test.txt v2
-.git/objects/3c/4e9cd789d88d8d89c1073707c3585e41b0e614 # tree 3
-.git/objects/83/baae61804e65cc73a7201a7252750c76066a30 # test.txt v1
-.git/objects/95/85191f37f7b0fb9444f35a9bf50de191beadc2 # tag
-.git/objects/ca/c0cab538b970a37ea1e769cbbde608743bc96d # commit 2
-.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4 # &#39;test content&#39;
-.git/objects/d8/329fc1cc938780ffdd9f94e0d364e0ea74f579 # tree 1
-.git/objects/fa/49b077972391ad58037050f2a75f74e3671e92 # new.txt
-.git/objects/fd/f4fc3344e67ab068f836878b6c4951e3b15f3d # commit 1</code></pre>
+<pre><code>$ sudo adduser git
+$ su git
+$ cd
+$ mkdir .ssh</code></pre>
 
-<p>Git comprimeert de inhoud van deze bestanden met zlib, en je slaat maar weinig op, dus nemen deze bestanden samen maar 925 bytes in beslag. Je zult nu wat grotere inhoud toevoegen aan het repository om een interessante eigenschap van Git te demonstreren. Voeg het repo.rb bestand toe van de Grit bibliotheek waaraan je eerder gewerkt hebt – dit is een broncode bestand van ongeveer 12K groot:</p>
+<p>Daarna moet je een aantal publieke SSH sleutels van ontwikkelaars aan het <code>authorized_keys</code> bestand toevoegen voor die gebruiker. Laten we aannemen dat je een aantal sleutels per e-mail ontvangen hebt en ze hebt opgeslagen in tijdelijke bestanden. Nogmaals, de sleutels zien er ongeveer zo uit:</p>
 
-<pre><code>$ curl http://github.com/mojombo/grit/raw/master/lib/grit/repo.rb &gt; repo.rb
-$ git add repo.rb 
-$ git commit -m &#39;added repo.rb&#39;
-[master 484a592] added repo.rb
- 3 files changed, 459 insertions(+), 2 deletions(-)
- delete mode 100644 bak/test.txt
- create mode 100644 repo.rb
- rewrite test.txt (100%)</code></pre>
+<pre><code>$ cat /tmp/id_rsa.john.pub
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCB007n/ww+ouN4gSLKssMxXnBOvf9LGt4L
+ojG6rs6hPB09j9R/T17/x4lhJA0F3FR1rP6kYBRsWj2aThGw6HXLm9/5zytK6Ztg3RPKK+4k
+Yjh6541NYsnEAZuXz0jTTyAUfrtU3Z5E003C4oxOj6H0rfIF1kKI9MAQLMdpGW1GYEIgS9Ez
+Sdfd8AcCIicTDWbqLAcU4UpkaX8KyGlLwsNuuGztobF8m72ALC/nLF6JLtPofwFBlgc+myiv
+O7TCUSBdLQlgMVOFq1I2uPWQOkOWQAHukEOmfjy2jctxSDBQ220ymjaNsHT4kgtZg2AYYgPq
+dAv8JggJICUvax2T9va5 gsg-keypair</code></pre>
 
-<p>Als je naar de resulterende boom kijkt, kun je zien welke SHA-1 waarde je repo.rb gekregen heeft voor het blob object:</p>
+<p>Je voegt ze slechts toe aan je <code>authorized_keys</code> bestand:</p>
 
-<pre><code>$ git cat-file -p master^{tree}
-100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
-100644 blob 9bc1dc421dcd51b4ac296e3e5b6e2a99cf44391e      repo.rb
-100644 blob e3f094f522629ae358806b17daf78246c27c007b      test.txt</code></pre>
+<pre><code>$ cat /tmp/id_rsa.john.pub &gt;&gt; ~/.ssh/authorized_keys
+$ cat /tmp/id_rsa.josie.pub &gt;&gt; ~/.ssh/authorized_keys
+$ cat /tmp/id_rsa.jessica.pub &gt;&gt; ~/.ssh/authorized_keys</code></pre>
 
-<p>Je kunt dan het <code>git cat-file</code> commando gebruiken om te zien hoe groot dat object is:</p>
+<p>Nu kun je een leeg repository voor ze instellen door <code>git init</code> uit te voeren met de <code>--bare</code> optie, wat het repository initialiseert zonder een werkmap:</p>
 
-<pre><code>$ git cat-file -s 9bc1dc421dcd51b4ac296e3e5b6e2a99cf44391e
-12898</code></pre>
+<pre><code>$ cd /opt/git
+$ mkdir project.git
+$ cd project.git
+$ git --bare init</code></pre>
 
-<p>Pas het bestand nu eens een beetje aan, en kijk wat er gebeurd:</p>
+<p>Daarna kunnen John, Josie of Jessica de eerste versie van hun project in de repository pushen door het als een remote toe te voegen en naar een branch te pushen. Let op dat iemand met een shell op de machine zal moeten inloggen en een kale repository moet creëren, iedere keer als je een project wilt toevoegen. Laten we <code>gitserver</code> als hostnaam gebruiken voor de server waar je je &#8216;git&#8217; gebruiker en repository hebt ingesteld. Als je het intern gaat draaien, en je de DNS instelt zodat <code>gitserver</code> naar die server wijst, dan kun je de commando&#8217;s vrijwel ongewijzigd gebruiken:</p>
 
-<pre><code>$ echo &#39;# testing&#39; &gt;&gt; repo.rb 
-$ git commit -am &#39;modified repo a bit&#39;
-[master ab1afef] modified repo a bit
- 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
+<pre><code># op Johns computer
+$ cd myproject
+$ git init
+$ git add .
+$ git commit -m &#39;initial commit&#39;
+$ git remote add origin git@gitserver:/opt/git/project.git
+$ git push origin master</code></pre>
 
-<p>Bekijk de boom die door de commit gemaakt is, en je zult iets interessants zien:</p>
+<p>Op dat punt kunnen de anderen het clonen en wijzigingen even gemakkelijk terug pushen:</p>
 
-<pre><code>$ git cat-file -p master^{tree}
-100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
-100644 blob 05408d195263d853f09dca71d55116663690c27c      repo.rb
-100644 blob e3f094f522629ae358806b17daf78246c27c007b      test.txt</code></pre>
+<pre><code>$ git clone git@gitserver:/opt/git/project.git
+$ vim README
+$ git commit -am &#39;fix for the README file&#39;
+$ git push origin master</code></pre>
 
-<p>De blob is nu een andere blob, wat betekent dat alhoewel je slechts een enkele regel aan het eind van een bestand van 400 regels toegevoegd hebt, Git die nieuwe inhoud als een compleet nieuw object opgeslagen heeft:</p>
+<p>Met deze methode kun je snel een lees/schrijf Git server draaiend krijgen voor een handvol ontwikkelaars.</p>
 
-<pre><code>$ git cat-file -s 05408d195263d853f09dca71d55116663690c27c
-12908</code></pre>
+<p>Als een extra voorzorgsmaatregel kun je de &#8216;git&#8217; gebruiker makkelijk beperken tot het doen van alleen Git activiteiten, met een gelimiteerde shell applicatie genaamd <code>git-shell</code> die bij Git geleverd wordt. Als je dit als login shell voor je &#8216;git&#8217; gebruiker instelt, dan kan de &#8216;git&#8217; gebruiker geen normale shell toegang hebben op je server. Specificeer <code>git-shell</code> in plaats van bash of csh voor je gebruikers login shell om dit te gebruiken. Om dit te doen zul je waarschijnlijk het <code>/etc/passwd</code> bestand aan moeten passen:</p>
 
-<p>Je hebt nu twee vrijwel identieke 12K grote objecten op je disk. Zou het niet fijn zijn als Git één van de twee volledig op kon slaan, en het tweede object slechts als delta tussen die en de eerste?</p>
+<pre><code>$ sudo vim /etc/passwd</code></pre>
 
-<p>Het blijkt dat dat kan. Het initiele formaat waarin Git objecten opslaat op disk wordt een los object formaat genoemd. Maar, eens in de zoveel tijd pakt Git een aantal van die objecten in een enkel binair bestand wat een packfile genoemd wordt, om wat ruimte te besparen en efficiënter te zijn. Git doet dit als je teveel losse objecten rond hebt slingeren, als je het <code>git gc</code> commando handmatig uitvoert, of als je naar een remote server pushed. Om te zien wat er gebeurd, kun je Git handmatig vragen om de objecten in te pakken met het <code>git gc</code> commando:</p>
+<p>Aan het einde zou je een regel moeten vinden die er ongeveer zo uit ziet:</p>
 
-<pre><code>$ git gc
-Counting objects: 17, done.
-Delta compression using 2 threads.
-Compressing objects: 100% (13/13), done.
-Writing objects: 100% (17/17), done.
-Total 17 (delta 1), reused 10 (delta 0)</code></pre>
+<pre><code>git:x:1000:1000::/home/git:/bin/sh</code></pre>
 
-<p>Als je in je objecten map kijkt, zul je zien dat de meeste objecten verdwenen zijn, en er een aantal nieuwe bestanden verschenen zijn:</p>
+<p>Verander <code>/bin/sh</code> in <code>/usr/bin/git-shell</code> (of voer <code>which git-shell</code> uit om te zien waar het geïnstalleerd is). De regel moet er ongeveer zo uit zien:</p>
 
-<pre><code>$ find .git/objects -type f
-.git/objects/71/08f7ecb345ee9d0084193f147cdad4d2998293
-.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4
-.git/objects/info/packs
-.git/objects/pack/pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.idx
-.git/objects/pack/pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.pack</code></pre>
+<pre><code>git:x:1000:1000::/home/git:/usr/bin/git-shell</code></pre>
 
-<p>De objecten die overgebleven zijn, zijn de blobs waarnaar geen enkel commit wijst – in dit geval zijn het de &#8220;what is up, doc?&#8221; en de &#8220;test content&#8221; voorbeeld-blobs die je eerder aangemaakt hebt. Omdat je ze nooit aan een commit toegevoegd hebt, worden ze beschouwd als &#8216;rondslingerend&#8217; en worden ze niet in je nieuwe packfile ingepakt.</p>
+<p>Nu kan de &#8216;git&#8217; gebruiker de SSH connectie alleen gebruiken om Git repositories te pushen en te pullen, en niet om in te loggen in de machine. Als je het probeert zul je een login weigering zoals deze zien:</p>
 
-<p>De andere bestanden zijn je nieuwe packfile en een index. De packfile is een enkel bestand dat de inhoud bevat van alle objecten die van je bestandssysteem verwijderd zijn. De index is een bestand dat offsets binnen de packfile bevat, zodat je snel naar een specifiek object kunt zoeken. Wat cool is, is dat alhoewel de objecten op de disk voordat je <code>gc</code> aanriep samen zo&#8217;n 12K groot waren, is de nieuwe packfile slechts 6K. Je hebt je diskverbruik gehalveerd door je bestanden in te pakken.</p>
-
-<p>Hoe doet Git dit? Als Git objecten inpakt, zoekt het naar bestanden die gelijk genaamd en in grootte zijn, en slaat slechts de delta&#8217;s van één versie van het bestand naar de volgende op. Je kunt in de packfile kijken en zien wat Git gedaan heeft om ruimte te besparen. Het <code>git verify-pack</code> sanitaire voorzieningen commando stelt je in staat om te zien wat er ingepakt is:</p>
-
-<pre><code>$ git verify-pack -v \
-  .git/objects/pack/pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.idx
-0155eb4229851634a0f03eb265b69f5a2d56f341 tree   71 76 5400
-05408d195263d853f09dca71d55116663690c27c blob   12908 3478 874
-09f01cea547666f58d6a8d809583841a7c6f0130 tree   106 107 5086
-1a410efbd13591db07496601ebc7a059dd55cfe9 commit 225 151 322
-1f7a7a472abf3dd9643fd615f6da379c4acb3e3a blob   10 19 5381
-3c4e9cd789d88d8d89c1073707c3585e41b0e614 tree   101 105 5211
-484a59275031909e19aadb7c92262719cfcdf19a commit 226 153 169
-83baae61804e65cc73a7201a7252750c76066a30 blob   10 19 5362
-9585191f37f7b0fb9444f35a9bf50de191beadc2 tag    136 127 5476
-9bc1dc421dcd51b4ac296e3e5b6e2a99cf44391e blob   7 18 5193 1
-05408d195263d853f09dca71d55116663690c27c \
-  ab1afef80fac8e34258ff41fc1b867c702daa24b commit 232 157 12
-cac0cab538b970a37ea1e769cbbde608743bc96d commit 226 154 473
-d8329fc1cc938780ffdd9f94e0d364e0ea74f579 tree   36 46 5316
-e3f094f522629ae358806b17daf78246c27c007b blob   1486 734 4352
-f8f51d7d8a1760462eca26eebafde32087499533 tree   106 107 749
-fa49b077972391ad58037050f2a75f74e3671e92 blob   9 18 856
-fdf4fc3344e67ab068f836878b6c4951e3b15f3d commit 177 122 627
-chain length = 1: 1 object
-pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.pack: ok</code></pre>
-
-<p>Hier refereert de <code>9bc1d</code> blob, wat als je je dat herinnert de eerste versie is van je repo.rb bestand, aan de <code>05408</code> blob, wat de tweede versie was van het bestand. De derde kolom in de uitvoer is e grootte van het object in het pakket, zodat je kunt zien dat <code>05408</code> 12K van het bestand in beslag neemt maar dat <code>9bc1d</code> slechts 7 bytes in beslag neemt. Wat ook interessant is, is dat de tweede versie van het bestand degene is die intakt opgeslagen wordt, terwijl de originele versie als delta opgeslagen wordt – dit is zo gedaan omdat het waarschijnlijker is dat je snellere toegang nodig hebt tot de meest recente versie van het bestand.</p>
-
-<p>Het fijnste van dit alles is, is dat het op ieder gewenst moment opnieuw ingepakt kan worden. Git zal op z&#8217;n tijd je databank automatisch opnieuw inpakken, waarmee het altijd meer ruimte wil besparen. Je kunt ook handmatig opnieuw inpakken op ieder tijdstip, door <code>git gc</code> met de hand uit te voeren.</p>
+<pre><code>$ ssh git@gitserver
+fatal: What do you think I am? A shell?
+Connection to gitserver closed.</code></pre>
 
 <div id='nav'>
 <a href='ch9-3.html'>prev</a> | <a href='ch9-5.html'>next</a>

@@ -1,0 +1,212 @@
+---
+layout: translation
+title: Pro Git 5.6 Git&#8217;in Temelleri Etiketleme
+---
+<h2 id='etiketleme'>Etiketleme</h2>
+
+<p>Çoğu SKS gibi Git&#8217;in de tarihçedeki belirli noktaları önemli olarak etiketleyebilme özelliği vardır. Genellikle insanlar bu işlevi sürümleri (<code>v1.0</code>, vs.) işaretlemek için kullanırlar. Bu alt bölümde mevcut etiketleri nasıl listeleyebileceğinizi, nasıl yeni etiketler oluşturabileceğinizi ve değişik etiket tiplerini öğreneceksiniz.</p>
+
+<h3 id='listing_your_tags'>Listing Your Tags</h3>
+
+<p>Git&#8217;te mevcut etiketleri listeleme işi epeyi kolaydır. <code>git tag</code> yazmanız yeterlidir:</p>
+
+<pre><code>$ git tag
+v0.1
+v1.3</code></pre>
+
+<p>Bu komut etiketleri alfabetik biçimde sıralar; etiketlerin sırasının bir önemi yoktur.</p>
+
+<p>İsterseniz belirli bir örüntüyle eşleşen etiketleri de arayabilirsiniz. Git kaynak yazılım havuzunda 240&#8217;tan fazla etiket vardır. Yalnızca 1.4.2 serisindeki etiketleri görmek isterseniz şu komutu çalıştırmalısınız:</p>
+
+<pre><code>$ git tag -l &#39;v1.4.2.*&#39;
+v1.4.2.1
+v1.4.2.2
+v1.4.2.3
+v1.4.2.4</code></pre>
+
+<h3 id='etiket_oluturma'>Etiket Oluşturma</h3>
+
+<p>Git iki başlıca etiket tipi kullanır: hafif ve açıklamalı. Hafif etiketler hiç değişmeyen dallar gibidir —belirli bir kaydı işaret ederler. Öte yandan, açıklamalı etiketler, Git veritabanında bütünlüklü nesneler olarak kaydedilirler. Sınama toplamları alınır; etiketleyenin adını ve e-posta adresini içerirler; bir etiket mesajına sahiptirler ve GNU Privacy Guard (GPG) kullanılarak imzalanıp doğrulanabilirler. Genelllikle bütün bu bilgilere ulaşılabilmesini olanaklı kılabilmek için açıklamalı etiketlerin kullanılması önerilir, ama bütün bu bilgileri depolamadan yalnızca geçici bir etiket oluşturmak istiyorsanız, hafif etiketleri de kullanabilirsiniz.</p>
+
+<h3 id='aklamal_etiketler'>Açıklamalı Etiketler</h3>
+
+<p>Git&#8217;te açıklamalı etiket oluşturmak basittir. En kolayı <code>tag</code> komutunu çalıştırıren <code>-a</code> seçeneğini kullanmaktır:</p>
+
+<pre><code>$ git tag -a v1.4 -m &#39;my version 1.4&#39;
+$ git tag
+v0.1
+v1.3
+v1.4</code></pre>
+
+<p><code>-m</code> seçeneği etketle birlikte depolanacak etiketleme mesajını belirlemek için kullanılır. Açıklamalı bir etiket için mesajı bu şekilde belirlemezseniz, Git mesajı yazabilmeniz için bir editör açacaktır.</p>
+
+<p><code>git show</code> komutunu kullanarak etiketlenen kayıtla birlikte etikete ilişkin verileri de görebilirsiniz:</p>
+
+<pre><code>$ git show v1.4
+tag v1.4
+Tagger: Scott Chacon &lt;schacon@gee-mail.com&gt;
+Date:   Mon Feb 9 14:45:11 2009 -0800
+
+my version 1.4
+commit 15027957951b64cf874c3557a0f3547bd83b3ff6
+Merge: 4a447f7... a6b4c97...
+Author: Scott Chacon &lt;schacon@gee-mail.com&gt;
+Date:   Sun Feb 8 19:02:46 2009 -0800
+
+    Merge branch &#39;experiment&#39;</code></pre>
+
+<p>Bu, kayıt bilgisinden önce etiketlenyenle ilgili bilgileri, kaydın etiketlendiği tarihi ve açıklama mesajını gösterir.</p>
+
+<h3 id='mzal_etiketler'>İmzalı Etiketler</h3>
+
+<p>Eğer bir kişisel anahtarınız (_private key_) varsa etiketlerinizi GPG ile imzalayabilirsiniz. Yapmanız gereken tek şey <code>-a</code> yerine <code>-s</code> seçeneğini kullanmaktır:</p>
+
+<pre><code>$ git tag -s v1.5 -m &#39;my signed 1.5 tag&#39;
+You need a passphrase to unlock the secret key for
+user: &quot;Scott Chacon &lt;schacon@gee-mail.com&gt;&quot;
+1024-bit DSA key, ID F721C45A, created 2009-02-09</code></pre>
+
+<p>Bu etiket üzerinde <code>git show</code> komutunu çalıştırırsanız, GPG imzasını da görebilirsiniz:</p>
+
+<pre><code>$ git show v1.5
+tag v1.5
+Tagger: Scott Chacon &lt;schacon@gee-mail.com&gt;
+Date:   Mon Feb 9 15:22:20 2009 -0800
+
+my signed 1.5 tag
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.8 (Darwin)
+
+iEYEABECAAYFAkmQurIACgkQON3DxfchxFr5cACeIMN+ZxLKggJQf0QYiQBwgySN
+Ki0An2JeAVUCAiJ7Ox6ZEtK+NvZAj82/
+=WryJ
+-----END PGP SIGNATURE-----
+commit 15027957951b64cf874c3557a0f3547bd83b3ff6
+Merge: 4a447f7... a6b4c97...
+Author: Scott Chacon &lt;schacon@gee-mail.com&gt;
+Date:   Sun Feb 8 19:02:46 2009 -0800
+
+    Merge branch &#39;experiment&#39;</code></pre>
+
+<p>Birazdan imzalı etiketleri nasıl doğrulayabileceğinizi öğreneceksiniz.</p>
+
+<h3 id='hafif_etiketler'>Hafif Etiketler</h3>
+
+<p>Kayıtları etiketlemenin bir yolu da hafif etiketler kullanmaktır. Bu, kayıt sınama toplamının bir dosyada depolanmasından ibarettir —başka hiçbir bilgi tutulmaz. Bir hafif etiket oluştururken <code>-a</code>, <code>-s</code> ya da <code>-m</code> seçeneklerini kullanmamalısınız.</p>
+
+<pre><code>$ git tag v1.4-lw
+$ git tag
+v0.1
+v1.3
+v1.4
+v1.4-lw
+v1.5</code></pre>
+
+<p>Şimdi etiket üzerinde <code>git show</code> komutunu çalıştıracak olsanız, etiketle ilgili ek bilgiler görmezsiniz. Komut yalnızca kaydı gösterir:</p>
+
+<pre><code>$ git show v1.4-lw
+commit 15027957951b64cf874c3557a0f3547bd83b3ff6
+Merge: 4a447f7... a6b4c97...
+Author: Scott Chacon &lt;schacon@gee-mail.com&gt;
+Date:   Sun Feb 8 19:02:46 2009 -0800
+
+    Merge branch &#39;experiment&#39;</code></pre>
+
+<h3 id='etiketleri_dorulamak'>Etiketleri Doğrulamak</h3>
+
+<p>İmzalı bir etiketi doğrulamak için <code>git tag -v [etiket-adi]</code> komutu kullanılır. Bu komut imzayı doğrulamak için GPG&#8217;yi kullanır. Bunun düzgün çalışması için imza sahibinin kamusal anahtarı (_public key_) anahtar halkanızda (_keyring_) bulunmalıdır.</p>
+
+<pre><code>$ git tag -v v1.4.2.1
+object 883653babd8ee7ea23e6a5c392bb739348b1eb61
+type commit
+tag v1.4.2.1
+tagger Junio C Hamano &lt;junkio@cox.net&gt; 1158138501 -0700
+
+GIT 1.4.2.1
+
+Minor fixes since 1.4.2, including git-mv and git-http with alternates.
+gpg: Signature made Wed Sep 13 02:08:25 2006 PDT using DSA key ID F3119B9A
+gpg: Good signature from &quot;Junio C Hamano &lt;junkio@cox.net&gt;&quot;
+gpg:                 aka &quot;[jpeg image of size 1513]&quot;
+Primary key fingerprint: 3565 2A26 2040 E066 C9A7  4A7D C0C6 D9A4 F311 9B9A</code></pre>
+
+<p>If you don’t have the signer’s public key, you get something like this instead:</p>
+
+<pre><code>gpg: Signature made Wed Sep 13 02:08:25 2006 PDT using DSA key ID F3119B9A
+gpg: Can&#39;t check signature: public key not found
+error: could not verify the tag &#39;v1.4.2.1&#39;</code></pre>
+
+<h3 id='sonradan_etiketleme'>Sonradan Etiketleme</h3>
+
+<p>Geçmişteki kayıtları da etiketleyebilirsiniz. Diyelim ki Git tarihçeniz şöyle olsun:</p>
+
+<pre><code>$ git log --pretty=oneline
+15027957951b64cf874c3557a0f3547bd83b3ff6 Merge branch &#39;experiment&#39;
+a6b4c97498bd301d84096da251c98a07c7723e65 beginning write support
+0d52aaab4479697da7686c15f77a3d64d9165190 one more thing
+6d52a271eda8725415634dd79daabbc4d9b6008e Merge branch &#39;experiment&#39;
+0b7434d86859cc7b8c3d5e1dddfed66ff742fcbc added a commit function
+4682c3261057305bdd616e23b64b0857d832627b added a todo file
+166ae0c4d3f420721acbb115cc33848dfcc2121a started write support
+9fceb02d0ae598e95dc970b74767f19372d61af8 updated rakefile
+964f16d36dfccde844893cac5b347e7b3d44abbc commit the todo
+8a5cbc430f1a9c3d00faaeffd07798508422908a updated readme</code></pre>
+
+<p>Söz gelimi, &#8220;updated rakefile&#8221; kaydında projenizi <code>v1.2</code> olarak etiketlemeniz gerekiyordu, ama unuttunuz. Etiketi sonradan da ekleyebilirsiniz. O kaydı etiketlemek için komutun sonuna kaydın sınama toplamını (ya da bir parçasını) eklemelisiniz:</p>
+
+<pre><code>$ git tag -a v1.2 9fceb02</code></pre>
+
+<p>Kaydın etiketlendiğini göreceksiniz:</p>
+
+<pre><code>$ git tag
+v0.1
+v1.2
+v1.3
+v1.4
+v1.4-lw
+v1.5
+
+$ git show v1.2
+tag v1.2
+Tagger: Scott Chacon &lt;schacon@gee-mail.com&gt;
+Date:   Mon Feb 9 15:32:16 2009 -0800
+
+version 1.2
+commit 9fceb02d0ae598e95dc970b74767f19372d61af8
+Author: Magnus Chacon &lt;mchacon@gee-mail.com&gt;
+Date:   Sun Apr 27 20:43:35 2008 -0700
+
+    updated rakefile
+...</code></pre>
+
+<h3 id='etiketleri_paylamak'>Etiketleri Paylaşmak</h3>
+
+<p>Aksi belirtilmedikçe <code>git push</code> komutu etiketleri uzak uçbirimelere aktarmaz. Etiketleri belirtik biçimde bir ortak sunucuya itmeniz gerekir. Bu süreç uçbirim dallarını paylaşmaya benzer —<code>git push origin [etiket-adi]</code> komutunu çalıştırabilirsiniz.</p>
+
+<pre><code>$ git push origin v1.5
+Counting objects: 50, done.
+Compressing objects: 100% (38/38), done.
+Writing objects: 100% (44/44), 4.56 KiB, done.
+Total 44 (delta 18), reused 8 (delta 1)
+To git@github.com:schacon/simplegit.git
+* [new tag]         v1.5 -&gt; v1.5</code></pre>
+
+<p>Bir seferde birden çok etiketi paylaşmak isterseniz, <code>git push</code> komutuyla birlikte <code>--tags</code> seçeneğini de kullanabilirsiniz. Bu, halihazırda itilmemiş olan bütün etiketlerinizi uzak uçbirime aktaracaktır.</p>
+
+<pre><code>$ git push origin --tags
+Counting objects: 50, done.
+Compressing objects: 100% (38/38), done.
+Writing objects: 100% (44/44), 4.56 KiB, done.
+Total 44 (delta 18), reused 8 (delta 1)
+To git@github.com:schacon/simplegit.git
+ * [new tag]         v0.1 -&gt; v0.1
+ * [new tag]         v1.2 -&gt; v1.2
+ * [new tag]         v1.4 -&gt; v1.4
+ * [new tag]         v1.4-lw -&gt; v1.4-lw
+ * [new tag]         v1.5 -&gt; v1.5</code></pre>
+
+<p>Artık başka biri sizin yazılım havuzunuzdan çekme yaptığında, bütün etiketlerinize de sahip olacaktır.</p>
+
+<div id='nav'>
+<a href='ch5-5.html'>prev</a> | <a href='ch5-7.html'>next</a>
+</div>

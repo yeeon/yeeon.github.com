@@ -1,103 +1,96 @@
 ---
 layout: translation
-title: Pro Git 1.7 Los geht&#8217;s Git Installieren
+title: Pro Git 1.7 Git Tools Debugging with Git
 ---
-<h2 id='git_installieren'>Git Installieren</h2>
+<h2 id='debugging_with_git'>Debugging with Git</h2>
 
-<p>Let’s get into using some Git. First things first—you have to install it. You can get it a number of ways; the two major ones are to install it from source or to install an existing package for your platform.</p>
+<p>Git also provides a couple of tools to help you debug issues in your projects. Because Git is designed to work with nearly any type of project, these tools are pretty generic, but they can often help you hunt for a bug or culprit when things go wrong.</p>
 
-<p>Laß uns damit anfangen, Git tatsächlich zu verwenden. Der erste Schritt besteht natürlich darin, Git zu installieren und das kann, wie üblich, auf unterschiedliche Weisen geschehen. Die beiden wichtigsten bestehen darin, entweder den Quellcode herunterzuladen und selbst zu kompilieren oder ein fertiges Paket für dein Betriebssystem zu installieren.</p>
+<h3 id='file_annotation'>File Annotation</h3>
 
-<h3 id='installing_from_source'>Installing from Source</h3>
+<p>If you track down a bug in your code and want to know when it was introduced and why, file annotation is often your best tool. It shows you what commit was the last to modify each line of any file. So, if you see that a method in your code is buggy, you can annotate the file with <code>git blame</code> to see when each line of the method was last edited and by whom. This example uses the <code>-L</code> option to limit the output to lines 12 through 22:</p>
 
-<h3 id='vom_quellcode_aus_installieren'>Vom Quellcode aus installieren</h3>
+<pre><code>$ git blame -L 12,22 simplegit.rb 
+^4832fe2 (Scott Chacon  2008-03-15 10:31:28 -0700 12)  def show(tree = &#39;master&#39;)
+^4832fe2 (Scott Chacon  2008-03-15 10:31:28 -0700 13)   command(&quot;git show #{tree}&quot;)
+^4832fe2 (Scott Chacon  2008-03-15 10:31:28 -0700 14)  end
+^4832fe2 (Scott Chacon  2008-03-15 10:31:28 -0700 15)
+9f6560e4 (Scott Chacon  2008-03-17 21:52:20 -0700 16)  def log(tree = &#39;master&#39;)
+79eaf55d (Scott Chacon  2008-04-06 10:15:08 -0700 17)   command(&quot;git log #{tree}&quot;)
+9f6560e4 (Scott Chacon  2008-03-17 21:52:20 -0700 18)  end
+9f6560e4 (Scott Chacon  2008-03-17 21:52:20 -0700 19) 
+42cf2861 (Magnus Chacon 2008-04-13 10:45:01 -0700 20)  def blame(path)
+42cf2861 (Magnus Chacon 2008-04-13 10:45:01 -0700 21)   command(&quot;git blame #{path}&quot;)
+42cf2861 (Magnus Chacon 2008-04-13 10:45:01 -0700 22)  end</code></pre>
 
-<p>If you can, it’s generally useful to install Git from source, because you’ll get the most recent version. Each version of Git tends to include useful UI enhancements, so getting the latest version is often the best route if you feel comfortable compiling software from source. It is also the case that many Linux distributions contain very old packages; so unless you’re on a very up-to-date distro or are using backports, installing from source may be the best bet.</p>
+<p>Notice that the first field is the partial SHA-1 of the commit that last modified that line. The next two fields are values extracted from that commit—the author name and the authored date of that commit — so you can easily see who modified that line and when. After that come the line number and the content of the file. Also note the <code>^4832fe2</code> commit lines, which designate that those lines were in this file’s original commit. That commit is when this file was first added to this project, and those lines have been unchanged since. This is a tad confusing, because now you’ve seen at least three different ways that Git uses the <code>^</code> to modify a commit SHA, but that is what it means here.</p>
 
-<p>Wenn es dir möglich ist, empfehlen wir, Git vom Quellcode aus zu installieren, weil Du die jeweils neueste Version erhältst. In der Regel bringt jede Version nützliche Verbesserungen (z.B. am Interface), so dass es sich lohnt die jeweils neueste Version zu verwenden - sofern Du natürlich damit klarkommst, Software aus dem Quellcode zu kompilieren. Viele Linux Distributionen umfassen sehr alte Git Versionen. Wenn Du also keine sehr aktuelle Distribution oder Backports (xxx) verwendest, empfehlen wir, diesen Weg in Erwägung ziehen.</p>
+<p>Another cool thing about Git is that it doesn’t track file renames explicitly. It records the snapshots and then tries to figure out what was renamed implicitly, after the fact. One of the interesting features of this is that you can ask it to figure out all sorts of code movement as well. If you pass <code>-C</code> to <code>git blame</code>, Git analyzes the file you’re annotating and tries to figure out where snippets of code within it originally came from if they were copied from elsewhere. Recently, I was refactoring a file named <code>GITServerHandler.m</code> into multiple files, one of which was <code>GITPackUpload.m</code>. By blaming <code>GITPackUpload.m</code> with the <code>-C</code> option, I could see where sections of the code originally came from:</p>
 
-<p>To install Git, you need to have the following libraries that Git depends on: curl, zlib, openssl, expat, and libiconv. For example, if you’re on a system that has yum (such as Fedora) or apt-get (such as a Debian based system), you can use one of these commands to install all of the dependencies:</p>
+<pre><code>$ git blame -C -L 141,153 GITPackUpload.m 
+f344f58d GITServerHandler.m (Scott 2009-01-04 141) 
+f344f58d GITServerHandler.m (Scott 2009-01-04 142) - (void) gatherObjectShasFromC
+f344f58d GITServerHandler.m (Scott 2009-01-04 143) {
+70befddd GITServerHandler.m (Scott 2009-03-22 144)         //NSLog(@&quot;GATHER COMMI
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 145)
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 146)         NSString *parentSha;
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 147)         GITCommit *commit = [g
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 148)
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 149)         //NSLog(@&quot;GATHER COMMI
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 150)
+56ef2caf GITServerHandler.m (Scott 2009-01-05 151)         if(commit) {
+56ef2caf GITServerHandler.m (Scott 2009-01-05 152)                 [refDict setOb
+56ef2caf GITServerHandler.m (Scott 2009-01-05 153)</code></pre>
 
-<p>Um Git zu installieren, benötigst Du die folgenden Bibliotheken, die von Git verwendet werden: curl, zlib, openssl, expat und libiconv. Wenn Dir auf deinem System yum (z.B. auf Fedora) oder apt-get (z.B. auf Debian-basierten Systemen) zur Verfügung steht, kannst Du einen der folgenden Befehle verwenden, um diese Abhängigkeiten zu installieren:</p>
+<p>This is really useful. Normally, you get as the original commit the commit where you copied the code over, because that is the first time you touched those lines in this file. Git tells you the original commit where you wrote those lines, even if it was in another file.</p>
 
-<pre><code>$ yum install curl-devel expat-devel gettext-devel \
-  openssl-devel zlib-devel
+<h3 id='binary_search'>Binary Search</h3>
 
-$ apt-get install curl-devel expat-devel gettext-devel \
-  openssl-devel zlib-devel</code></pre>
+<p>Annotating a file helps if you know where the issue is to begin with. If you don’t know what is breaking, and there have been dozens or hundreds of commits since the last state where you know the code worked, you’ll likely turn to <code>git bisect</code> for help. The <code>bisect</code> command does a binary search through your commit history to help you identify as quickly as possible which commit introduced an issue.</p>
 
-<p>When you have all the necessary dependencies, you can go ahead and grab the latest snapshot from the Git web site:</p>
+<p>Let’s say you just pushed out a release of your code to a production environment, you’re getting bug reports about something that wasn’t happening in your development environment, and you can’t imagine why the code is doing that. You go back to your code, and it turns out you can reproduce the issue, but you can’t figure out what is going wrong. You can bisect the code to find out. First you run <code>git bisect start</code> to get things going, and then you use <code>git bisect bad</code> to tell the system that the current commit you’re on is broken. Then, you must tell bisect when the last known good state was, using <code>git bisect good [good_commit]</code>:</p>
 
-<p>Nachdem Du die genannten Bibliotheken installiert hast, besorge dir die aktuelle Version des Git Quellcodes von der Git Webseite:</p>
+<pre><code>$ git bisect start
+$ git bisect bad
+$ git bisect good v1.0
+Bisecting: 6 revisions left to test after this
+[ecb6e1bc347ccecc5f9350d878ce677feb13d3b2] error handling on repo</code></pre>
 
-<pre><code>http://git-scm.com/download</code></pre>
+<p>Git figured out that about 12 commits came between the commit you marked as the last good commit (v1.0) and the current bad version, and it checked out the middle one for you. At this point, you can run your test to see if the issue exists as of this commit. If it does, then it was introduced sometime before this middle commit; if it doesn’t, then the problem was introduced sometime after the middle commit. It turns out there is no issue here, and you tell Git that by typing <code>git bisect good</code> and continue your journey:</p>
 
-<p>Then, compile and install:</p>
+<pre><code>$ git bisect good
+Bisecting: 3 revisions left to test after this
+[b047b02ea83310a70fd603dc8cd7a6cd13d15c04] secure this thing</code></pre>
 
-<p>Danach kannst Du dann Git kompilieren und installieren:</p>
+<p>Now you’re on another commit, halfway between the one you just tested and your bad commit. You run your test again and find that this commit is broken, so you tell Git that with <code>git bisect bad</code>:</p>
 
-<pre><code>$ tar -zxf git-1.6.0.5.tar.gz
-$ cd git-1.6.0.5
-$ make prefix=/usr/local all
-$ sudo make prefix=/usr/local install</code></pre>
+<pre><code>$ git bisect bad
+Bisecting: 1 revisions left to test after this
+[f71ce38690acf49c1f3c9bea38e09d82a5ce6014] drop exceptions table</code></pre>
 
-<p>After this is done, you can also get Git via Git itself for updates:</p>
+<p>This commit is fine, and now Git has all the information it needs to determine where the issue was introduced. It tells you the SHA-1 of the first bad commit and show some of the commit information and which files were modified in that commit so you can figure out what happened that may have introduced this bug:</p>
 
-<p>Von nun an kannst Du Git mit Hilfe von Git selbst aktualisieren:</p>
+<pre><code>$ git bisect good
+b047b02ea83310a70fd603dc8cd7a6cd13d15c04 is first bad commit
+commit b047b02ea83310a70fd603dc8cd7a6cd13d15c04
+Author: PJ Hyett &lt;pjhyett@example.com&gt;
+Date:   Tue Jan 27 14:48:32 2009 -0800
 
-<pre><code>$ git clone git://git.kernel.org/pub/scm/git/git.git</code></pre>
+    secure this thing
 
-<h3 id='installing_on_linux'>Installing on Linux</h3>
+:040000 040000 40ee3e7821b895e52c1695092db9bdc4c61d1730
+f24d3c6ebcfc639b1a3814550e62d60b8e68a8e4 M  config</code></pre>
 
-<h3 id='installation_unter_linux'>Installation unter Linux</h3>
+<p>When you’re finished, you should run <code>git bisect reset</code> to reset your HEAD to where you were before you started, or you’ll end up in a weird state:</p>
 
-<p>If you want to install Git on Linux via a binary installer, you can generally do so through the basic package-management tool that comes with your distribution. If you’re on Fedora, you can use yum:</p>
+<pre><code>$ git bisect reset</code></pre>
 
-<p>Wenn Du Git unter Linux mit einem Installationsprogramm installieren willst, kannst Du das normalerweise mit dem Paketmanager tun, der von deinem Betriebssystem verwendet wird. Unter Fedora zum Beispiel kannst Du yum verwenden:</p>
+<p>This is a powerful tool that can help you check hundreds of commits for an introduced bug in minutes. In fact, if you have a script that will exit 0 if the project is good or non-0 if the project is bad, you can fully automate <code>git bisect</code>. First, you again tell it the scope of the bisect by providing the known bad and good commits. You can do this by listing them with the <code>bisect start</code> command if you want, listing the known bad commit first and the known good commit second:</p>
 
-<pre><code>$ yum install git-core</code></pre>
+<pre><code>$ git bisect start HEAD v1.0
+$ git bisect run test-error.sh</code></pre>
 
-<p>Or if you’re on a Debian-based distribution like Ubuntu, try apt-get:</p>
-
-<p>Auf einem Debian-basierten System wie Ubuntu steht dir apt-get zur Verfügung:</p>
-
-<pre><code>$ apt-get install git-core</code></pre>
-
-<h3 id='installing_on_mac'>Installing on Mac</h3>
-
-<h3 id='installation_unter_mac_os_x'>Installation unter Mac OS X</h3>
-
-<p>There are two easy ways to install Git on a Mac. The easiest is to use the graphical Git installer, which you can download from the Google Code page (see Figure 1-7):</p>
-
-<p>Auf einem Mac kann man Git auf zwei Arten installieren. Der einfachste ist, das grafische Git Installationsprogramm zu verwenden, den man von der Google Code Webseite herunterladen kann (siehe Bild 1-7)</p>
-
-<p>http://code.google.com/p/git-osx-installer</p>
-
-<p><center><img src="/figures/ch1/18333fig0107-tn.png"></center><br/> Figure 1-7. Git OS X installer</p>
-
-<p>The other major way is to install Git via MacPorts (http://www.macports.org). If you have MacPorts installed, install Git via</p>
-
-<p>Die andere Möglichkeit ist, Git via MacPorts (http://www.macports.org) zu installieren. Wenn Du MacPorts auf deinem System hast, installiert der folgende Befehl Git:</p>
-
-<pre><code>$ sudo port install git-core +svn +doc +bash_completion +gitweb</code></pre>
-
-<p>You don’t have to add all the extras, but you’ll probably want to include +svn in case you ever have to use Git with Subversion repositories (see Chapter 8).</p>
-
-<p>Du brauchst die optionalen Features natürlich nicht mit zu installieren, aber es macht Sinn <code>+svn</code> zu verwenden, falls Du jemals Git mit einem Subversion Repository verwenden willst.</p>
-
-<h3 id='installing_on_windows'>Installing on Windows</h3>
-
-<h3 id='installation_unter_windows'>Installation unter Windows</h3>
-
-<p>Installing Git on Windows is very easy. The msysGit project has one of the easier installation procedures. Simply download the installer exe file from the Google Code page, and run it:</p>
-
-<p>Das msysGit Projekt macht die Installation von Git unter Windows sehr einfach. Lade einfach das Installationsprogramm für Windows von der Google Code Webseite herunter und führe es aus:</p>
-
-<pre><code>http://code.google.com/p/msysgit</code></pre>
-
-<p>After it’s installed, you have both a command-line version (including an SSH client that will come in handy later) and the standard GUI.</p>
-
-<p>Danach hast Du sowohl eine Kommandozeilenversion (inklusive eines SSH Clients, der sich später noch als nützlich erweisen wird) als auch die Standard GUI installiert.</p>
+<p>Doing so automatically runs <code>test-error.sh</code> on each checked-out commit until Git finds the first broken commit. You can also run something like <code>make</code> or <code>make tests</code> or whatever you have that runs automated tests for you.</p>
 
 <div id='nav'>
 <a href='ch1-6.html'>prev</a> | <a href='ch1-8.html'>next</a>

@@ -1,495 +1,382 @@
 ---
 layout: translation
-title: Pro Git 5.2 Git en entornos distribuidos Contribuyendo a un proyecto
+title: Pro Git 5.2 Fundamentos de Git Guardando cambios en el repositorio
 ---
-<h2 id='contribuyendo_a_un_proyecto'>Contribuyendo a un proyecto</h2>
+<h2 id='guardando_cambios_en_el_repositorio'>Guardando cambios en el repositorio</h2>
 
-<p>En estos momentos conoces las diferentes formas de trabajar, y tienes ya un generoso conocimiento de los fundamentos de Git. En esta sección, aprenderás acerca de las formas más habituales de contribuir a un proyecto.</p>
+<p>Tienes un repositorio Git completo, y una copia de trabajo de los archivos de ese proyecto. Necesitas hacer algunos cambios, y confirmar instantáneas de esos cambios a tu repositorio cada vez que el proyecto alcance un estado que desees grabar.</p>
 
-<p>El mayor problema al intentar describir este proceso es el gran número de variaciones que se pueden presentar. Por la gran flexibilidad de Git, la gente lo suele utilizar de multiples maneras; siendo problemático intentar describir la forma en que deberías contribuir a un proyecto &#8211;cada proyecto tiene sus peculiaridades&#8211;. Algunas de las variables a considerar son: la cantidad de colaboradores activos, la forma de trabajo escogida, el nivel de acceso que tengas, y, posiblemente, el sistema de colaboración externa implantado.</p>
+<p>Recuerda que cada archivo de tu directorio de trabajo puede estar en uno de estos dos estados: bajo seguimiento (tracked), o sin seguimiento (untracked). Los archivos bajo seguimiento son aquellos que existían en la última instantánea; pueden estar sin modificaciones, modificados, o preparados. Los archivos sin seguimiento son todos los demás —cualquier archivo de tu directorio que no estuviese en tu última instantánea ni está en tu área de preparación—. La primera vez que clonas un repositorio, todos tus archivos estarán bajo seguimiento y sin modificaciones, ya que los acabas de copiar y no has modificado nada.</p>
+
+<p>A medida que editas archivos, Git los ve como modificados, porque los has cambiado desde tu última confirmación. Preparas estos archivos modificados y luego confirmas todos los cambios que hayas preparado, y el ciclo se repite. Este proceso queda ilustrado en la Figura 2-1.</p>
+
+<p><center><img src="/figures/ch5/18333fig0201-tn.png"></center><br/> Figura 2-1. El ciclo de vida del estado de tus archivos.</p>
+
+<h3 id='comprobando_el_estado_de_tus_archivos'>Comprobando el estado de tus archivos</h3>
 
-<p>La primera variable es el número de colaboradores activos. ¿Cuántos usuarios están enviando activamente código a este proyecto?, y ¿con qué frecuencia?. En muchas ocasiones, tendrás dos o tres desarrolladores, con tan solo unas pocas confirmaciones de cambios (commits) diarias; e incluso menos en algunos proyectos durmientes. En proyectos o empresas verdaderamente grandes puedes tener cientos de desarrolladores, con docenas o incluso cientos de parches llegando cada día. Esto es importante, ya que cuantos más desarrolladores haya, mayores serán los problemas para asegurarte de que tu código se integre limpiamente. Los cambios que envies pueden quedar obsoletos o severamente afectados por otros trabajos que han sido integrados previamente mientras tú estabas trabajando o mientras tus cambios aguardaban a ser aprobados para su integración. ¿Cómo puedes mantener consistentemente actualizado tu código, y asegurarte así de que tus parches son válidos?</p>
+<p>Tu principal herramienta para determinar qué archivos están en qué estado es el comando <code>git status</code>. Si ejecutas este comando justo después de clonar un repositorio, deberías ver algo así:</p>
 
-<p>La segunda variable es la forma de trabajo que se utilice para el proyecto. ¿Es centralizado, con iguales derechos de acceso en escritura para cada desarrollador?. ¿Tiene un gestor de integraciones que comprueba todos los parches?. ¿Se revisan y aprueban los parches entre los propios desarrolladores?. ¿Participas en ese proceso de aprobación?. ¿Existe un sistema de tenientes, a los que has de enviar tu trabajo en primer lugar?.</p>
+<pre><code>$ git status
+# On branch master
+nothing to commit (working directory clean)</code></pre>
 
-<p>La tercera variable es el nivel de acceso que tengas. La forma de trabajar y de contribuir a un proyecto es totalmente diferente dependiendo de si tienes o no acceso de escritura al proyecto. Si no tienes acceso de escritura, ¿cuál es el sistema preferido del proyecto para aceptar contribuciones?. Es más, ¿tiene un sistema para ello?. ¿Con cuánto trabajo contribuyes?. ¿Con qué frecuencia?.</p>
+<p>Esto significa que tienes un directorio de trabajo limpio —en otras palabras, no tienes archivos bajo seguimiento y modificados—. Git tampoco ve ningún archivo que no esté bajo seguimiento, o estaría listado ahí. Por último, el comando te dice en qué rama estás. Por ahora, esa rama siempre es &#8220;master&#8221;, que es la predeterminada. No te preocupes de eso por ahora, el siguiente capítulo tratará los temas de las ramas y las referencias en detalle.</p>
 
-<p>Todas estas preguntas afectan a la forma efectiva de contribuir a un proyecto, y a la forma de trabajo que prefieras o esté disponible para tí. Vamos a cubrir ciertos aspectos de todo esto, en una serie de casos de uso; desde los más sencillos hasta los más complejos. A partir de dichos ejemplos, tendrías que ser capaz de construir la forma de trabajo específica que necesites para cada caso.</p>
+<p>Digamos que añades un nuevo archivo a tu proyecto, un sencillo archivo README. Si el archivo no existía y ejecutas <code>git status</code>, verás tus archivos sin seguimiento así:</p>
 
-<h3 id='reglas_para_las_confirmaciones_de_cambios_commits'>Reglas para las confirmaciones de cambios (commits)</h3>
+<pre><code>$ vim README
+$ git status
+# On branch master
+# Untracked files:
+#   (use &quot;git add &lt;file&gt;...&quot; to include in what will be committed)
+#
+#	README
+nothing added to commit but untracked files present (use &quot;git add&quot; to track)</code></pre>
 
-<p>Antes de comenzar a revisar casos de uso específicos, vamos a dar una pincelada sobre los mensajes en las confirmaciones de cambios (commits). Disponer unas reglas claras para crear confirmaciones de cambios, y seguirlas fielmente, facilta enormemente tanto el trabajo con Git y como la colaboración con otras personas. El propio proyecto Git suministra un documento con un gran número de buenas sugerencias sobre la creación de confirmaciones de cambio destinadas a enviar parches &#8211;puedes leerlo en el código fuente de Git, en el archivo &#8216;Documentation/SubmittingPatches&#8217;&#8211;.</p>
+<p>Puedes ver que tu nuevo archivo README aparece bajo la cabecera “Archivos sin seguimiento” (“Untracked files”) de la salida del comando. Sin seguimiento significa básicamente que Git ve un archivo que no estaba en la instantánea anterior; Git no empezará a incluirlo en las confirmaciones de tus instantáneas hasta que se lo indiques explícitamente. Lo hace para que no incluyas accidentalmente archivos binarios generados u otros archivos que no tenías intención de incluir. Sí que quieres incluir el README, así que vamos a iniciar el seguimiento del archivo.</p>
 
-<p>En primer lugar, no querrás enviar ningún error de espaciado. Git nos permite buscarlos facilmente. Previamente a realizar una confirmación de cambios, lanzar el comando &#8216;git diff &#8211;check&#8217; para identificar posibles errores de espaciado. Aquí van algunos ejemplos, en los que hemos sustituido las marcas rojas por &#8216;X&#8217;s:</p>
+<h3 id='seguimiento_de_nuevos_archivos'>Seguimiento de nuevos archivos</h3>
 
-<pre><code>$ git diff --check
-lib/simplegit.rb:5: trailing whitespace.
-+    @git_dir = File.expand_path(git_dir)XX
-lib/simplegit.rb:7: trailing whitespace.
-+ XXXXXXXXXXX
-lib/simplegit.rb:26: trailing whitespace.
-+    def command(git_cmd)XXXX</code></pre>
+<p>Para empezar el seguimiento de un nuevo archivo se usa el comando <code>git add</code>. Iniciaremos el seguimiento del archivo README ejecutando esto:</p>
 
-<p>Lanzando este comando antes de confirmar cambios, puedes estar seguro de si vas o no a incluir problemas de espaciado que puedan molestar a otros desarrolladores.</p>
+<pre><code>$ git add README</code></pre>
 
-<p>En segundo lugar, intentar hacer de cada confirmación (commit) un grupo lógico e independiente de cambios. Siempre que te sea posible, intenta hacer digeribles tus cambios &#8211;no estés trabajando todo el fin de semana, sobre cuatro o cinco asuntos diferentes, y luego confirmes todo junto el lunes&#8211;. Aunque no hagas ninguna confirmación durante el fin de semana, el lunes puedes utilizar el área de preparación (staging area) para ir dividiendo tu trabajo y hacer una confirmación de cambios (commit) separada para cada asunto; con un mensaje adecuado para cada una de ellas. Si algunos de los cambios modifican un mismo archivo, utiliza el comando &#8216;git add &#8211;patch&#8217; para almacenar parcialmente los archivos (tal y como se verá detalladamente en el Capítulo 6). El estado del proyecto al final de cada rama será idéntico si haces una sola confirmación o si haces cinco, en tanto en cuanto todos los cambios estén confirmados en un determinado momento. Por consiguiente, intenta facilitar las cosas a tus compañeros y compañeras desarroladores cuando vayan a revisar tus cambios. Además, esta manera de trabajar facilitará la integración o el descarte individual de alguno de los cambios, en caso de ser necesario. El Capítulo 6 contiene un gran número de trucos para reescribir el historial e ir preparando archivos interactivamente &#8211;utilizalos para ayudarte a crear un claro y comprensible historial&#8211;.</p>
+<p>Si vuelves a ejecutar el comando <code>git status</code>, verás que tu README está ahora bajo seguimiento y preparado:</p>
 
-<p>Y, por último, prestar atención al mensaje de confirmación. Si nos acostumbramos a poner siempre mensajes de calidad en las confirmaciones de cambios, facilitaremos en gran medida el trabajo y la colaboración con Git. Como regla general, tus mensajes han de comenzar con una ĺínea, de no más de 50 caracteres, donde se resuma el grupo de cambios; seguida de una línea en blanco; y seguida de una detallada explicación en las líneas siguientes. El proyecto Git obliga a incluir una explicación detallada; incluyendo tus motivaciones para los cambios realizados; y comentarios sobre las diferencias, tras su implementación, respecto del comportamiento anterior del programa. Esta recomendación es una buena regla a seguir. Es también buena idea redactar los mensajes utilizando el imperativo, en tiempo presente. Es decir, dá órdenes. Por ejemplo, en vez de escribir &#8220;He añadido comprobaciones para&#8221; o &#8220;Añadiendo comprobaciones para&#8221;, utilizar la frase &#8220;Añadir comprobaciones para&#8221;. Como plantilla de referencia, podemos utilizar la que escribió Tim Pope en tpope.net:</p>
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#</code></pre>
 
-<pre><code>Un resumen de cambios, corto (50 caracteres o menos).
+<p>Puedes ver que está preparado porque aparece bajo la cabecera “Cambios a confirmar” (“Changes to be committed”). Si confirmas ahora, la versión del archivo en el momento de ejecutar <code>git add</code> será la que se incluya en la instantánea. Recordarás que cuando antes ejecutaste <code>git init</code>, seguidamente ejecutaste <code>git add (archivos)</code>. Esto era para iniciar el seguimiento de los archivos de tu directorio. El comando <code>git add</code> recibe la ruta de un archivo o de un directorio; si es un directorio, añade todos los archivos que contenga de manera recursiva.</p>
 
-Seguido de un texto más detallado, si es necesario.  Limitando las líneas a 72 caracteres mas o menos.  En algunos contextos, la primera línea se tratará como si fuera el asundo de un correo electrónico y el resto del texto como si fuera el cuerpo.  La línea en blanco separando el resumen del cuerpo es crítica (a no ser que se omita totalmente el cuerpo); algunas herramientas como &#39;rebase&#39; pueden tener problemas si no los separas adecuadamente.
+<h3 id='preparando_archivos_modificados'>Preparando archivos modificados</h3>
 
-Los siguientes párrafos van tras la línea en blanco.
+<p>Vamos a modificar un archivo que estuviese bajo seguimiento. Si modificas el archivo <code>benchmarks.rb</code> que estaba bajo seguimiento, y ejecutas el comando <code>status</code> de nuevo, verás algo así:</p>
 
- - Los puntos con bolo también están permitidos.
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#	modified:   benchmarks.rb
+#</code></pre>
 
- - Habitualmente se emplea un guión o un asterisco como bolo, seguido de un espacio, con líneas en blanco intermedias; pero las convenciones pueden variar.</code></pre>
+<p>El archivo benchmarks.rb aparece bajo la cabecera “Modificados pero no actualizados” (“Changes not staged for commit”) —esto significa que un archivo bajo seguimiento ha sido modificado en el directorio de trabajo, pero no ha sido preparado todavía—. Para prepararlo, ejecuta el comando <code>git add</code> (es un comando multiuso —puedes utilizarlo para empezar el seguimiento de archivos nuevos, para preparar archivos, y para otras cosas como marcar como resueltos archivos con conflictos de unión—). Ejecutamos <code>git add</code> para preparar el archivo benchmarks.rb, y volvemos a ejecutar <code>git status</code>:</p>
 
-<p>Si todas tus confirmaciones de cambio (commit) llevan mensajes de este estilo, facilitarás las cosas tanto para tí como para las personas que trabajen contigo. El proyecto Git tiene los mensajes adecuadamente formateados. Te animo a lanzar el comando &#8216;git log &#8211;no-merges&#8217; en dicho proyecto, para que veas la pinta que tiene un historial de proyecto limpio y claro.</p>
+<pre><code>$ git add benchmarks.rb
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#	modified:   benchmarks.rb
+#</code></pre>
 
-<p>En los ejemplos siguientes, y a lo largo de todo este libro, por razones de brevedad no formatearé correctamente los mensajes; sino que emplearé la opción &#8216;-m&#8217; en los comandos &#8216;git commit&#8217;. Observa mis palabras, no mis hechos.</p>
+<p>Ambos archivos están ahora preparados y se incluirán en tu próxima confirmación. Supón que en este momento recuerdas que tenías que hacer una pequeña modificación en benchmarks.rb antes de confirmarlo. Lo vuelves abrir, haces ese pequeño cambio, y ya estás listo para confirmar. Sin embargo, si vuelves a ejecutar <code>git status</code> verás lo siguiente:</p>
 
-<h3 id='pequeo_grupo_privado'>Pequeño Grupo Privado</h3>
-
-<p>Lo más simple que te puedes encontrar es un proyecto privado con uno o dos desarrolladores. Por privado, me refiero a código propietario &#8211;no disponible para ser leido por el mundo exterior&#8211;. Tanto tu como el resto del equipo teneis acceso de envio (push) al repositorio.</p>
-
-<p>En un entorno como este, puedes seguir un flujo de trabajo similar al que adoptarías usando Subversion o algún otro sistema centralizado. Sigues disfrutando de ventajas tales como las confirmaciones offline y la mayor simplicidad en las ramificaciones/fusiones. Pero, en el fondo, la forma de trabajar será bastante similar; la mayor diferencia radica en que las fusiones (merge) se hacen en el lado cliente en lugar de en el servidor. Vamos a ver como actuarian dos desarrolladores trabajando conjuntamente en un repositorio compartido. El primero de ellos, John, clona el repositorio, hace algunos cambios y los confirma localmente: (en estos ejemplos estoy sustituyendo los mensajes del protocolo con &#8217;&#8230;&#8217; , para acortarlos)</p>
-
-<pre><code># John&#39;s Machine
-$ git clone john@githost:simplegit.git
-Initialized empty Git repository in /home/john/simplegit/.git/
-...
-$ cd simplegit/
-$ vim lib/simplegit.rb 
-$ git commit -am &#39;removed invalid default value&#39;
-[master 738ee87] removed invalid default value
- 1 files changed, 1 insertions(+), 1 deletions(-)</code></pre>
-
-<p>La segunda desarrolladora, Jessica, hace lo mismo: clona el repositorio y confirma algunos cambios:</p>
-
-<pre><code># Jessica&#39;s Machine
-$ git clone jessica@githost:simplegit.git
-Initialized empty Git repository in /home/jessica/simplegit/.git/
-...
-$ cd simplegit/
-$ vim TODO 
-$ git commit -am &#39;add reset task&#39;
-[master fbff5bc] add reset task
- 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
-
-<p>Tras esto, Jessica envia (push) su trabajo al servidor:</p>
-
-<pre><code># Jessica&#39;s Machine
-$ git push origin master
-...
-To jessica@githost:simplegit.git
-   1edee6b..fbff5bc  master -&gt; master</code></pre>
-
-<p>John intenta enviar también sus cambios:</p>
-
-<pre><code># John&#39;s Machine
-$ git push origin master
-To john@githost:simplegit.git
- ! [rejected]        master -&gt; master (non-fast forward)
-error: failed to push some refs to &#39;john@githost:simplegit.git&#39;</code></pre>
-
-<p>John no puede enviar porque Jessica ha enviado previamente. Entender bien esto es especialmente importante, sobre todo si estás acostumbrado a utilizar Subversion; porque habrás notado que ambos desarrolladores han editado archivos distintos. Mientras que Subversion fusiona automáticamente en el servidor cuando los cambios han sido aplicados sobre archivos distintos, en Git has de fusionar (merge) los cambios localmente. John se vé obligado a recuperar (fetch) los cambios de jessica y a fusionarlos (merge) con los suyos, antes de que se le permita enviar (push):</p>
-
-<pre><code>$ git fetch origin
-...
-From john@githost:simplegit
- + 049d078...fbff5bc master     -&gt; origin/master</code></pre>
-
-<p>En este punto, el repositorio local de John será algo parecido a la Figura 5-4.</p>
-
-<p><center><img src="/figures/ch5/18333fig0504-tn.png"></center><br/> Figura 5-4. El repositorio inicial de John.</p>
-
-<p>John tiene una referencia a los cambios enviados por Jessica, pero ha de fusionarlos en su propio trabajo antes de que se le permita enviar:</p>
-
-<pre><code>$ git merge origin/master
-Merge made by recursive.
- TODO |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
-
-<p>Si la fusión se realiza sin problemas, el historial de John será algo parecido a la Figura 5-5.</p>
-
-<p><center><img src="/figures/ch5/18333fig0505-tn.png"></center><br/> Figura 5-5. El repositorio de John tras fusionar origin/master.</p>
-
-<p>En este momento, John puede comprobar su código para verificar que sigue funcionando correctamente, y luego puede enviar su trabajo al servidor:</p>
-
-<pre><code>$ git push origin master
-...
-To john@githost:simplegit.git
-   fbff5bc..72bbc59  master -&gt; master</code></pre>
-
-<p>Finalmente, el historial de John es algo parecido a la Figura 5-6.</p>
-
-<p><center><img src="/figures/ch5/18333fig0506-tn.png"></center><br/> Figura 5-6. El historial de John tras enviar al servidor origen.</p>
-
-<p>Mientras tanto, jessica ha seguido trabajando en una rama puntual (topic branch). Ha creado una rama puntual denominada &#8216;issue54&#8217; y ha realizado tres confirmaciones de cambios (commit) en dicha rama. Como todavia no ha recuperado los cambios de John, su historial es como se muestra en la Figura 5-7.</p>
-
-<p><center><img src="/figures/ch5/18333fig0507-tn.png"></center><br/> Figura 5-7. Historial inicial de Jessica.</p>
-
-<p>Jessica desea sincronizarse con John, para lo cual:</p>
-
-<pre><code># Jessica&#39;s Machine
-$ git fetch origin
-...
-From jessica@githost:simplegit
-   fbff5bc..72bbc59  master     -&gt; origin/master</code></pre>
-
-<p>Esto recupera el trabajo enviado por John durante el tiempo en que Jessica estaba trabajando. El historial de Jessica es en estos momentos como se muestra en la figura 5-8.</p>
-
-<p><center><img src="/figures/ch5/18333fig0508-tn.png"></center><br/> Figura 5-8. El historial de Jessica tras recuperar los cambios de John.</p>
-
-<p>Jessica considera su rama puntual terminada, pero quiere saber lo que debe integrar con su trabajo antes de poder enviarla. Lo comprueba con el comando &#8216;git log&#8217;:</p>
-
-<pre><code>$ git log --no-merges origin/master ^issue54
-commit 738ee872852dfaa9d6634e0dea7a324040193016
-Author: John Smith &lt;jsmith@example.com&gt;
-Date:   Fri May 29 16:01:27 2009 -0700
-
-    removed invalid default value</code></pre>
-
-<p>Ahora, jessica puede fusionar (merge) su trabajo de la rama puntual &#8216;issue54&#8217; en su rama &#8216;master&#8217;l, fusionar (merge) el trabajo de John (&#8216;origin/master&#8217;) en su rama &#8216;master&#8217;, y enviarla de vuelta al servidor. Primero, se posiciona de nuevo en su rama principal para integrar todo su trabajo:</p>
-
-<pre><code>$ git checkout master
-Switched to branch &quot;master&quot;
-Your branch is behind &#39;origin/master&#39; by 2 commits, and can be fast-forwarded.</code></pre>
-
-<p>Puede fusionar primero tanto &#8216;origin/master&#8217; o como &#8216;issue54&#8217;, ya que ambos están aguas arriba. La situación final (snapshot) será la misma, indistintamente del orden elegido; tan solo el historial variará ligeramente. Elige fusionar primero &#8216;issue54&#8217;:</p>
-
-<pre><code>$ git merge issue54
-Updating fbff5bc..4af4298
-Fast forward
- README           |    1 +
- lib/simplegit.rb |    6 +++++-
- 2 files changed, 6 insertions(+), 1 deletions(-)</code></pre>
-
-<p>No hay ningún problema; como puedes observar, es un simple avance rápido (fast-forward). Tras esto, jessica fusiona el trabajo de John (&#8216;origin/master&#8217;):</p>
-
-<pre><code>$ git merge origin/master
-Auto-merging lib/simplegit.rb
-Merge made by recursive.
- lib/simplegit.rb |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)</code></pre>
-
-<p>Todo se integra limpiamente, y el historial de Jessica queda como en la Figura 5-9.</p>
-
-<p><center><img src="/figures/ch5/18333fig0509-tn.png"></center><br/> Figura 5-9. El historial de Jessica tras fusionar los cambios de John.</p>
-
-<p>En este punto, la rama &#8216;origin/master&#8217; es alcanzable desde la rama &#8216;master&#8217; de Jessica, permitiendole enviar (push) &#8211;asumiendo que John no haya enviado nada más durante ese tiempo&#8211;:</p>
-
-<pre><code>$ git push origin master
-...
-To jessica@githost:simplegit.git
-   72bbc59..8059c15  master -&gt; master</code></pre>
-
-<p>Cada desarrollador ha confirmado algunos cambios y ambos han fusionado sus trabajos correctamente; ver Figura 5-10.</p>
-
-<p><center><img src="/figures/ch5/18333fig0510-tn.png"></center><br/> Figura 5-10. El historial de Jessica tras enviar de vuelta todos los cambios al servidor.</p>
-
-<p>Este es uno de los flujos de trabajo más simples. Trabajas un rato, normalmente en una rama puntual de un asunto concreto, y la fusionas con tu rama principal cuando la tienes lista para integrar. Cuando deseas compartir ese trabajo, lo fusionas (merge) en tu propia rama &#8216;master&#8217;; luego recuperas (fetch) y fusionas (merge) la rama &#8216;origin/master&#8217;, por si hubiera cambiado; y finalmente envias (push) la rama &#8216;master&#8217; de vuelta al servidor. La secuencia general es algo así como la mostrada en la Figura 5-11.</p>
-
-<p><center><img src="/figures/ch5/18333fig0511-tn.png"></center><br/> Figura 5-11. Secuencia general de eventos en un flujo de trabajo multidesarrollador simple.</p>
-
-<h3 id='grupo_privado_gestionado'>Grupo Privado Gestionado</h3>
-
-<p>En este próximo escenario, vamos a hechar un vistazo al rol de colaborador en un gran grupo privado. Aprenderás cómo trabajar en un entorno donde pequeños grupos colaboran en algunas funcionalidades, y luego todas las aportaciones de esos equipos son integradas por otro grupo.</p>
-
-<p>Supongamos que John y Jessica trabajan conjuntamente en una funcionalidad, mientras que jessica y Josie trabajan en una segunda funcionalidad. En este caso, la compañia está utilizando un flujo de trabajo del tipo gestor-de-integración, donde el trabajo de algunos grupos individuales es integrado por unos ingenieros concretos; siendo solamente estos últimos quienes pueden actualizar la rama &#8216;master&#8217; del repositorio principal. En este escenario, todo el trabajo se realiza en ramas propias de cada grupo y es consolidado por los integradores más tarde.</p>
-
-<p>Vamos a seguir el trabajo de Jessica, a medida que trabaja en sus dos funcionalidade; colaborando en paralelo con dos desarrolladores distintos. Suponiendo que tiene su repositorio ya clonado, ella decide trabajar primero en la funcionalidad A (featureA). Crea una nueva rama para dicha funcionalidad y trabaja en ella:</p>
-
-<pre><code># Jessica&#39;s Machine
-$ git checkout -b featureA
-Switched to a new branch &quot;featureA&quot;
-$ vim lib/simplegit.rb
-$ git commit -am &#39;add limit to log function&#39;
-[featureA 3300904] add limit to log function
- 1 files changed, 1 insertions(+), 1 deletions(-)</code></pre>
-
-<p>En ese punto, necesita compartir su trabajo con John, por lo que envia (push) al servidor las confirmaciones (commits) en su rama &#8216;featureA&#8217;. Como Jessica no tiene acceso de envio a la rama &#8216;master&#8217; &#8211;solo los integradores lo tienen&#8211;, ha de enviar a alguna otra rama para poder colaborar con John:</p>
-
-<pre><code>$ git push origin featureA
-...
-To jessica@githost:simplegit.git
- * [new branch]      featureA -&gt; featureA</code></pre>
-
-<p>Jessica notifica a John por correo electrónico que ha enviado trabajo a una rama denominada &#8216;featureA&#8217; y que puede hecharle un vistazo allí. Mientras espera noticias de John, Jessica decide comenzar a trabajar en la funcionalidad B (featureB) con Josie. Para empezar, arranca una nueva rama puntual, basada en la rama &#8216;master&#8217; del servidor:</p>
-
-<pre><code># Jessica&#39;s Machine
-$ git fetch origin
-$ git checkout -b featureB origin/master
-Switched to a new branch &quot;featureB&quot;</code></pre>
-
-<p>Y realiza un par de confirmaciones de cambios (commits) en la rama &#8216;featureB&#8217;:</p>
-
-<pre><code>$ vim lib/simplegit.rb
-$ git commit -am &#39;made the ls-tree function recursive&#39;
-[featureB e5b0fdc] made the ls-tree function recursive
- 1 files changed, 1 insertions(+), 1 deletions(-)
-$ vim lib/simplegit.rb
-$ git commit -am &#39;add ls-files&#39;
-[featureB 8512791] add ls-files
+<pre><code>$ vim benchmarks.rb
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#	modified:   benchmarks.rb
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#	modified:   benchmarks.rb
+#</code></pre>
+
+<p>¿Pero qué&#8230;? Ahora benchmarks.rb aparece listado como preparado y como no preparado. ¿Cómo es posible? Resulta que Git prepara un archivo tal y como era en el momento de ejecutar el comando <code>git add</code>. Si haces <code>git commit</code> ahora, la versión de benchmarks.rb que se incluirá en la confirmación será la que fuese cuando ejecutaste el comando <code>git add</code>, no la versión que estás viendo ahora en tu directorio de trabajo. Si modificas un archivo después de haber ejecutado <code>git add</code>, tendrás que volver a ejecutar <code>git add</code> para preparar la última versión del archivo:</p>
+
+<pre><code>$ git add benchmarks.rb
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#	modified:   benchmarks.rb
+#</code></pre>
+
+<h3 id='ignorando_archivos'>Ignorando archivos</h3>
+
+<p>A menudo tendrás un tipo de archivos que no quieras que Git añada automáticamente o te muestre como no versionado. Suelen ser archivos generados automáticamente, como archivos de log, o archivos generados por tu compilador. Para estos casos puedes crear un archivo llamado .gitignore, en el que listas los patrones de nombres que deseas que sean ignorados. He aquí un archivo .gitignore de ejemplo:</p>
+
+<pre><code>$ cat .gitignore
+*.[oa]
+*~</code></pre>
+
+<p>La primera línea le dice a Git que ignore cualquier archivo cuyo nombre termine en .o o .a —archivos objeto que suelen ser producto de la compilación de código—. La segunda línea le dice a Git que ignore todos los archivos que terminan en tilde (<code>~</code>), usada por muchos editores de texto, como Emacs, para marcar archivos temporales. También puedes incluir directorios de log, temporales, documentación generada automáticamente, etc. Configurar un archivo .gitignore antes de empezar a trabajar suele ser una buena idea, para así no confirmar archivos que no quieres en tu repositorio Git.</p>
+
+<p>Las reglas para los patrones que pueden ser incluidos en el archivo .gitignore son:</p>
+
+<ul>
+<li>Las líneas en blanco, o que comienzan por #, son ignoradas.</li>
+
+<li>Puedes usar patrones glob estándar.</li>
+
+<li>Puedes indicar un directorio añadiendo una barra hacia delante (<code>/</code>) al final.</li>
+
+<li>Puedes negar un patrón añadiendo una exclamación (<code>!</code>) al principio.</li>
+</ul>
+
+<p>Los patrones glob son expresiones regulares simplificadas que pueden ser usadas por las shells. Un asterisco (<code>*</code>) reconoce cero o más caracteres; <code>[abc]</code> reconoce cualquier carácter de los especificados entre corchetes (en este caso, a, b, o c); una interrogación (<code>?</code>) reconoce un único carácter; y caracteres entre corchetes separados por un guión (<code>[0-9]</code>) reconoce cualquier carácter entre ellos (en este caso, de 0 a 9).</p>
+
+<p>He aquí otro ejemplo de archivo .gitignore:</p>
+
+<pre><code># a comment – this is ignored
+*.a       # no .a files
+!lib.a    # but do track lib.a, even though you&#39;re ignoring .a files above
+/TODO     # only ignore the root TODO file, not subdir/TODO
+build/    # ignore all files in the build/ directory
+doc/*.txt # ignore doc/notes.txt, but not doc/server/arch.txt</code></pre>
+
+<h3 id='viendo_tus_cambios_preparados_y_no_preparados'>Viendo tus cambios preparados y no preparados</h3>
+
+<p>Si el comando <code>git status</code> es demasiado impreciso para ti —quieres saber exactamente lo que ha cambiado, no sólo qué archivos fueron modificados— puedes usar el comando <code>git diff</code>. Veremos <code>git diff</code> en más detalle después; pero probablemente lo usarás para responder estas dos preguntas: ¿qué has cambiado pero aún no has preparado?, y ¿qué has preparado y estás a punto de confirmar? Aunque <code>git status</code> responde esas preguntas de manera general, <code>git diff</code> te muestra exactamente las líneas añadidas y eliminadas —el parche, como si dijésemos—.</p>
+
+<p>Supongamos que quieres editar y preparar el archivo README otra vez, y luego editar el archivo benchmarks.rb sin prepararlo. Si ejecutas el comando <code>status</code>, de nuevo verás algo así:</p>
+
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#	modified:   benchmarks.rb
+#</code></pre>
+
+<p>Para ver lo que has modificado pero aún no has preparado, escribe <code>git diff</code>:</p>
+
+<pre><code>$ git diff
+diff --git a/benchmarks.rb b/benchmarks.rb
+index 3cb747f..da65585 100644
+--- a/benchmarks.rb
++++ b/benchmarks.rb
+@@ -36,6 +36,10 @@ def main
+           @commit.parents[0].parents[0].parents[0]
+         end
+
++        run_code(x, &#39;commits 1&#39;) do
++          git.commits.size
++        end
++
+         run_code(x, &#39;commits 2&#39;) do
+           log = git.commits(&#39;master&#39;, 15)
+           log.size</code></pre>
+
+<p>Ese comando compara lo que hay en tu directorio de trabajo con lo que hay en tu área de preparación. El resultado te indica los cambios que has hecho y que todavía no has preparado.</p>
+
+<p>Si quieres ver los cambios que has preparado y que irán en tu próxima confirmación, puedes usar <code>git diff –-cached</code>. (A partir de la versión 1.6.1 de Git, también puedes usar <code>git diff –-staged</code>, que puede resultar más fácil de recordar.) Este comando compara tus cambios preparados con tu última confirmación:</p>
+
+<pre><code>$ git diff --cached
+diff --git a/README b/README
+new file mode 100644
+index 0000000..03902a1
+--- /dev/null
++++ b/README2
+@@ -0,0 +1,5 @@
++grit
++ by Tom Preston-Werner, Chris Wanstrath
++ http://github.com/mojombo/grit
++
++Grit is a Ruby library for extracting information from a Git repository</code></pre>
+
+<p>Es importante indicar que <code>git diff</code> por sí solo no muestra todos los cambios hechos desde tu última confirmación —sólo los cambios que todavía no están preparados—. Esto puede resultar desconcertante, porque si has preparado todos tus cambios, <code>git diff</code> no mostrará nada.</p>
+
+<p>Por poner otro ejemplo, si preparas el archivo benchmarks.rb y después lo editas, puedes usar <code>git diff</code> para ver las modificaciones del archivo que están preparadas, y las que no lo están:</p>
+
+<pre><code>$ git add benchmarks.rb
+$ echo &#39;# test line&#39; &gt;&gt; benchmarks.rb
+$ git status
+# On branch master
+#
+# Changes to be committed:
+#
+#	modified:   benchmarks.rb
+#
+# Changes not staged for commit:
+#
+#	modified:   benchmarks.rb
+#</code></pre>
+
+<p>Ahora puedes usar <code>git diff</code> para ver qué es lo que aún no está preparado:</p>
+
+<pre><code>$ git diff
+diff --git a/benchmarks.rb b/benchmarks.rb
+index e445e28..86b2f7c 100644
+--- a/benchmarks.rb
++++ b/benchmarks.rb
+@@ -127,3 +127,4 @@ end
+ main()
+
+ ##pp Grit::GitRuby.cache_client.stats
++# test line</code></pre>
+
+<p>Y <code>git diff --cached</code> para ver los cambios que llevas preparados hasta ahora:</p>
+
+<pre><code>$ git diff --cached
+diff --git a/benchmarks.rb b/benchmarks.rb
+index 3cb747f..e445e28 100644
+--- a/benchmarks.rb
++++ b/benchmarks.rb
+@@ -36,6 +36,10 @@ def main
+          @commit.parents[0].parents[0].parents[0]
+        end
+
++        run_code(x, &#39;commits 1&#39;) do
++          git.commits.size
++        end
++
+        run_code(x, &#39;commits 2&#39;) do
+          log = git.commits(&#39;master&#39;, 15)
+          log.size</code></pre>
+
+<h3 id='confirmando_tus_cambios'>Confirmando tus cambios</h3>
+
+<p>Ahora que el área de preparación está como tú quieres, puedes confirmar los cambios. Recuerda que cualquier cosa que todavía esté sin preparar —cualquier archivo que hayas creado o modificado, y sobre el que no hayas ejecutado <code>git add</code> desde su última edición— no se incluirá en esta confirmación. Se mantendrán como modificados en tu disco.</p>
+
+<p>En este caso, la última vez que ejecutaste <code>git status</code> viste que estaba todo preparado, por lo que estás listo para confirmar tus cambios. La forma más fácil de confirmar es escribiendo <code>git commit</code>:</p>
+
+<pre><code>$ git commit</code></pre>
+
+<p>Al hacerlo, se ejecutará tu editor de texto. (Esto se configura a través de la variable de entorno <code>$EDITOR</code> de tu shell —normalmente vim o emacs, aunque puedes configurarlo usando el comando <code>git config --global core.editor</code> como vimos en el Capítulo 1.—)</p>
+
+<p>El editor mostrará el siguiente texto (este ejemplo usa Vim):</p>
+
+<pre><code># Please enter the commit message for your changes. Lines starting
+# with &#39;#&#39; will be ignored, and an empty message aborts the commit.
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#       new file:   README
+#       modified:   benchmarks.rb
+~
+~
+~
+&quot;.git/COMMIT_EDITMSG&quot; 10L, 283C</code></pre>
+
+<p>Puedes ver que el mensaje de confirmación predeterminado contiene la salida del comando <code>git status</code> comentada, y una línea vacía arriba del todo. Puedes eliminar estos comentarios y escribir tu mensaje de confirmación, o puedes dejarlos para ayudarte a recordar las modificaciones que estás confirmando. (Para un recordatorio todavía más explícito de lo que has modificado, puedes pasar la opción <code>-v</code> a <code>git commit</code>. Esto provoca que se añadan también las diferencias de tus cambios, para que veas exactamente lo que hiciste.) Cuando sales del editor, Git crea tu confirmación con el mensaje que hayas especificado (omitiendo los comentarios y las diferencias).</p>
+
+<p>Como alternativa, puedes escribir tu mensaje de confirmación desde la propia línea de comandos mediante la opción <code>-m</code>:</p>
+
+<pre><code>$ git commit -m &quot;Story 182: Fix benchmarks for speed&quot;
+[master]: created 463dc4f: &quot;Fix benchmarks for speed&quot;
+ 2 files changed, 3 insertions(+), 0 deletions(-)
+ create mode 100644 README</code></pre>
+
+<p>¡Acabas de crear tu primera confirmación! Puedes ver que el comando <code>commit</code> ha dado cierta información sobre la confirmación: a qué rama has confirmado (master), cuál es su suma de comprobación SHA-1 de la confirmación (<code>463dc4f</code>), cuántos archivos se modificaron, y estadísticas acerca de cuántas líneas se han añadido y cuántas se han eliminado.</p>
+
+<p>Recuerda que la confirmación registra la instantánea de tu área de preparación. Cualquier cosa que no preparases sigue estando modificada; puedes hacer otra confirmación para añadirla a la historia del proyecto. Cada vez que confirmas, estás registrando una instantánea de tu proyecto, a la que puedes volver o con la que puedes comparar más adelante.</p>
+
+<h3 id='saltndote_el_rea_de_preparacin'>Saltándote el área de preparación</h3>
+
+<p>Aunque puede ser extremadamente útil para elaborar confirmaciones exactamente a tu gusto, el área de preparación es en ocasiones demasiado compleja para las necesidades de tu flujo de trabajo. Si quieres saltarte el área de preparación, Git proporciona un atajo. Pasar la opción <code>-a</code> al comando <code>git commit</code> hace que Git prepare todo archivo que estuviese en seguimiento antes de la confirmación, permitiéndote obviar toda la parte de <code>git add</code>:</p>
+
+<pre><code>$ git status
+# On branch master
+#
+# Changes not staged for commit:
+#
+#	modified:   benchmarks.rb
+#
+$ git commit -a -m &#39;added new benchmarks&#39;
+[master 83e38c7] added new benchmarks
  1 files changed, 5 insertions(+), 0 deletions(-)</code></pre>
 
-<p>Quedando su repositorio como se muestra en la Figura 5-12</p>
+<p>Fíjate que no has tenido que ejecutar <code>git add</code> sobre el archivo benchmarks.rb antes de hacer la confirmación.</p>
 
-<p><center><img src="/figures/ch5/18333fig0512-tn.png"></center><br/> Figura 5-12. Historial inicial de Jessica.</p>
+<h3 id='eliminando_archivos'>Eliminando archivos</h3>
 
-<p>Cuando está preparada para enviar (push) su trabajo, recibe un correo-e de Josie de que ha puesto en el servidor una rama denominada &#8216;featureBee&#8217;, con algo de trabajo. Jessica necesita fusionar (merge) dichos cambios con los suyos antes de poder enviarlos al servidor. Por tanto, recupera (fetch) los cambios de Josie:</p>
+<p>Para eliminar un archivo de Git, debes eliminarlo de tus archivos bajo seguimiento (más concretamente, debes eliminarlo de tu área de preparación), y después confirmar. El comando <code>git rm</code> se encarga de eso, y también elimina el archivo de tu directorio de trabajo, para que no lo veas entre los archivos sin seguimiento.</p>
 
-<pre><code>$ git fetch origin
-...
-From jessica@githost:simplegit
- * [new branch]      featureBee -&gt; origin/featureBee</code></pre>
+<p>Si simplemente eliminas el archivo de tu directorio de trabajo, aparecerá bajo la cabecera “Modificados pero no actualizados” (“Changes not staged for commit”) (es decir, <em>sin preparar</em>) de la salida del comando <code>git status</code>:</p>
 
-<p>Y los fusiona con su propio trabajo:</p>
+<pre><code>$ rm grit.gemspec
+$ git status
+# On branch master
+#
+# Changes not staged for commit:
+#   (use &quot;git add/rm &lt;file&gt;...&quot; to update what will be committed)
+#
+#       deleted:    grit.gemspec
+#</code></pre>
 
-<pre><code>$ git merge origin/featureBee
-Auto-merging lib/simplegit.rb
-Merge made by recursive.
- lib/simplegit.rb |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)</code></pre>
+<p>Si entonces ejecutas el comando <code>git rm</code>, preparas la eliminación del archivo en cuestión:</p>
 
-<p>Pero hay un pequeño problema, necesita enviar el trabajo fusionado en su rama &#8216;featureB&#8217; a la rama &#8216;featureBee&#8217; del servidor. Puede hacerlo usando el comando &#8216;git push&#8217; e indicando específicamente el nombre de la rama local seguida de dos puntos (:) y seguida del nombre de la rama remota:</p>
+<pre><code>$ git rm grit.gemspec
+rm &#39;grit.gemspec&#39;
+$ git status
+# On branch master
+#
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#       deleted:    grit.gemspec
+#</code></pre>
 
-<pre><code>$ git push origin featureB:featureBee
-...
-To jessica@githost:simplegit.git
-   fba9af8..cd685d1  featureB -&gt; featureBee</code></pre>
+<p>La próxima vez que confirmes, el archivo desaparecerá y dejará de estar bajo seguimiento. Si ya habías modificado el archivo y lo tenías en el área de preparación, deberás forzar su eliminación con la opción <code>-f</code>. Ésta es una medida de seguridad para evitar la eliminación accidental de información que no ha sido registrada en una instantánea, y que por tanto no podría ser recuperada.</p>
 
-<p>Esto es lo que se denomina un <em>refspec</em>. Puedes ver el Capítulo 9 para una discusión más detallada acerca de los <em>refspecs</em> de Git y los distintos usos que puedes darles.</p>
+<p>Otra cosa que puede que quieras hacer es mantener el archivo en tu directorio de trabajo, pero eliminarlo de tu área de preparación. Dicho de otro modo, puede que quieras mantener el archivo en tu disco duro, pero interrumpir su seguimiento por parte de Git. Esto resulta particularmente útil cuando olvidaste añadir algo a tu archivo <code>.gitignore</code> y lo añadiste accidentalmente, como un archivo de log enorme, o un montón de archivos <code>.a</code>. Para hacer esto, usa la opción <code>--cached</code>:</p>
 
-<p>A continuación, John envia un correo-e a jessica comentandole que ha enviado algunos cambios a la rama &#8216;featureA&#8217; y pidiendole que los verifique. Ella lanza un &#8216;git fetch&#8217; para recuperar dichos cambios:</p>
+<pre><code>$ git rm --cached readme.txt</code></pre>
 
-<pre><code>$ git fetch origin
-...
-From jessica@githost:simplegit
-   3300904..aad881d  featureA   -&gt; origin/featureA</code></pre>
+<p>El comando <code>git rm</code> acepta archivos, directorios, y patrones glob. Es decir, que podrías hacer algo así:</p>
 
-<p>A continuación, puede ver las modificaciones realizadas, lanzando el comando &#8216;git log&#8217;:</p>
+<pre><code>$ git rm log/\*.log</code></pre>
 
-<pre><code>$ git log origin/featureA ^featureA
-commit aad881d154acdaeb2b6b18ea0e827ed8a6d671e6
-Author: John Smith &lt;jsmith@example.com&gt;
-Date:   Fri May 29 19:57:33 2009 -0700
+<p>Fíjate en la barra hacia atrás (<code>\</code>) antes del <code>*</code>. Es necesaria debido a que Git hace su propia expansión de rutas, además de la expansión que hace tu shell. Este comando elimina todos los archivos con la extensión <code>.log</code> en el directorio <code>log/</code>. También puedes hacer algo así:</p>
 
-    changed log output to 30 from 25</code></pre>
+<pre><code>$ git rm \*~</code></pre>
 
-<p>Para terminar, fusiona el trabajo de John en su propia rama &#8216;featureA&#8217;:</p>
+<p>Este comando elimina todos los archivos que terminan en <code>~</code>.</p>
 
-<pre><code>$ git checkout featureA
-Switched to branch &quot;featureA&quot;
-$ git merge origin/featureA
-Updating 3300904..aad881d
-Fast forward
- lib/simplegit.rb |   10 +++++++++-
-1 files changed, 9 insertions(+), 1 deletions(-)</code></pre>
+<h3 id='moviendo_archivos'>Moviendo archivos</h3>
 
-<p>Jessica realiza algunos ajustes, los confirma (commit) y los envia (push) de vuelta al servidor:</p>
+<p>A diferencia de muchos otros VCSs, Git no hace un seguimiento explicito del movimiento de archivos. Si renombras un archivo, en Git no se almacena ningún metadato que indique que lo has renombrado. Sin embargo, Git es suficientemente inteligente como para darse cuenta —trataremos el tema de la detección de movimiento de archivos un poco más adelante—.</p>
 
-<pre><code>$ git commit -am &#39;small tweak&#39;
-[featureA ed774b3] small tweak
- 1 files changed, 1 insertions(+), 1 deletions(-)
-$ git push origin featureA
-...
-To jessica@githost:simplegit.git
-   3300904..ed774b3  featureA -&gt; featureA</code></pre>
+<p>Por tanto, es un poco desconcertante que Git tenga un comando <code>mv</code>. Si quieres renombrar un archivo en Git, puedes ejecutar algo así:</p>
 
-<p>Quedando su historial como se muestra en la Figura 5-13.</p>
+<pre><code>$ git mv file_from file_to</code></pre>
 
-<p><center><img src="/figures/ch5/18333fig0513-tn.png"></center><br/> Figura 5-13. El historial de Jessica después de confirmar cambios en una rama puntual.</p>
+<p>Y funciona perfectamente. De hecho, cuando ejecutas algo así y miras la salida del comando <code>status</code>, verás que Git lo considera un archivo renombrado:</p>
 
-<p>Jessica, Josie y John informan a los integradores de que las ramas &#8216;featureA&#8217; y &#8216;featureBee&#8217; del servidor están preparadas para su integración con la línea principal del programa. Despues de que dichas ramas sean integradas en la línea principal, una recuperación (fetch) traerá de vuelta las confirmaciones de cambios de las integraciones (merge commits), dejando un historial como el mostrado en la Figura 5-14.</p>
+<pre><code>$ git mv README.txt README
+$ git status
+# On branch master
+# Your branch is ahead of &#39;origin/master&#39; by 1 commit.
+#
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#       renamed:    README.txt -&gt; README
+#</code></pre>
 
-<p><center><img src="/figures/ch5/18333fig0514-tn.png"></center><br/> Figura 5-14. El historial de Jessica tras fusionar sus dos ramas puntuales.</p>
+<p>Sin embargo, esto es equivalente a ejecutar algo así:</p>
 
-<p>Muchos grupos se están pasando a trabajar con Git, debido a su habilidad para mantener multiples equipos trabajando en paralelo, fusionando posteriormente las diferentes líneas de trabajo. La habilidad para que pequeños subgrupos de un equipo colaboren a través de ramas remotas, sin necesidad de tener en cuenta o de perturbar el equipo completo, es un gran beneficio de trabajar con Git. La secuencia del flujo de trabajo que hemos visto es algo así como lo mostrado en la Figura 5-15.</p>
+<pre><code>$ mv README.txt README
+$ git rm README.txt
+$ git add README</code></pre>
 
-<p><center><img src="/figures/ch5/18333fig0515-tn.png"></center><br/> Figura 5-15. Secuencia básica de este flujo de trabajo en equipo gestionado.</p>
-
-<h3 id='pequeo_proyecto_pblico'>Pequeño Proyecto Público</h3>
-
-<p>Contribuir a proyectos públicos es ligeramente diferente. Ya que no tendrás permisos para actualizar ramas directamente sobre el proyecto, has de enviar el trabajo a los gestores de otra manera. En este primer ejemplo, veremos cómo contribuir a través de bifurcaciones (forks) en servidores Git que soporten dichas bifurcaciones. Los sitios como repo.or.cz ó GitHub permiten realizar esto, y muchos gestores de proyectos esperan este estilo de contribución. En la siguiente sección, veremos el caso de los proyectos que prefieren aceptar contribuciones a través del correo electrónico.</p>
-
-<p>Para empezar, problemente desees clonar el repositorio principal, crear una rama puntual para el parche con el que piensas contribuir, y ponerte a trabajar sobre ella. La secuencia será algo parecido a esto:</p>
-
-<pre><code>$ git clone (url)
-$ cd project
-$ git checkout -b featureA
-$ (work)
-$ git commit
-$ (work)
-$ git commit</code></pre>
-
-<p>Puedes querer utilizar &#8216;rebase -i&#8217; para reducir tu trabajo a una sola confirmación de cambios (commit), o reorganizar el trabajo en las diversas confirmaciones para facilitar la revisión de parche por parte del gestor del proyecto &#8211;ver el Capítulo 6 para más detalles sobre reorganizaciones interactivas&#8211;.</p>
-
-<p>Cuando el trabajo en tu rama puntual está terminado y estás listo para enviarlo al gestor del proyecto, vete a la página del proyecto original y clica sobre el botón &#8220;Fork&#8221; (bifurcar), para crear así tu propia copia editable del proyecto. Tendrás que añadir la URL a este nuevo repositorio como un segundo remoto, y en este caso lo denominaremos &#8216;myfork&#8217;:</p>
-
-<pre><code>$ git remote add myfork (url)</code></pre>
-
-<p>Tu trabajo lo enviarás (push) a este segundo remoto. Es más sencillo enviar (push) directamente la rama puntual sobre la que estás trabajando, en lugar de fusionarla (merge) previamente con tu rama principal y enviar esta última. Y la razón para ello es que, si el trabajo no es aceptado o se integra solo parcialmente, no tendrás que rebobinar tu rama principal. Si el gestor del proyecto fusiona (merge), reorganiza (rebase) o integra solo parcialmente tu trabajo, aún podrás recuperarlo de vuelta a través de su repositorio:</p>
-
-<pre><code>$ git push myfork featureA</code></pre>
-
-<p>Tras enviar (push) tu trabajo a tu copia bifurcada (fork), has de notificarselo al gestor del proyecto. Normalmente se suele hacer a través de una solicitud de recuperación/integración (pull request). La puedes generar directamente desde el sitio web, &#8211;GitHub tiene un botón &#8220;pull request&#8221; que notifica automáticamente al gestor&#8211;, o puedes lanzar el comando &#8216;git request-pull&#8217; y enviar manualmente su salida por correo electrónico al gestor del proyecto.</p>
-
-<p>Este comando &#8216;request-pull&#8217; compara la rama base donde deseas que se integre tu rama puntual y el repositorio desde cuya URL deseas que se haga, para darte un resumen de todos los cambios que deseas integrar. Por ejemplo, si Jessica quiere enviar a John una solicitud de recuperación, y ha realizado dos confirmaciones de cambios sobre la rama puntual que desea enviar, lanzará los siguientes comandos:</p>
-
-<pre><code>$ git request-pull origin/master myfork
-The following changes since commit 1edee6b1d61823a2de3b09c160d7080b8d1b3a40:
-  John Smith (1):
-        added a new function
-
-are available in the git repository at:
-
-  git://githost/simplegit.git featureA
-
-Jessica Smith (2):
-      add limit to log function
-      change log output to 30 from 25
-
- lib/simplegit.rb |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)</code></pre>
-
-<p>Esta salida puede ser enviada al gestor del proyecto, &#8211;le indica el punto donde se ramificó, resume las confirmaciones de cambio, y le dice desde dónde recuperar estos cambios&#8211;.</p>
-
-<p>En un proyecto del que no seas gestor, suele ser más sencillo tener una rama tal como &#8216;master&#8217; siguiendo siempre a la rama &#8216;origin/master&#8217;; mientras realizas todo tu trabajo en otras ramas puntuales, que podrás descartar facilmente en caso de que alguna de ellas sea rechazada. Manteniendo el trabajo de distintos temas aislados en sus respectivas ramas puntuales, te facilitas también el poder reorganizar tu trabajo si la cabeza del repositorio principal se mueve mientras tanto y tus confirmaciones de cambio (commits) ya no se pueden integrar limpiamente. Por ejemplo, si deseas contribuir al proyecto en un segundo tema, no continues trabajando sobre la rama puntual que acabas de enviar; comienza una nueva rama puntual desde la rama &#8216;master&#8217; del repositorio principal:</p>
-
-<pre><code>$ git checkout -b featureB origin/master
-$ (work)
-$ git commit
-$ git push myfork featureB
-$ (email maintainer)
-$ git fetch origin</code></pre>
-
-<p>De esta forma, cada uno de los temas está aislado dentro de un silo, &#8211;similar a una cola de parches&#8211;; permitiendote reescribir, reorganizar y modificar cada uno de ellos sin interferir ni crear interdependencias entre ellos.</p>
-
-<p><center><img src="/figures/ch5/18333fig0516-tn.png"></center><br/> Figura 5-16. Historial inicial con el trabajo de la funcionalidad B.</p>
-
-<p>Supongamos que el gestor del proyecto ha recuperado e integrado un grupo de otros parches y después lo intenta con tu primer parche, viendo que no se integra limpiamente. En este caso, puedes intentar reorganizar (rebase) tu parche sobre &#8216;origin/master&#8217;, arreglar los conflictos y volver a enviar tus cambios:</p>
-
-<pre><code>$ git checkout featureA
-$ git rebase origin/master
-$ git push –f myfork featureA</code></pre>
-
-<p>Esto reescribe tu historial, quedando como se vé en la Figura 5-17.</p>
-
-<p><center><img src="/figures/ch5/18333fig0517-tn.png"></center><br/> Figura 5-17. Historial tras el trabajo en la funcionalidad A.</p>
-
-<p>Debido a que has reorganizado (rebase) tu rama de trabajo, tienes que indicar la opción &#8216;-f&#8217; en tu comando de envio (push), para permitir que la rama &#8216;featureA&#8217; del servidor sea reemplazada por una confirmación de cambios (commit) que no es hija suya. Una alternativa podría ser el enviar (push) este nuevo trabajo a una rama diferente del servidor (por ejemplo a &#8216;featureAv2&#8217;).</p>
-
-<p>Vamos a ver otro posible escenario: el gestor del proyecto ha revisado tu trabajo en la segunda rama y le ha gustado el concepto, pero desea que cambies algunos detalles de la implementación. Puedes aprovechar también esta oportunidad para mover el trabajo y actualizarlo sobre la actual rama &#8216;master&#8217; del proyecto. Para ello, inicias una nueva rama basada en la actual &#8216;origin/master&#8217;, aplicas (squash) sobre ella los cambios de &#8216;featureB&#8217;, resuelves los posibles conflictos que se pudieran presentar, realizas los cambios en los detalles, y la envias de vuelta como una nueva rama:</p>
-
-<pre><code>$ git checkout -b featureBv2 origin/master
-$ git merge --no-commit --squash featureB
-$ (change implementation)
-$ git commit
-$ git push myfork featureBv2</code></pre>
-
-<p>La opción &#8217;&#8211;squash&#8217; coge todo el trabajo en la rama fusionada y lo aplica, en una sola confirmación de cambios sin fusión (no-merge commit), sobre la rama en la que estés situado. La opción &#8217;&#8211;no-commit&#8217; indica a Git que no debe registrar automáticamente una confirmación de cambios. Esto te permitirá el aplicar todos los cambios de la otra rama y después hacer más cambios, antes de guardarlos todos ellos en una nueva confirmación (commit).</p>
-
-<p>En estos momentos, puedes notificar al gestor del proyecto que has realizado todos los cambios solicitados y que los puede encontrar en tu rama &#8216;featureBv2&#8217; (ver Figura 5-18).</p>
-
-<p><center><img src="/figures/ch5/18333fig0518-tn.png"></center><br/> Figura 5-18. Historial tras el trabajo en la versión 2 de la funcionalidad B.</p>
-
-<h3 id='proyecto_pblico_grande'>Proyecto Público Grande</h3>
-
-<p>Muchos grandes proyectos suelen tener establecidos los procedimientos para aceptar parches; &#8211;es necesario que compruebes las normas específicas para cada proyecto, ya que pueden variar de uno a otro&#8211;. De todas formas, muchos de los proyectos públicos más grandes aceptar parches a través de una lista de correo electrónico, por lo que veremos un ejemplo de dicho procedimiento.</p>
-
-<p>El flujo de trabajo es similar a los casos de uso vistos anteriormente; &#8211;creando ramas puntuales para cada serie de parches en los que vayas a trabajar&#8211;. La diferencia está en la forma de enviarlos al proyecto. En lugar de bifurcar (fork) el proyecto y enviar a tu propia copia editable, generarás correos electrónicos para cada serie de parches y os enviarás a la lista de correo.</p>
-
-<pre><code>$ git checkout -b topicA
-$ (work)
-$ git commit
-$ (work)
-$ git commit</code></pre>
-
-<p>Tienes dos confirmaciones de cambios (commits) a enviar a la lista de correo. Utilizarás el comando <code>git format-patch</code> para generar archivos formateados para poder ser enviados por correo electrónico. Este comando convierte cada confirmación de cambios (commit) en un mensaje de correo; con la primera línea del mensaje de confirmación puesto como asunto, y el resto del mensaje mas el parche como cuerpo. Lo bonito de este procedimiento es que, al aplicar un parche desde un correo electrónico generado por <code>format-patch</code>, se preserva íntegramente la información de la confirmación de cambios (commit). Lo veremos más adelante, en la próxima sección, cuando veamos como aplicarlos:</p>
-
-<pre><code>$ git format-patch -M origin/master
-0001-add-limit-to-log-function.patch
-0002-changed-log-output-to-30-from-25.patch</code></pre>
-
-<p>El comando <code>format-patch</code> lista los nombres de los archivos de parche que crea. La opción <code>-M</code> indica a Git que ha de mirar por si hay algo renombrado. Los archivos serán algo como:</p>
-
-<pre><code>$ cat 0001-add-limit-to-log-function.patch 
-From 330090432754092d704da8e76ca5c05c198e71a8 Mon Sep 17 00:00:00 2001
-From: Jessica Smith &lt;jessica@example.com&gt;
-Date: Sun, 6 Apr 2008 10:17:23 -0700
-Subject: [PATCH 1/2] add limit to log function
-
-Limit log functionality to the first 20Limit log functionality to the first 20Limit log functionality to the first 20
-
----
- lib/simplegit.rb |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/lib/simplegit.rb b/lib/simplegit.rb
-index 76f47bc..f9815f1 100644
---- a/lib/simplegit.rb
-+++ b/lib/simplegit.rb
-@@ -14,7 +14,7 @@ class SimpleGit
-   end
-
-   def log(treeish = &#39;master&#39;)
--    command(&quot;git log #{treeish}&quot;)
-+    command(&quot;git log -n 20 #{treeish}&quot;)
-   end
-
-   def ls_tree(treeish = &#39;master&#39;)
--- 
-1.6.2.rc1.20.g8c5b.dirty</code></pre>
-
-<p>Puedes incluso editar esos archivos de parche, para añadirles más información , específica para la lista de correo, y que no desees mostrar en el propio mensaje de la confirmación de cambios. Si añades texto entre la línea que comienza por <code>--</code> y el comienzo del parche (la línea <code>lib/simplegit.rb). Los desarrolladores de la lista de correo podrán leerlo. Pero será ignorado al aplicar el parche al proyecto.</code></p>
-
-<p>Para enviar estos archivos a la lista de correo,puedes tanto pegar directamente el archivo en tu programa de correo electrónico, como enviarlo a través de algún programa basado en línea de comandos. Pegar el texto directamente suele causar problemas de formato. Especialmente con los clientes de correo más &#8220;inteligentes&#8221;, que no preservan adecuadamente los saltos de línea y otros espaciados. Afortunadamente, Git suministra una herramienta que nos puede ser de gran ayuda para enviar parches correctamente formateados a través de protocolo IMAP, facilitandonos así las cosas. Voy a indicar cómo enviar un parche usando Gmail, que da la casualidad de que es el agente de correo utilizado por mí. En el final del anteriormente citado documento, <code>Documentation/SubmittingPatches</code>, puedes leer instrucciones detalladas para otros agentes de correo.</p>
-
-<p>Lo primero es configurar correctamente el apartado imap de tu archivo <code>~/.gitconfig</code>. Puedes ir ajustando cada valor individualmente, a través de comandos <code>git config</code>; o puedes añadirlos todos manualmente. Pero, al final, tu archivo de configuración ha de quedar más o menos como esto:</p>
-
-<pre><code>[imap]
-  folder = &quot;[Gmail]/Drafts&quot;
-  host = imaps://imap.gmail.com
-  user = user@gmail.com
-  pass = p4ssw0rd
-  port = 993
-  sslverify = false</code></pre>
-
-<p>Las dos últimas líneas probablente no sean necesarias si tu servidor IMAP no utiliza SSL; y, en ese caso, el valor para <code>host</code> deberá de ser <code>imap://</code> en lugar de <code>imaps://</code>. Cuando tengas esto ajustado, podrás utilizar el comando <code>git send-email</code> para poner series de parches en la carpeta de borradores (Drafts) de tu servidor IMAP:</p>
-
-<pre><code>$ git send-email *.patch
-0001-added-limit-to-log-function.patch
-0002-changed-log-output-to-30-from-25.patch
-Who should the emails appear to be from? [Jessica Smith &lt;jessica@example.com&gt;] 
-Emails will be sent from: Jessica Smith &lt;jessica@example.com&gt;
-Who should the emails be sent to? jessica@example.com
-Message-ID to be used as In-Reply-To for the first email? y</code></pre>
-
-<p>Tras esto, Git escupirá una serie de información de registro, con pinta más o menos como esta:</p>
-
-<pre><code>(mbox) Adding cc: Jessica Smith &lt;jessica@example.com&gt; from 
-  \line &#39;From: Jessica Smith &lt;jessica@example.com&gt;&#39;
-OK. Log says:
-Sendmail: /usr/sbin/sendmail -i jessica@example.com
-From: Jessica Smith &lt;jessica@example.com&gt;
-To: jessica@example.com
-Subject: [PATCH 1/2] added limit to log function
-Date: Sat, 30 May 2009 13:29:15 -0700
-Message-Id: &lt;1243715356-61726-1-git-send-email-jessica@example.com&gt;
-X-Mailer: git-send-email 1.6.2.rc1.20.g8c5b.dirty
-In-Reply-To: &lt;y&gt;
-References: &lt;y&gt;
-
-Result: OK</code></pre>
-
-<p>En estos momentos, deberías poder ir a tu carpeta de borradores (Drafts), cambiar el destinatario (To) para apuntar a la lista de correo donde estés enviando el parche, puede que poner en copia (CC) al gestor o persona responsable, y enviar el mensaje.</p>
-
-<h3 id='recapitulacin'>Recapitulación</h3>
-
-<p>En esta sección hemos visto unos cuantos de los flujos de trabajo más habituales para lidiar con distintos tipos de proyectos Git. Y hemos introducido un par de nuevas herramientas para ayudarte a gestionar estos procesos. A continuación veremos cómo trabajar en el otro lado de la moneda: manteniendo y gestionando un proyecto Git. Vas a aprender cómo ser un dictador benevolente o un gestor de integración.</p>
+<p>Git se da cuenta de que es un renombrado de manera implícita, así que no importa si renombras un archivo de este modo, o usando el comando <code>mv</code>. La única diferencia real es que <code>mv</code> es un comando en vez de tres —es más cómodo—. Y lo que es más importante, puedes usar cualquier herramienta para renombrar un archivo, y preocuparte de los <code>add</code> y <code>rm</code> más tarde, antes de confirmar.</p>
 
 <div id='nav'>
 <a href='ch5-1.html'>prev</a> | <a href='ch5-3.html'>next</a>

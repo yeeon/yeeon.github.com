@@ -1,8 +1,44 @@
 ---
 layout: translation
-title: Pro Git 4.5 Git on the Server Generating Your SSH Public Key
+title: Pro Git 4.5 Git Branching Branching Workflows
 ---
-<h2 id='generating_your_ssh_public_key'>Generating Your SSH Public Key</h2>
+<h2 id='branching_workflows'>Branching Workflows</h2>
+
+<p>Jetzt da du die Grundlagen von &#8216;branching&#8217; und &#8216;merging&#8217; kennst, fragst du dich sicher, was du damit anfangen kannst. In diesem Abschnitt werden wir uns typische Workflows anschauen, die dieses leichtgewichtige &#8216;branching&#8217; möglich macht. Und du kannst dann entscheiden, ob du es in deinem eigene Entwicklungszyklus verwenden willst.</p>
+
+<h3 id='langfristige_branches'>Langfristige Branches</h3>
+
+<p>Da Git das einfachen 3-Wege-&#8216;merge&#8217; verwendet, ist häufiges Zusammenführen von einer Branch in eine andere über einen langen Zeitraum generell einfach zu bewerkstelligen. Das heisst, du kann mehrere Branches haben, die alle offen sind und auf unterschiedlichen Ebenen deines Entwicklungszyklus verwendung finden, und diese regelmäßig ineinander zusammenführen.</p>
+
+<p>Viele Git Entwickler verfolgen mit ihrem Workflow den Ansatz nur den stabilen Code in dem <code>master</code>-Branch zu halten - möglicherweise auch nur Code, der released wurde oder werden kann. Sie betreiben parallel einen anderen Branch zum Arbeiten oder Testen. Wenn dieser paralelle Zweig einen stabilen Status erreicht, kann er mit dem <code>master</code>-Branch zusammengeführt werden. Dies findet bei Themen bezogenen Branches (kurzfristigen Branches, wie der zuvor genante <code>iss53</code>-Branch) Anwendung, um sicherzustellen, dass dieser die Tests besteht und keine Fehler verursacht.</p>
+
+<p>In Realität reden wir über sich bewegende Zeiger, die den Commit-Verlauf weiterwandern. Die stabilen Branches liegen unten und die bleeding-edge Branches weiter oben in der Zeitlinie (siehe Abbildung 3-18).</p>
+
+<p><center><img src="/figures/ch4/18333fig0318-tn.png"></center><br/> Abbildung 3-18. Stabilere Branches sind generell weiter unten im Entwicklungsverlauf.</p>
+
+<p>Es ist leichter sich die verschiedenen Branches als Arbeitsdepots vorzustellen, in denen Sätze von Commits in stabilere Depots aufsteigen, sobald sie ausreichend getestet wurden (siehe Abbildung 3-19).</p>
+
+<p><center><img src="/figures/ch4/18333fig0319-tn.png"></center><br/> Abbildung 3-19. Es könnte hilfreich sein, sich die Branches als Depots vorzustellen.</p>
+
+<p>Das lässt sich für beliebig viele Stabilitätsabstufungen umsetzen. Manche größeren Projekte haben auch einen <code>proposed</code> (Vorgeschlagen) oder <code>pu</code> (proposed updates - vorgeschlagene Updates) Zweig mit Branches die vielleicht noch nicht bereit sind in den <code>next</code>- oder <code>master</code>-Branch integriert zu werden. Die Idee dahinter ist, dass deine Branches verschiedene Stabilitätsabstufungen repräsentieren. Sobald sie eine stabilere Stufe erreichen, werden sie in den nächsthöheren Branch vereinigt.</p>
+
+<p>Nochmal, langfristig verschiedene Branches paralell laufen zu lassen ist nicht notwendig, aber oft hilfreich. Insbesondere wenn man es mit sehr großen oder komplexen Projekten zu tun hat.</p>
+
+<h3 id='themenbranches'>Themen-Branches</h3>
+
+<p>Themen-Branches sind in jedem Projekt nützlich, egal bei welcher Größe. Ein Themen-Branch ist ein kurzlebiger Zweig der für eine spezielle Aufgabe oder ähnliche Arbeiten erstellt und benutzt wird. Das ist vielleicht etwas was du noch nie zuvor mit einem Versionierungssystem gemacht hast, weil es normalerweise zu aufwändig und mühsam ist Branches zu erstellen und zusammenzuführen. Mit Git ist es allerdings vollkommen geläufig mehrmals am Tag Branches zu erstellen, an ihnen zu arbeiten, sie zusammenzuführen und sie anschließend wieder zu löschen.</p>
+
+<p>Du hast das im letzten Abschnitt an den von dir erstellten <code>iss53</code>- und <code>hotfix</code>-Branches gesehen. Du hast mehrere Commits auf sie angewendet und sie unmittelbar nach Zusammenführung mit deinem Hauptzweig gelöscht. Diese Technik erlaubt es dir schnell und vollständig den Kontext zu wechseln. Da deine Arbeit in verschiedene Depots aufgeteilt ist, in denen alle Änderungen unter die Thematik dieses Branches fallen, ist es leichter nachzuvollziehen was bei Code-Überprüfungen und ähnlichem geschehen ist.</p>
+
+<p>Stell dir du arbeitest ein bisschen (in <code>master</code>), erstellst mal eben einen Branch für einen Fehler (<code>iss91</code>), arbeitest an dem für eine Weile, erstellst einen zweiten Branch um eine andere Problemlösung für den selben Fehler auszuprobieren (<code>iss91v2</code>), wechselst zurück zu deinem MASTER-Branch, arbeitest dort ein bisschen und machst dann einen neuen Branch für etwas, wovon du nicht weißt ob&#8217;s eine gute Idee ist (<code>dumbidea</code>-Branch). Dein Commit-Verlauf wird wie in Abbildung 3-20 aussehen.</p>
+
+<p><center><img src="/figures/ch4/18333fig0320-tn.png"></center><br/> Abbildung 3-20. Dein Commit-Verlauf mit verschiedenen Themen-Branches.</p>
+
+<p>Nun, sagen wir du hast dich entschieden die zweite Lösung des Fehlers (<code>iss91v2</code>) zu bevorzugen, außerdem hast den <code>dumbidea</code>-Branch deinen Mitarbeitern gezeigt und es hat sich herausgestellt das er genial ist. Du kannst also den ursprünglichen <code>iss91</code>-Branch (unter Verlust der Commits C5 und C6) wegschmeißen und die anderen Beiden vereinen. Dein Verlauf sieht dann aus wie in Abbildung 3-21.</p>
+
+<p><center><img src="/figures/ch4/18333fig0321-tn.png"></center><br/> Abbildung 3-21. Dein Verlauf nach Zusammenführung von <code>dumbidea</code> und <code>iss91v2</code>.</p>
+
+<p>Es ist wichtig sich daran zu erinnern, dass alle diese Branches nur lokal existieren. Wenn du Verzweigungen schaffst (branchst) und wieder zusammenführst (mergest), findet dies nur in deinem Git-Repository statt - es findet keine Server-Kommunikation statt.</p>
 
 <div id='nav'>
 <a href='ch4-4.html'>prev</a> | <a href='ch4-6.html'>next</a>

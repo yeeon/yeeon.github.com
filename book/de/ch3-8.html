@@ -1,114 +1,148 @@
 ---
 layout: translation
-title: Pro Git 3.8 Git Branching Rebasing
+title: Pro Git 3.8 Git Internals xxx
 ---
-<h2 id='rebasing'>Rebasing</h2>
+<h2 id='xxx'>xxx</h2>
 
-<p>In Git, there are two main ways to integrate changes from one branch into another: the <code>merge</code> and the <code>rebase</code>. In this section you’ll learn what rebasing is, how to do it, why it’s a pretty amazing tool, and in what cases you won’t want to use it.</p>
+<p>Let’s go back to the objects database for your test Git repository. At this point, you have 11 objects — 4 blobs, 3 trees, 3 commits, and 1 tag:</p>
 
-<h3 id='the_basic_rebase'>The Basic Rebase</h3>
+<p>Kommen wir noch einmal auf die Objekt Datenbank zurück, die du für dein Test Git Repository angelegt hast. Im Moment müßtest du 11 Objekte haben: 4 Blobs, 3 Trees, 3 Commits und 1 Tag:</p>
 
-<p>If you go back to an earlier example from the Merge section (see Figure 3-27), you can see that you diverged your work and made commits on two different branches.</p>
+<pre><code>$ find .git/objects -type f
+.git/objects/01/55eb4229851634a0f03eb265b69f5a2d56f341 # tree 2
+.git/objects/1a/410efbd13591db07496601ebc7a059dd55cfe9 # commit 3
+.git/objects/1f/7a7a472abf3dd9643fd615f6da379c4acb3e3a # test.txt v2
+.git/objects/3c/4e9cd789d88d8d89c1073707c3585e41b0e614 # tree 3
+.git/objects/83/baae61804e65cc73a7201a7252750c76066a30 # test.txt v1
+.git/objects/95/85191f37f7b0fb9444f35a9bf50de191beadc2 # tag
+.git/objects/ca/c0cab538b970a37ea1e769cbbde608743bc96d # commit 2
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4 # &#39;test content&#39;
+.git/objects/d8/329fc1cc938780ffdd9f94e0d364e0ea74f579 # tree 1
+.git/objects/fa/49b077972391ad58037050f2a75f74e3671e92 # new.txt
+.git/objects/fd/f4fc3344e67ab068f836878b6c4951e3b15f3d # commit 1</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0327-tn.png"></center><br/> Figure 3-27. Your initial diverged commit history</p>
+<p>Git compresses the contents of these files with zlib, and you’re not storing much, so all these files collectively take up only 925 bytes. You’ll add some larger content to the repository to demonstrate an interesting feature of Git. Add the repo.rb file from the Grit library you worked with earlier — this is about a 12K source code file:</p>
 
-<p>The easiest way to integrate the branches, as we’ve already covered, is the <code>merge</code> command. It performs a three-way merge between the two latest branch snapshots (C3 and C4) and the most recent common ancestor of the two (C2), creating a new snapshot (and commit), as shown in Figure 3-28.</p>
+<p>Git komprimiert die Inhalte dieser Dateien mit zlib und du hast nicht sonderlich viele davon, so daß die Gesamtgröße der Dateien gerade mal 925 Bytes beträgt. Wir wollen ein anderes interessantes Feature von Git demonstrieren, und dazu müssen wir eine größere Datei hinzufügen, z.B. die <code>repo.rb</code> Datei aus dem Grit Repository, das du schon verwendet hast. Diese Datei ist eine etwa 12K große Quellcode Datei:</p>
 
-<p><center><img src="/figures/ch3/18333fig0328-tn.png"></center><br/> Figure 3-28. Merging a branch to integrate the diverged work history</p>
+<pre><code>$ curl http://github.com/mojombo/grit/raw/master/lib/grit/repo.rb &gt; repo.rb
+$ git add repo.rb 
+$ git commit -m &#39;added repo.rb&#39;
+[master 484a592] added repo.rb
+ 3 files changed, 459 insertions(+), 2 deletions(-)
+ delete mode 100644 bak/test.txt
+ create mode 100644 repo.rb
+ rewrite test.txt (100%)</code></pre>
 
-<p>However, there is another way: you can take the patch of the change that was introduced in C3 and reapply it on top of C4. In Git, this is called <em>rebasing</em>. With the <code>rebase</code> command, you can take all the changes that were committed on one branch and replay them on another one.</p>
+<p>If you look at the resulting tree, you can see the SHA-1 value your repo.rb file got for the blob object:</p>
 
-<p>In this example, you’d run the following:</p>
+<p>Wenn du dir den resultierenden Tree anschaust, findest du den SHA-1 Hash, den die Datei <code>repo.rb</code> für das Blob Objekt erhalten hat:</p>
 
-<pre><code>$ git checkout experiment
-$ git rebase master
-First, rewinding head to replay your work on top of it...
-Applying: added staged command</code></pre>
+<pre><code>$ git cat-file -p master^{tree}
+100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
+100644 blob 9bc1dc421dcd51b4ac296e3e5b6e2a99cf44391e      repo.rb
+100644 blob e3f094f522629ae358806b17daf78246c27c007b      test.txt</code></pre>
 
-<p>It works by going to the common ancestor of the two branches (the one you’re on and the one you’re rebasing onto), getting the diff introduced by each commit of the branch you’re on, saving those diffs to temporary files, resetting the current branch to the same commit as the branch you are rebasing onto, and finally applying each change in turn. Figure 3-29 illustrates this process.</p>
+<p>You can then use <code>git cat-file</code> to see how big that object is:</p>
 
-<p><center><img src="/figures/ch3/18333fig0329-tn.png"></center><br/> Figure 3-29. Rebasing the change introduced in C3 onto C4</p>
+<p>Jetzt kannst du mit <code>git cat-file</code> sehen, wie groß das Objekt ist:</p>
 
-<p>At this point, you can go back to the master branch and do a fast-forward merge (see Figure 3-30).</p>
+<pre><code>$ git cat-file -s 9bc1dc421dcd51b4ac296e3e5b6e2a99cf44391e
+12898</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0330-tn.png"></center><br/> Figure 3-30. Fast-forwarding the master branch</p>
+<p>Now, modify that file a little, and see what happens:</p>
 
-<p>Now, the snapshot pointed to by C3 is exactly the same as the one that was pointed to by C5 in the merge example. There is no difference in the end product of the integration, but rebasing makes for a cleaner history. If you examine the log of a rebased branch, it looks like a linear history: it appears that all the work happened in series, even when it originally happened in parallel.</p>
+<p>Als nächste ändern wir die Datei ein bißchen, um zu sehen, was passiert:</p>
 
-<p>Often, you’ll do this to make sure your commits apply cleanly on a remote branch — perhaps in a project to which you’re trying to contribute but that you don’t maintain. In this case, you’d do your work in a branch and then rebase your work onto <code>origin/master</code> when you were ready to submit your patches to the main project. That way, the maintainer doesn’t have to do any integration work — just a fast-forward or a clean apply.</p>
+<pre><code>$ echo &#39;# testing&#39; &gt;&gt; repo.rb 
+$ git commit -am &#39;modified repo a bit&#39;
+[master ab1afef] modified repo a bit
+ 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
 
-<p>Note that the snapshot pointed to by the final commit you end up with, whether it’s the last of the rebased commits for a rebase or the final merge commit after a merge, is the same snapshot — it’s only the history that is different. Rebasing replays changes from one line of work onto another in the order they were introduced, whereas merging takes the endpoints and merges them together.</p>
+<p>Check the tree created by that commit, and you see something interesting:</p>
 
-<h3 id='more_interesting_rebases'>More Interesting Rebases</h3>
+<p>Wenn du jetzt den Tree anschaust, der durch den Commit angelegt wurde, findest du etwas Interessantes:</p>
 
-<p>You can also have your rebase replay on something other than the rebase branch. Take a history like Figure 3-31, for example. You branched a topic branch (<code>server</code>) to add some server-side functionality to your project, and made a commit. Then, you branched off that to make the client-side changes (<code>client</code>) and committed a few times. Finally, you went back to your server branch and did a few more commits.</p>
+<pre><code>$ git cat-file -p master^{tree}
+100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
+100644 blob 05408d195263d853f09dca71d55116663690c27c      repo.rb
+100644 blob e3f094f522629ae358806b17daf78246c27c007b      test.txt</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0331-tn.png"></center><br/> Figure 3-31. A history with a topic branch off another topic branch</p>
+<p>The blob is now a different blob, which means that although you added only a single line to the end of a 400-line file, Git stored that new content as a completely new object:</p>
 
-<p>Suppose you decide that you want to merge your client-side changes into your mainline for a release, but you want to hold off on the server-side changes until it’s tested further. You can take the changes on client that aren’t on server (C8 and C9) and replay them on your master branch by using the <code>--onto</code> option of <code>git rebase</code>:</p>
+<p>Das Blob ist ein anderes, d.h. obwohl du lediglich eine einzige Zeile an das Ende einer 400 Zeilen langen Datei angehängt hast, speichert Git den Inhalt jetzt als ein ganz neues Objekt:</p>
 
-<pre><code>$ git rebase --onto master server client</code></pre>
+<pre><code>$ git cat-file -s 05408d195263d853f09dca71d55116663690c27c
+12908</code></pre>
 
-<p>This basically says, “Check out the client branch, figure out the patches from the common ancestor of the <code>client</code> and <code>server</code> branches, and then replay them onto <code>master</code>.” It’s a bit complex; but the result, shown in Figure 3-32, is pretty cool.</p>
+<p>You have two nearly identical 12K objects on your disk. Wouldn’t it be nice if Git could store one of them in full but then the second object only as the delta between it and the first?</p>
 
-<p><center><img src="/figures/ch3/18333fig0332-tn.png"></center><br/> Figure 3-32. Rebasing a topic branch off another topic branch</p>
+<p>Du hast jetzt zwei fast identische 12K große Objekte auf deiner Festplatte. Wäre es nicht besser, wenn Git nur das erste vollständig und das zweite lediglich als ein Delta zwischen dem ersten und dem zweiten speichern würde?</p>
 
-<p>Now you can fast-forward your master branch (see Figure 3-33):</p>
+<p>It turns out that it can. The initial format in which Git saves objects on disk is called a loose object format. However, occasionally Git packs up several of these objects into a single binary file called a packfile in order to save space and be more efficient. Git does this if you have too many loose objects around, if you run the <code>git gc</code> command manually, or if you push to a remote server. To see what happens, you can manually ask Git to pack up the objects by calling the <code>git gc</code> command:</p>
 
-<pre><code>$ git checkout master
-$ git merge client</code></pre>
+<p>Tatsächlich kann Git das. Das ursprüngliche Format, in dem Git Objekte in der Datenbank speichert wird als &#8220;freies Objekt Format&#8221; (&#8220;loose object format&#8221;) bezeichnet. Hin und wieder packt Git allerdings eine Reihe solcher Objekte in eine einzige binäre Datei zusammen, um Platz zu sparen und effizienter zu arbeiten. Eine solche Datei wird als &#8220;packfile&#8221; bezeichnet. Git tut das immer dann, wenn zu viele freie Objekte vorhanden sind, wenn du den Befehl <code>git gc</code> manuell ausführst oder wenn du auf einen externen Server pushst. Schauen wir uns also an, was passiert, wenn wir manuell <code>git gc</code> ausführen:</p>
 
-<p><center><img src="/figures/ch3/18333fig0333-tn.png"></center><br/> Figure 3-33. Fast-forwarding your master branch to include the client branch changes</p>
+<pre><code>$ git gc
+Counting objects: 17, done.
+Delta compression using 2 threads.
+Compressing objects: 100% (13/13), done.
+Writing objects: 100% (17/17), done.
+Total 17 (delta 1), reused 10 (delta 0)</code></pre>
 
-<p>Let’s say you decide to pull in your server branch as well. You can rebase the server branch onto the master branch without having to check it out first by running <code>git rebase [basebranch] [topicbranch]</code> — which checks out the topic branch (in this case, <code>server</code>) for you and replays it onto the base branch (<code>master</code>):</p>
+<p>If you look in your objects directory, you’ll find that most of your objects are gone, and a new pair of files has appeared:</p>
 
-<pre><code>$ git rebase master server</code></pre>
+<p>Wenn du das Objekt Verzeichnis anschaust, siehst du, daß die meisten Objekte jetzt fehlen und daß stattdessen zwei neue Objekte aufgetaucht sind:</p>
 
-<p>This replays your <code>server</code> work on top of your <code>master</code> work, as shown in Figure 3-34.</p>
+<pre><code>$ find .git/objects -type f
+.git/objects/71/08f7ecb345ee9d0084193f147cdad4d2998293
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4
+.git/objects/info/packs
+.git/objects/pack/pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.idx
+.git/objects/pack/pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.pack</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0334-tn.png"></center><br/> Figure 3-34. Rebasing your server branch on top of your master branch</p>
+<p>The objects that remain are the blobs that aren’t pointed to by any commit — in this case, the &#8220;what is up, doc?&#8221; example and the &#8220;test content&#8221; example blobs you created earlier. Because you never added them to any commits, they’re considered dangling and aren’t packed up in your new packfile.</p>
 
-<p>Then, you can fast-forward the base branch (<code>master</code>):</p>
+<p>Die verbleibenden Objekte sind diejenigen Blobs, die nicht von irgendeinem Commit referenziert werden - in diesem Fall sind das die &#8220;what is up, doc?&#8221; und &#8220;test content&#8221; Beispielblobs, die wir zuvor gespeichert hatten: weil wir sie nie zu irgendeinem Commit hinzugefügt haben, werden sie als &#8220;dangling&#8221; (xxx) betrachtet und nicht im Packfile zusammengepackt.</p>
 
-<pre><code>$ git checkout master
-$ git merge server</code></pre>
+<p>The other files are your new packfile and an index. The packfile is a single file containing the contents of all the objects that were removed from your filesystem. The index is a file that contains offsets into that packfile so you can quickly seek to a specific object. What is cool is that although the objects on disk before you ran the <code>gc</code> were collectively about 12K in size, the new packfile is only 6K. You’ve halved your disk usage by packing your objects.</p>
 
-<p>You can remove the <code>client</code> and <code>server</code> branches because all the work is integrated and you don’t need them anymore, leaving your history for this entire process looking like Figure 3-35:</p>
+<p>Die beiden neuen Dateien sind das Packfile und ein Index. Das Packfile ist eine einzelne Datei, die die Inhalte all der Dateien umfaßt, die jetzt aus dem Dateisystem entfernt worden sind. Der Index ist eine Datei, die auf Positionen von Objekten im Packfile zeigt, so daß Git schneller nach einem bestimmten Objekt suchen kann. Obwohl diese Objekte auf der Festplatte ingesamt 12K groß waren, bevor du <code>git gc</code> ausgeführt hast, ist das Packfile jetzt nur 6K groß. D.h., du hast den Platzverbrauch dadurch um die Hälfte reduziert. Toll, oder?</p>
 
-<pre><code>$ git branch -d client
-$ git branch -d server</code></pre>
+<p>How does Git do this? When Git packs objects, it looks for files that are named and sized similarly, and stores just the deltas from one version of the file to the next. You can look into the packfile and see what Git did to save space. The <code>git verify-pack</code> plumbing command allows you to see what was packed up:</p>
 
-<p><center><img src="/figures/ch3/18333fig0335-tn.png"></center><br/> Figure 3-35. Final commit history</p>
+<p>Wie stellt Git das genau an? Wenn Git Objekte zusammen packt, sucht es nach Dateien, die ähnlich benannt und ähnlich groß sind, und speichert dann lediglich Deltas von einer Version zur nächsten. Du kannst ein Packfile inspizieren, um zu sehen, wie Git die Objekte gepackt hat. Der Plumbing Befehl <code>git verify-pack</code> macht das möglich:</p>
 
-<h3 id='the_perils_of_rebasing'>The Perils of Rebasing</h3>
+<pre><code>$ git verify-pack -v \
+  .git/objects/pack/pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.idx
+0155eb4229851634a0f03eb265b69f5a2d56f341 tree   71 76 5400
+05408d195263d853f09dca71d55116663690c27c blob   12908 3478 874
+09f01cea547666f58d6a8d809583841a7c6f0130 tree   106 107 5086
+1a410efbd13591db07496601ebc7a059dd55cfe9 commit 225 151 322
+1f7a7a472abf3dd9643fd615f6da379c4acb3e3a blob   10 19 5381
+3c4e9cd789d88d8d89c1073707c3585e41b0e614 tree   101 105 5211
+484a59275031909e19aadb7c92262719cfcdf19a commit 226 153 169
+83baae61804e65cc73a7201a7252750c76066a30 blob   10 19 5362
+9585191f37f7b0fb9444f35a9bf50de191beadc2 tag    136 127 5476
+9bc1dc421dcd51b4ac296e3e5b6e2a99cf44391e blob   7 18 5193 1 \
+  05408d195263d853f09dca71d55116663690c27c
+ab1afef80fac8e34258ff41fc1b867c702daa24b commit 232 157 12
+cac0cab538b970a37ea1e769cbbde608743bc96d commit 226 154 473
+d8329fc1cc938780ffdd9f94e0d364e0ea74f579 tree   36 46 5316
+e3f094f522629ae358806b17daf78246c27c007b blob   1486 734 4352
+f8f51d7d8a1760462eca26eebafde32087499533 tree   106 107 749
+fa49b077972391ad58037050f2a75f74e3671e92 blob   9 18 856
+fdf4fc3344e67ab068f836878b6c4951e3b15f3d commit 177 122 627
+chain length = 1: 1 object
+pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.pack: ok</code></pre>
 
-<p>Ahh, but the bliss of rebasing isn’t without its drawbacks, which can be summed up in a single line:</p>
+<p>Here, the <code>9bc1d</code> blob, which if you remember was the first version of your repo.rb file, is referencing the <code>05408</code> blob, which was the second version of the file. The third column in the output is the size of the object in the pack, so you can see that <code>05408</code> takes up 12K of the file but that <code>9bc1d</code> only takes up 7 bytes. What is also interesting is that the second version of the file is the one that is stored intact, whereas the original version is stored as a delta — this is because you’re most likely to need faster access to the most recent version of the file.</p>
 
-<p><strong>Do not rebase commits that you have pushed to a public repository.</strong></p>
+<p>Du erinnerst dich, daß der <code>9bc1d</code> Blob die erste Version der <code>repo.rb</code> Datei ist. Dieser Blob referenziert jetzt den <code>05408</code> Blob, der die zweite Version der Datei ist. Die dritte Spalte der Ausgabe ist die Größe des Objektes im Packfile. Wir können also sehen, daß <code>05408</code> 12K in Anspruch nimmt, <code>9bc1d</code> aber nur 7 Bytes. Das bedeutet also, daß die zweite Version diejenige ist, die vollständig, während die ursprüngliche, erste Version als Delta gespeichert wird! Der Grund dafür ist, daß du höchstwahrscheinlich einen schnelleren Zugriff auf die jeweils neuesten Dateien brauchst.</p>
 
-<p>If you follow that guideline, you’ll be fine. If you don’t, people will hate you, and you’ll be scorned by friends and family.</p>
+<p>The really nice thing about this is that it can be repacked at any time. Git will occasionally repack your database automatically, always trying to save more space. You can also manually repack at any time by running <code>git gc</code> by hand.</p>
 
-<p>When you rebase stuff, you’re abandoning existing commits and creating new ones that are similar but different. If you push commits somewhere and others pull them down and base work on them, and then you rewrite those commits with <code>git rebase</code> and push them up again, your collaborators will have to re-merge their work and things will get messy when you try to pull their work back into yours.</p>
-
-<p>Let’s look at an example of how rebasing work that you’ve made public can cause problems. Suppose you clone from a central server and then do some work off that. Your commit history looks like Figure 3-36.</p>
-
-<p><center><img src="/figures/ch3/18333fig0336-tn.png"></center><br/> Figure 3-36. Clone a repository, and base some work on it.</p>
-
-<p>Now, someone else does more work that includes a merge, and pushes that work to the central server. You fetch them and merge the new remote branch into your work, making your history look something like Figure 3-37.</p>
-
-<p><center><img src="/figures/ch3/18333fig0337-tn.png"></center><br/> Figure 3-37. Fetch more commits, and merge them into your work.</p>
-
-<p>Next, the person who pushed the merged work decides to go back and rebase their work instead; they do a <code>git push --force</code> to overwrite the history on the server. You then fetch from that server, bringing down the new commits.</p>
-
-<p><center><img src="/figures/ch3/18333fig0338-tn.png"></center><br/> Figure 3-38. Someone pushes rebased commits, abandoning commits you’ve based your work on.</p>
-
-<p>At this point, you have to merge this work in again, even though you’ve already done so. Rebasing changes the SHA-1 hashes of these commits so to Git they look like new commits, when in fact you already have the C4 work in your history (see Figure 3-39).</p>
-
-<p><center><img src="/figures/ch3/18333fig0339-tn.png"></center><br/> Figure 3-39. You merge in the same work again into a new merge commit.</p>
-
-<p>You have to merge that work in at some point so you can keep up with the other developer in the future. After you do that, your commit history will contain both the C4 and C4&#8217; commits, which have different SHA-1 hashes but introduce the same work and have the same commit message. If you run a <code>git log</code> when your history looks like this, you’ll see two commits that have the same author date and message, which will be confusing. Furthermore, if you push this history back up to the server, you’ll reintroduce all those rebased commits to the central server, which can further confuse people.</p>
-
-<p>If you treat rebasing as a way to clean up and work with commits before you push them, and if you only rebase commits that have never been available publicly, then you’ll be fine. If you rebase commits that have already been pushed publicly, and people may have based work on those commits, then you may be in for some frustrating trouble.</p>
+<p>Außerdem ist toll, daß ein Repository jederzeit neu gepackt werden kann. Git macht das gelegentlich automatisch, um weniger Platz für die Datenbank zu verbrauchen. Du kannst sie aber auch jederzeit manuell mit <code>git gc</code> packen.</p>
 
 <div id='nav'>
 <a href='ch3-7.html'>prev</a> | <a href='ch3-9.html'>next</a>

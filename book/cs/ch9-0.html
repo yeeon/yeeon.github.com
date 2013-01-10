@@ -1,16 +1,16 @@
 ---
 layout: translation
-title: Pro Git 9.0 Git Internals
+title: Pro Git 9.0 Git na serveru
 ---
-<h1>Chapter 9</h1><h1 id='git_internals'>Git Internals</h1>
+<h1>Chapter 9</h1><h1 id='git_na_serveru'>Git na serveru</h1>
 
-<p>You may have skipped to this chapter from a previous chapter, or you may have gotten here after reading the rest of the book — in either case, this is where you’ll go over the inner workings and implementation of Git. I found that learning this information was fundamentally important to understanding how useful and powerful Git is, but others have argued to me that it can be confusing and unnecessarily complex for beginners. Thus, I’ve made this discussion the last chapter in the book so you could read it early or later in your learning process. I leave it up to you to decide.</p>
+<p>V této chvíli byste už měli zvládat většinu každodenních úkonů, pro něž se vyplatí Git používat. Abyste však mohli v systému Git spolupracovat s ostatními, budete potřebovat vzdálený repozitář Git. Technicky vzato sice můžete odesílat a stahovat změny z repozitářů jednotlivých spolupracovníků, tento postup ale nedoporučujeme, protože se může při troše neopatrnosti velmi snadno stát, že zapomenete, kdo na čem pracuje. Navíc chcete, aby měli vaši spolupracovníci do repozitáře přístup, i když je váš počítač offline – na společný repozitář bývá často lepší spolehnutí. Jako nejlepší metodu spolupráce s ostatními proto můžeme doporučit nastavení „neutrálního“ repozitáře, do nějž budete mít všichni přístup, budete do něj moci odesílat data a budete z něj moci stahovat. Tomuto repozitáři budeme říkat „server Git“. Jak ale zjistíte, nebývá hostování repozitáře Git nijak zvlášť náročné na zdroje, a tak nejspíš nebudete potřebovat celý server.</p>
 
-<p>Now that you’re here, let’s get started. First, if it isn’t yet clear, Git is fundamentally a content-addressable filesystem with a VCS user interface written on top of it. You’ll learn more about what this means in a bit.</p>
+<p>Spuštění serveru Git je jednoduché. Nejprve určíte, jakými protokoly má váš server komunikovat. První část této kapitoly se bude věnovat možným protokolům, jejich přednostem a nevýhodám. V dalších částech popíšeme některá typická nastavení pro použití těchto protokolů, a jak s nimi uvést server do provozu. Nakonec se podíváme na několik možností hostování pro případ, že nebudete mít chuť podstupovat martyrium s nastavováním a správou vlastního serveru a nevadí vám umístit svůj kód na cizí server.</p>
 
-<p>In the early days of Git (mostly pre 1.5), the user interface was much more complex because it emphasized this filesystem rather than a polished VCS. In the last few years, the UI has been refined until it’s as clean and easy to use as any system out there; but often, the stereotype lingers about the early Git UI that was complex and difficult to learn.</p>
+<p>Pokud víte, že nebudete chtít spravovat vlastní server, můžete přeskočit rovnou na poslední část této kapitoly a podívat se na možnosti nastavení hostovaného účtu. Pak přejděte na následující kapitolu, v níž se dočtete o různých vstupech a výstupech při práci v prostředí s distribuovanou správou zdrojového kódu.</p>
 
-<p>The content-addressable filesystem layer is amazingly cool, so I’ll cover that first in this chapter; then, you’ll learn about the transport mechanisms and the repository maintenance tasks that you may eventually have to deal with.</p>
+<p>Vzdálený repozitář je obvykle holý repozitář, tj. repozitář Git bez pracovního adresáře. Protože se repozitář používá pouze jako místo pro spolupráci, není žádný důvod, aby byl na disku načten konkrétní snímek. Jsou tu pouze uložena data systému Git. Jednoduše bychom mohli také říct, že holý repozitář je obsah adresáře <code>.git</code> vašeho projektu a nic víc.</p>
 
 <div id='nav'>
 <a href='ch8-3.html'>prev</a> | <a href='ch9-1.html'>next</a>

@@ -1,210 +1,116 @@
 ---
 layout: translation
-title: Pro Git 6.6 Git Tools Rewriting History
+title: Pro Git 6.6 Customizing Git Git Hooks
 ---
-<h2 id='rewriting_history'>Rewriting History</h2>
+<h2 id='git_hooks'>Git Hooks</h2>
 
-<p>Many times, when working with Git, you may want to revise your commit history for some reason. One of the great things about Git is that it allows you to make decisions at the last possible moment. You can decide what files go into which commits right before you commit with the staging area, you can decide that you didn’t mean to be working on something yet with the stash command, and you can rewrite commits that already happened so they look like they happened in a different way. This can involve changing the order of the commits, changing messages or modifying files in a commit, squashing together or splitting apart commits, or removing commits entirely — all before you share your work with others.</p>
+<p>Genau wie viele andere Versionskontrollsysteme gibt es auch bei Git die Möglichkeit eigene Skripte zu starten, wenn bestimmte wichtige Ereignisse eintreten. Es gibt zwei Gruppen dieser Schnittstellen, allgemein &#8220;Hook&#8221; genannt: auf Seiten des Clients und des Servers. Die Client-seitigen Hooks dienen Operationen bei einem Client, zum Beispiel bei Commits oder Merges. Die Server-seitigen Hooks dienen Git Server Operationen wie den Empfang von hochgeladenen Commits. Ma kann diese Schnittstellen aus diversen Gruenden benutzen, und einige davon wirst Du hier kennenlernen.</p>
 
-<p>In this section, you’ll cover how to accomplish these very useful tasks so that you can make your commit history look the way you want before you share it with others.</p>
+<p>Like many other Version Control Systems, Git has a way to fire off custom scripts when certain important actions occur. There are two groups of these hooks: client side and server side. The client-side hooks are for client operations such as committing and merging. The server-side hooks are for Git server operations such as receiving pushed commits. You can use these hooks for all sorts of reasons, and you’ll learn about a few of them here.</p>
 
-<h3 id='changing_the_last_commit'>Changing the Last Commit</h3>
+<h3 id='installing_a_hook'>Installing a Hook</h3>
 
-<p>Changing your last commit is probably the most common rewriting of history that you’ll do. You’ll often want to do two basic things to your last commit: change the commit message, or change the snapshot you just recorded by adding, changing and removing files.</p>
+<h3 id='installieren_eines_hooks'>Installieren eines Hooks</h3>
 
-<p>If you only want to modify your last commit message, it’s very simple:</p>
+<p>Sämtliche Hooks werden im <code>hooks</code> Unterverzeichnis des Git Verzeichnisses gespeichert. In den meisten Projekten wird das <code>.git/hooks</code> sein. Git fuellt dieses Verzeichnis standardmässig mit Beispielskripten, von denen einige unverändert bereits nuetzlich sind; aber sie dokumentieren ausserdem die Eingabewerte jedes Skriptes. Alle Beispiele sind als Shellskripte mit etwas Perl hier und da geschrieben, aber jedes passend benannte Skript wird funktionieren — Du kannst sie in Ruby der Python schreiben, oder was immer Du bevorzugst. Bei Git Versionen nach 1.6 haben diese Beispieldateien die Endung .sample; sie muessen umbenannt werden. Bei Versionen vor 1.6 sind die Beispieldateien korrekt benannt, aber nicht ausfuehrbar.</p>
 
-<pre><code>$ git commit --amend</code></pre>
+<p>The hooks are all stored in the <code>hooks</code> subdirectory of the Git directory. In most projects, that’s <code>.git/hooks</code>. By default, Git populates this directory with a bunch of example scripts, many of which are useful by themselves; but they also document the input values of each script. All the examples are written as shell scripts, with some Perl thrown in, but any properly named executable scripts will work fine — you can write them in Ruby or Python or what have you. For post-1.6 versions of Git, these example hook files end with .sample; you’ll need to rename them. For pre-1.6 versions of Git, the example files are named properly but are not executable.</p>
 
-<p>That drops you into your text editor, which has your last commit message in it, ready for you to modify the message. When you save and close the editor, the editor writes a new commit containing that message and makes it your new last commit.</p>
+<p>Um ein Hook-Skript zu aktivieren, speichere eine entsprechend benannte und ausfuehrbare Datei im <code>hooks</code> Unterverzeichnis Deines Git Verzeichnisses. Von diesem Augenblick an sollte es ausgefuehrt werden. Ich werde hier die meisten der wichtigen Hook Dateinamen besprechen.</p>
 
-<p>If you’ve committed and then you want to change the snapshot you committed by adding or changing files, possibly because you forgot to add a newly created file when you originally committed, the process works basically the same way. You stage the changes you want by editing a file and running <code>git add</code> on it or <code>git rm</code> to a tracked file, and the subsequent <code>git commit --amend</code> takes your current staging area and makes it the snapshot for the new commit.</p>
+<p>To enable a hook script, put a file in the <code>hooks</code> subdirectory of your Git directory that is named appropriately and is executable. From that point forward, it should be called. I’ll cover most of the major hook filenames here.</p>
 
-<p>You need to be careful with this technique because amending changes the SHA-1 of the commit. It’s like a very small rebase — don’t amend your last commit if you’ve already pushed it.</p>
+<h3 id='clientside_hooks'>Client-Side Hooks</h3>
 
-<h3 id='changing_multiple_commit_messages'>Changing Multiple Commit Messages</h3>
+<h3 id='clientseitige_hooks'>Client-seitige Hooks</h3>
 
-<p>To modify a commit that is farther back in your history, you must move to more complex tools. Git doesn’t have a modify-history tool, but you can use the rebase tool to rebase a series of commits onto the HEAD they were originally based on instead of moving them to another one. With the interactive rebase tool, you can then stop after each commit you want to modify and change the message, add files, or do whatever you wish. You can run rebase interactively by adding the <code>-i</code> option to <code>git rebase</code>. You must indicate how far back you want to rewrite commits by telling the command which commit to rebase onto.</p>
+<p>Es gibt eine Menge Hooks auf Seiten des Clients. Dieser Abschnitt teilt sie in Hooks fuer einen Commit-Arbeitsablauf, Skripte bezogen auf e-Mail und den Rest der Client-seitigen Skripte.</p>
 
-<p>For example, if you want to change the last three commit messages, or any of the commit messages in that group, you supply as an argument to <code>git rebase -i</code> the parent of the last commit you want to edit, which is <code>HEAD~2^</code> or <code>HEAD~3</code>. It may be easier to remember the <code>~3</code> because you’re trying to edit the last three commits; but keep in mind that you’re actually designating four commits ago, the parent of the last commit you want to edit:</p>
+<p>There are a lot of client-side hooks. This section splits them into committing-workflow hooks, e-mail–workflow scripts, and the rest of the client-side scripts.</p>
 
-<pre><code>$ git rebase -i HEAD~3</code></pre>
+<h4 id='committingworkflow_hooks'>Committing-Workflow Hooks</h4>
 
-<p>Remember again that this is a rebasing command — every commit included in the range <code>HEAD~3..HEAD</code> will be rewritten, whether you change the message or not. Don’t include any commit you’ve already pushed to a central server — doing so will confuse other developers by providing an alternate version of the same change.</p>
+<h4 id='hooks_fuer_einen_commit_arbeitsablauf'>Hooks fuer einen Commit Arbeitsablauf</h4>
 
-<p>Running this command gives you a list of commits in your text editor that looks something like this:</p>
+<p>Die ersten vier Hooks hängen mit dem Commit Prozess zusammen. Der <code>pre-commit</code> Hook wird zuerst ausgefuehrt, schon bevor Du die Commit Nachricht eingegeben hast. Es wird benutzt, um den Snapshot zu pruefen, der den Commit ausmacht, um festzustellen ob Du etwas vergessen hast, um sicherzustellen das Tests ausgefuehrt wurden, oder um den Code zu inspizieren, aus welchem Grunde Du ihn auch untersuchen willst. Wenn das entsprechende Skript einen Wert ungleich Null zurueckgibt, wird der Commit abgebrochen, aber es kann mit <code>git commit --no-verify</code> umgangen werden. Du kannst Dinge machen wie den Code Stil untersuchen (lint ausfuehren oder etwas entsprechendes), auf Leerzeichen am Zeilenende pruefen (der Standard-Hook macht genau das), oder bei neuen Methoden nach entsprechender Dokumentation suchen.</p>
 
-<pre><code>pick f7f3f6d changed my name a bit
-pick 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file
+<p>The first four hooks have to do with the committing process. The <code>pre-commit</code> hook is run first, before you even type in a commit message. It’s used to inspect the snapshot that’s about to be committed, to see if you’ve forgotten something, to make sure tests run, or to examine whatever you need to inspect in the code. Exiting non-zero from this hook aborts the commit, although you can bypass it with <code>git commit --no-verify</code>. You can do things like check for code style (run lint or something equivalent), check for trailing whitespace (the default hook does exactly that), or check for appropriate documentation on new methods.</p>
 
-# Rebase 710f0f8..a5f4a0d onto 710f0f8
-#
-# Commands:
-#  p, pick = use commit
-#  e, edit = use commit, but stop for amending
-#  s, squash = use commit, but meld into previous commit
-#
-# If you remove a line here THAT COMMIT WILL BE LOST.
-# However, if you remove everything, the rebase will be aborted.
-#</code></pre>
+<p>Der <code>prepare-commit-msg</code> Hook wird ausgefuehrt, bevor der Editor fuer die Commit Nachricht geöffnet wird, aber nachdem die Standardnachricht erstellt wurde. Er erlaubt es die Standardnachricht zu modifizieren, bevor der Autor des Commits sie sieht. Dieser Hook akzeptiert diverse Optionen: den Pfad der Datei, die die bisherige Commit Nachricht enthält, den Typ des Commit und den SHA-1 Hash des Commit, falls es sich um ein Korrektur-Commit handelt. Dieser Hook ist ueblicherweise nicht sehr nuetzlich bei normalen Commits; er ist eher fuer solche Commits gedacht, bei denen die Standardnachricht automatisch generiert wird, wie zum Beispiel vorlagenbasierte Commit Nachrichten, Commits nach einem Merge, komprimierte Commits und Korrektur-Commits. Du kannst diesen Hook mit einer Commit Vorlage kombinieren, um programmatisch Informationen einzufuegen.</p>
 
-<p>It’s important to note that these commits are listed in the opposite order than you normally see them using the <code>log</code> command. If you run a <code>log</code>, you see something like this:</p>
+<p>The <code>prepare-commit-msg</code> hook is run before the commit message editor is fired up but after the default message is created. It lets you edit the default message before the commit author sees it. This hook takes a few options: the path to the file that holds the commit message so far, the type of commit, and the commit SHA-1 if this is an amended commit. This hook generally isn’t useful for normal commits; rather, it’s good for commits where the default message is auto-generated, such as templated commit messages, merge commits, squashed commits, and amended commits. You may use it in conjunction with a commit template to programmatically insert information.</p>
 
-<pre><code>$ git log --pretty=format:&quot;%h %s&quot; HEAD~3..HEAD
-a5f4a0d added cat-file
-310154e updated README formatting and added blame
-f7f3f6d changed my name a bit</code></pre>
+<p>Der <code>commit-msg</code> Hook akzeptiert einen Parameter, der wiederum ein Pfad zu der temporären Datei ist, die die momentane Commit Nachricht enthält. Falls dieses Skript nicht Null zurueckgibt, so wird der Commit abgebrochen, somit kannst Du die Gueltigkeit des Projekstatus oder die Commit Nachricht pruefen, bevor ein Commit akzeptiert wird. Im letzten Abschnitt dieses Kapitels werde ich beschreiben, wie man diesen Hook benutzt, um sicherzustellen, dass Commit Nachrichten einem bestimmten Muster entsprechen.</p>
 
-<p>Notice the reverse order. The interactive rebase gives you a script that it’s going to run. It will start at the commit you specify on the command line (<code>HEAD~3</code>) and replay the changes introduced in each of these commits from top to bottom. It lists the oldest at the top, rather than the newest, because that’s the first one it will replay.</p>
+<p>The <code>commit-msg</code> hook takes one parameter, which again is the path to a temporary file that contains the current commit message. If this script exits non-zero, Git aborts the commit process, so you can use it to validate your project state or commit message before allowing a commit to go through. In the last section of this chapter, I’ll demonstrate using this hook to check that your commit message is conformant to a required pattern.</p>
 
-<p>You need to edit the script so that it stops at the commit you want to edit. To do so, change the word pick to the word edit for each of the commits you want the script to stop after. For example, to modify only the third commit message, you change the file to look like this:</p>
+<p>Wenn der komplette Commit Process beendet ist, wird der <code>post-commit</code> Hook ausgefuehrt. Er akzeptiert keine Parameter, aber Du kannst den letzten Commit einfach mit dem Befehl <code>git log -1 HEAD</code> abfragen. Dieses Skript wird ueblicherweise fuer Benachrichtigungen oder ähnliches benutzt.</p>
 
-<pre><code>edit f7f3f6d changed my name a bit
-pick 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file</code></pre>
+<p>After the entire commit process is completed, the <code>post-commit</code> hook runs. It doesn’t take any parameters, but you can easily get the last commit by running <code>git log -1 HEAD</code>. Generally, this script is used for notification or something similar.</p>
 
-<p>When you save and exit the editor, Git rewinds you back to the last commit in that list and drops you on the command line with the following message:</p>
+<p>Diese Client-seitigen Skripte fuer den Commit Arbeitsablauf können auch fuer so ziemlich jeden anderen Arbeitsablauf verwendet werden. Sie werden oft benutzt, um bestimmte Regeln zu erzwingen, wobei es wichtig ist zu wissen, dass diese Skripte bei einem Klonen nicht mit uebertragen werden. Du kannst auf Seiten des Servers Regeln erzwingen, die hochgeladene Commits ablehnen, die nicht gewissen Prinzipien entsprechen, aber der Benutzer selbst entscheidet allein, ob er diese Skripte auf der Client Seite benutzt. Dies sind also Skripte, die den Entwicklern helfen sollen, und sie muessen von ihnen erstellt und gepflegt werden, und sie können von ihnen jederzeit verändert oder uebergangen werden.</p>
 
-<pre><code>$ git rebase -i HEAD~3
-Stopped at 7482e0d... updated the gemspec to hopefully work better
-You can amend the commit now, with
+<p>The committing-workflow client-side scripts can be used in just about any workflow. They’re often used to enforce certain policies, although it’s important to note that these scripts aren’t transferred during a clone. You can enforce policy on the server side to reject pushes of commits that don’t conform to some policy, but it’s entirely up to the developer to use these scripts on the client side. So, these are scripts to help developers, and they must be set up and maintained by them, although they can be overridden or modified by them at any time.</p>
 
-       git commit --amend
+<h4 id='email_workflow_hooks'>E-mail Workflow Hooks</h4>
 
-Once you’re satisfied with your changes, run
+<h4 id='hooks_fuer_email_arbeitsablauf'>Hooks fuer E-mail Arbeitsablauf</h4>
 
-       git rebase --continue</code></pre>
+<p>Fuer einen e-Mail basierten Arbeitsablauf kannst Du drei Client-seitige Hooks einrichten. Sie werden alle mit dem Befehl <code>git am</code> aufgerufen, wenn Du diesen Befehl also in Deinem normalen Arbeitsablauf nicht verwendest, kannst Du zum nächsten Abschnitt springen. Falls Du Patches per e-Mail erhältst, die mit <code>git format-patch</code> erstellt wurden, könnten trotzdem einige dieser Skripte fuer Dich nuetzich sein.</p>
 
-<p>These instructions tell you exactly what to do. Type</p>
+<p>You can set up three client-side hooks for an e-mail–based workflow. They’re all invoked by the <code>git am</code> command, so if you aren’t using that command in your workflow, you can safely skip to the next section. If you’re taking patches over e-mail prepared by <code>git format-patch</code>, then some of these may be helpful to you.</p>
 
-<pre><code>$ git commit --amend</code></pre>
+<p>Der erste Hook, der ausgefuehrt wird is <code>applypatch-msg</code>. Er akzeptiert genau einen Parameter: den Namen der temporären Datei, die die vorgegebene Commit Nachricht enthält. Git bricht den Patch ab, falls dieses Skript nicht Null zurueckgibt. Du kannst dies benutzen um sicherzustellen, dass die Commit Nachricht richtig formatiert ist, oder um die Nachricht zu standardisieren, indem das Skript sie direkt editiert.</p>
 
-<p>Change the commit message, and exit the editor. Then, run</p>
+<p>The first hook that is run is <code>applypatch-msg</code>. It takes a single argument: the name of the temporary file that contains the proposed commit message. Git aborts the patch if this script exits non-zero. You can use this to make sure a commit message is properly formatted or to normalize the message by having the script edit it in place.</p>
 
-<pre><code>$ git rebase --continue</code></pre>
+<p>Der nächste Hook, der beim Patchen vie <code>gti am</code> ausgefuehrt wird ist <code>pre-applypatch</code>. Er benötigt keine Parameter und wird direkt nach Anwendung des Patches ausgefuehrt, somit kannst Du damit einen Schnappschuss des Projektes direkt vor einem Commit inspizieren. Du kannst mit diesem Skript Tests ablaufen lassen oder das Arbeitsverzeichnis anderweitig untersuchen. Falls etwas fehlt oder ein Test fehlschlägt, sorgt eine Beenden des Skriptes mit einem Wert anders als Null ebenfalls fuer das Abbrechen des <code>git am</code> Skriptes, ohne Commit des Patches.</p>
 
-<p>This command will apply the other two commits automatically, and then you’re done. If you change pick to edit on more lines, you can repeat these steps for each commit you change to edit. Each time, Git will stop, let you amend the commit, and continue when you’re finished.</p>
+<p>The next hook to run when applying patches via <code>git am</code> is <code>pre-applypatch</code>. It takes no arguments and is run after the patch is applied, so you can use it to inspect the snapshot before making the commit. You can run tests or otherwise inspect the working tree with this script. If something is missing or the tests don’t pass, exiting non-zero also aborts the <code>git am</code> script without committing the patch.</p>
 
-<h3 id='reordering_commits'>Reordering Commits</h3>
+<p>Der letzte Hook, der währen des <code>git am</code> Operation ausgefuehrt wird ist <code>post-applypatch</code>. Du kannst dies verwenden, um eine Benutzergruppe oder den Autoren des Patches darueber zu informieren, dass der Patch angewendet wurde. Du kannst das Patchen mit diesem Skript nicht mehr abbrechen.</p>
 
-<p>You can also use interactive rebases to reorder or remove commits entirely. If you want to remove the &#8220;added cat-file&#8221; commit and change the order in which the other two commits are introduced, you can change the rebase script from this</p>
+<p>The last hook to run during a <code>git am</code> operation is <code>post-applypatch</code>. You can use it to notify a group or the author of the patch you pulled in that you’ve done so. You can’t stop the patching process with this script.</p>
 
-<pre><code>pick f7f3f6d changed my name a bit
-pick 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file</code></pre>
+<h4 id='other_client_hooks'>Other Client Hooks</h4>
 
-<p>to this:</p>
+<h4 id='andere_hooks_fuer_den_client'>Andere Hooks fuer den Client</h4>
 
-<pre><code>pick 310154e updated README formatting and added blame
-pick f7f3f6d changed my name a bit</code></pre>
+<p>Der <code>pre-rebase</code> Hook wird ausgefuehrt, bevor ein Rebase irgendetwas verändert, und er kann den Prozess durch einen Exit-Wert ungleich Null abbrechen. Du kannst diesen Hook benutzen, um zu verhindern, dass bereits hochgeladene Commits auf einen anderen Branch umbasiert werden. Der von Git installierte Beispiel-Hook fuer <code>pre-rebase</code>macht genau das, allerdings nimmt dieser an, dass der Name des veröffentlichten Branches &#8216;next&#8217; ist. Du wirst das wahrscheinlich in den Namen umändern muessen, der Deinem stabilen, öffentlichen Branch entspricht.</p>
 
-<p>When you save and exit the editor, Git rewinds your branch to the parent of these commits, applies <code>310154e</code> and then <code>f7f3f6d</code>, and then stops. You effectively change the order of those commits and remove the &#8220;added cat-file&#8221; commit completely.</p>
+<p>The <code>pre-rebase</code> hook runs before you rebase anything and can halt the process by exiting non-zero. You can use this hook to disallow rebasing any commits that have already been pushed. The example <code>pre-rebase</code> hook that Git installs does this, although it assumes that next is the name of the branch you publish. You’ll likely need to change that to whatever your stable, published branch is.</p>
 
-<h3 id='squashing_a_commit'>Squashing a Commit</h3>
+<p>Nach jedem erfolgreichen <code>git-checkout</code> wird der <code>post-checkout</code> Hook ausgefuehrt; Du kannst ihn benutzen, um Dein Arbeitsverzeichnis korrekt fuer Deine Arbeitsumgebung einzurichten. Das kann das hinzukopieren grosser Binärdateien bedeuten, die Du nicht unter Versionskontrolle stellen möchtest, das automatische Generieren von Dokumentation, oder entsprechend ähnliche Aktionen.</p>
 
-<p>It’s also possible to take a series of commits and squash them down into a single commit with the interactive rebasing tool. The script puts helpful instructions in the rebase message:</p>
+<p>After you run a successful <code>git checkout</code>, the <code>post-checkout</code> hook runs; you can use it to set up your working directory properly for your project environment. This may mean moving in large binary files that you don’t want source controlled, auto-generating documentation, or something along those lines.</p>
 
-<pre><code>#
-# Commands:
-#  p, pick = use commit
-#  e, edit = use commit, but stop for amending
-#  s, squash = use commit, but meld into previous commit
-#
-# If you remove a line here THAT COMMIT WILL BE LOST.
-# However, if you remove everything, the rebase will be aborted.
-#</code></pre>
+<p>Abschliessend wird noch der <code>post-merge</code> Hook nach einem erfolgreichen <code>merge</code> ausgefuehrt. Du kannst diesen benutzen, um Daten in Deinem Arbeitsverzeichnis wiederherzustellen, die Git nicht verfolgen kann, wie zum Beispiel Berechtigungsdaten. Dieser Hook kann genauso auch zur Bestätigung des Vorhandenseins von Dateien ausserhalb der Git Kontrolle dienen, die Du eventuell hinzukopieren möchtest, wenn das Arbeitsverzeichnis verändert worden ist.</p>
 
-<p>If, instead of &#8220;pick&#8221; or &#8220;edit&#8221;, you specify &#8220;squash&#8221;, Git applies both that change and the change directly before it and makes you merge the commit messages together. So, if you want to make a single commit from these three commits, you make the script look like this:</p>
+<p>Finally, the <code>post-merge</code> hook runs after a successful <code>merge</code> command. You can use it to restore data in the working tree that Git can’t track, such as permissions data. This hook can likewise validate the presence of files external to Git control that you may want copied in when the working tree changes.</p>
 
-<pre><code>pick f7f3f6d changed my name a bit
-squash 310154e updated README formatting and added blame
-squash a5f4a0d added cat-file</code></pre>
+<h3 id='serverside_hooks'>Server-Side Hooks</h3>
 
-<p>When you save and exit the editor, Git applies all three changes and then puts you back into the editor to merge the three commit messages:</p>
+<h3 id='serverseitige_hooks'>Serverseitige Hooks</h3>
 
-<pre><code># This is a combination of 3 commits.
-# The first commit&#39;s message is:
-changed my name a bit
+<p>Neben den Client-seitigen Hooks kannst Du als System Administrator noch einige wichtige Hooks auf Seiten des Servers einsetzen, um so ziemlich jede Art von Richtlinie fuer Dein Projekt zu erzwingen. Diese Skripte werden ausgefuehrt bevor und nachdem Daten auf den Server hochgeladen wurden. Die vorgelagerten Hooks können jederzeit mit einem Ruckgabewert ungleich Null abbrechen und somit das Hochladen verweigern und dem Client eine Fehlermeldung zurueckliefern; eine von Dir eingerichtete Push-Richtlinie kann so komplex sein, wie Du willst.</p>
 
-# This is the 2nd commit message:
+<p>In addition to the client-side hooks, you can use a couple of important server-side hooks as a system administrator to enforce nearly any kind of policy for your project. These scripts run before and after pushes to the server. The pre hooks can exit non-zero at any time to reject the push as well as print an error message back to the client; you can set up a push policy that’s as complex as you wish.</p>
 
-updated README formatting and added blame
+<h4 id='prereceive_and_postreceive'>pre-receive and post-receive</h4>
 
-# This is the 3rd commit message:
+<h4 id='prereceive_und_postreceive'>pre-receive und post-receive</h4>
 
-added cat-file</code></pre>
+<p>Das erste Skript, dass ausgefuehrt wird, wenn ein Push von einem Client empfangen wird ist <code>pre-receive</code>. Es akzeptiert eine Liste von Referenzen, die ueber &#8216;stdin&#8217; hochgeladen werden; wird es mit einem Wert ungleich Null beendet, so wird keine von ihnen akzeptiert. Du kannst diesen Hook benutzen, um sicherzustellen, dass keine der aktualisierten Referenzen Nicht-&#8216;fast-forwards&#8217; sind; oder um zu pruefen, dass der hochladende Benutzer die Berechtigung zum Erstellen, Löschen oder Hochladen hat, oder die Berechtigung Aktualisierungen fuer alle Dateien hochzuladen, die er mit dem Push verändert.</p>
 
-<p>When you save that, you have a single commit that introduces the changes of all three previous commits.</p>
+<p>The first script to run when handling a push from a client is <code>pre-receive</code>. It takes a list of references that are being pushed from stdin; if it exits non-zero, none of them are accepted. You can use this hook to do things like make sure none of the updated references are non-fast-forwards; or to check that the user doing the pushing has create, delete, or push access or access to push updates to all the files they’re modifying with the push.</p>
 
-<h3 id='splitting_a_commit'>Splitting a Commit</h3>
+<p>Der <code>post-receive</code> Hook läuft ab, nachdem der komplette Prozess abgeschlossen ist und aktualisieren anderer Dienste oder zum Benachrichtigen von Benutzern verwendet werden. Er erwartet die gleichen &#8216;stdin&#8217; Daten wie <code>pre-receive</code>. Beispiele umfassen das Versenden von e-Mails an eine Liste, Benachtichtigen eines durchgehenden Integrations-Servers, oder das Aktualisieren eines Ticket oder Fehler-Verfolgungssystems.</p>
 
-<p>Splitting a commit undoes a commit and then partially stages and commits as many times as commits you want to end up with. For example, suppose you want to split the middle commit of your three commits. Instead of &#8220;updated README formatting and added blame&#8221;, you want to split it into two commits: &#8220;updated README formatting&#8221; for the first, and &#8220;added blame&#8221; for the second. You can do that in the <code>rebase -i</code> script by changing the instruction on the commit you want to split to &#8220;edit&#8221;:</p>
+<p>The <code>post-receive</code> hook runs after the entire process is completed and can be used to update other services or notify users. It takes the same stdin data as the <code>pre-receive</code> hook. Examples include e-mailing a list, notifying a continuous integration server, or updating a ticket-tracking system — you can even parse the commit messages to see if any tickets need to be opened, modified, or closed. This script can’t stop the push process, but the client doesn’t disconnect until it has completed; so, be careful when you try to do anything that may take a long time.</p>
 
-<pre><code>pick f7f3f6d changed my name a bit
-edit 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file</code></pre>
+<h4 id='update'>update</h4>
 
-<p>Then, when the script drops you to the command line, you reset that commit, take the changes that have been reset, and create multiple commits out of them. When you save and exit the editor, Git rewinds to the parent of the first commit in your list, applies the first commit (<code>f7f3f6d</code>), applies the second (<code>310154e</code>), and drops you to the console. There, you can do a mixed reset of that commit with <code>git reset HEAD^</code>, which effectively undoes that commit and leaves the modified files unstaged. Now you can stage and commit files until you have several commits, and run <code>git rebase --continue</code> when you’re done:</p>
-
-<pre><code>$ git reset HEAD^
-$ git add README
-$ git commit -m &#39;updated README formatting&#39;
-$ git add lib/simplegit.rb
-$ git commit -m &#39;added blame&#39;
-$ git rebase --continue</code></pre>
-
-<p>Git applies the last commit (<code>a5f4a0d</code>) in the script, and your history looks like this:</p>
-
-<pre><code>$ git log -4 --pretty=format:&quot;%h %s&quot;
-1c002dd added cat-file
-9b29157 added blame
-35cfb2b updated README formatting
-f3cc40e changed my name a bit</code></pre>
-
-<p>Once again, this changes the SHAs of all the commits in your list, so make sure no commit shows up in that list that you’ve already pushed to a shared repository.</p>
-
-<h3 id='the_nuclear_option_filterbranch'>The Nuclear Option: filter-branch</h3>
-
-<p>There is another history-rewriting option that you can use if you need to rewrite a larger number of commits in some scriptable way — for instance, changing your e-mail address globally or removing a file from every commit. The command is <code>filter-branch</code>, and it can rewrite huge swaths of your history, so you probably shouldn’t use it unless your project isn’t yet public and other people haven’t based work off the commits you’re about to rewrite. However, it can be very useful. You’ll learn a few of the common uses so you can get an idea of some of the things it’s capable of.</p>
-
-<h4 id='removing_a_file_from_every_commit'>Removing a File from Every Commit</h4>
-
-<p>This occurs fairly commonly. Someone accidentally commits a huge binary file with a thoughtless <code>git add .</code>, and you want to remove it everywhere. Perhaps you accidentally committed a file that contained a password, and you want to make your project open source. <code>filter-branch</code> is the tool you probably want to use to scrub your entire history. To remove a file named passwords.txt from your entire history, you can use the <code>--tree-filter</code> option to <code>filter-branch</code>:</p>
-
-<pre><code>$ git filter-branch --tree-filter &#39;rm -f passwords.txt&#39; HEAD
-Rewrite 6b9b3cf04e7c5686a9cb838c3f36a8cb6a0fc2bd (21/21)
-Ref &#39;refs/heads/master&#39; was rewritten</code></pre>
-
-<p>The <code>--tree-filter</code> option runs the specified command after each checkout of the project and then recommits the results. In this case, you remove a file called passwords.txt from every snapshot, whether it exists or not. If you want to remove all accidentally committed editor backup files, you can run something like <code>git filter-branch --tree-filter &#39;rm -f *~&#39; HEAD</code>.</p>
-
-<p>You’ll be able to watch Git rewriting trees and commits and then move the branch pointer at the end. It’s generally a good idea to do this in a testing branch and then hard-reset your master branch after you’ve determined the outcome is what you really want. To run <code>filter-branch</code> on all your branches, you can pass <code>--all</code> to the command.</p>
-
-<h4 id='making_a_subdirectory_the_new_root'>Making a Subdirectory the New Root</h4>
-
-<p>Suppose you’ve done an import from another source control system and have subdirectories that make no sense (trunk, tags, and so on). If you want to make the <code>trunk</code> subdirectory be the new project root for every commit, <code>filter-branch</code> can help you do that, too:</p>
-
-<pre><code>$ git filter-branch --subdirectory-filter trunk HEAD
-Rewrite 856f0bf61e41a27326cdae8f09fe708d679f596f (12/12)
-Ref &#39;refs/heads/master&#39; was rewritten</code></pre>
-
-<p>Now your new project root is what was in the <code>trunk</code> subdirectory each time. Git will also automatically remove commits that did not affect the subdirectory.</p>
-
-<h4 id='changing_email_addresses_globally'>Changing E-Mail Addresses Globally</h4>
-
-<p>Another common case is that you forgot to run <code>git config</code> to set your name and e-mail address before you started working, or perhaps you want to open-source a project at work and change all your work e-mail addresses to your personal address. In any case, you can change e-mail addresses in multiple commits in a batch with <code>filter-branch</code> as well. You need to be careful to change only the e-mail addresses that are yours, so you use <code>--commit-filter</code>:</p>
-
-<pre><code>$ git filter-branch --commit-filter &#39;
-        if [ &quot;$GIT_AUTHOR_EMAIL&quot; = &quot;schacon@localhost&quot; ];
-        then
-                GIT_AUTHOR_NAME=&quot;Scott Chacon&quot;;
-                GIT_AUTHOR_EMAIL=&quot;schacon@example.com&quot;;
-                git commit-tree &quot;$@&quot;;
-        else
-                git commit-tree &quot;$@&quot;;
-        fi&#39; HEAD</code></pre>
-
-<p>This goes through and rewrites every commit to have your new address. Because commits contain the SHA-1 values of their parents, this command changes every commit SHA in your history, not just those that have the matching e-mail address.</p>
+<p>The update script is very similar to the <code>pre-receive</code> script, except that it’s run once for each branch the pusher is trying to update. If the pusher is trying to push to multiple branches, <code>pre-receive</code> runs only once, whereas update runs once per branch they’re pushing to. Instead of reading from stdin, this script takes three arguments: the name of the reference (branch), the SHA-1 that reference pointed to before the push, and the SHA-1 the user is trying to push. If the update script exits non-zero, only that reference is rejected; other references can still be updated.</p>
 
 <div id='nav'>
 <a href='ch6-5.html'>prev</a> | <a href='ch6-7.html'>next</a>

@@ -1,69 +1,210 @@
 ---
 layout: translation
-title: Pro Git 1.4 Úvod Instalujeme Git
+title: Pro Git 1.4 Nástroje systému Git Přepis historie
 ---
-<h2 id='instalujeme_git'>Instalujeme Git</h2>
+<h2 id='pepis_historie'>Přepis historie</h2>
 
-<p>Ponořme se nyní do používání Gitu. Ale od začátku &#8211; nejprve ho musíte nainstalovat; dá se získat mnoha způsoby &#8211; dva hlavní jsou instalace ze zdrojových souborů a instalace už existujícího balíčku pro váš systém.</p>
+<p>Při práci se systémem Git možná budete z nějakého důvodu čas od času potřebovat poopravit historii revizí. Jednou ze skvělých možností, které vám Git nabízí, jsou rozhodnutí na poslední chvíli. Jaké soubory budou součástí jaké revize? To můžete rozhodnout až těsně před tím, než soubory zapíšete z oblasti připravených změn. Můžete se rozmyslet, že jste na něčem ještě nechtěli pracovat, a použít možnost odložení. A stejně tak můžete přepsat už jednou zapsané revize. Budou vypadat, jako by byly zapsány v jiné podobě. K této možnosti patří změna pořadí revizí, změny ve zprávách nebo úprava souborů v revizích, komprimace i dělení revizí nebo třeba jejich úplné odstranění. Všechno toto můžete provést, dokud nezačnete sdílet revize s ostatními.</p>
 
-<h3 id='instalujeme_ze_zdroje'>Instalujeme ze zdroje</h3>
+<p>V této části se dozvíte, jak se tyto velmi užitečné úkony provádějí, abyste mohli svou historii revizí před zveřejněním upravit podle svých představ.</p>
 
-<p>Pokud to umíte, je obecně možné instalovat Git ze zdrojových kódů, protože získáte nejnovější verzi. Vývojáři se stále snaží vylepšovat uživatelské rozhraní, takže stažení poslední verze je obvykle nejlepší cesta k cíli, pokud se tedy cítíte na překládání zdrojových souborů. To je také řešení případu, kdy je ve mnoha dostribucích Linuxu dostupný jen nějaký starý balík; takže pokud zrovna nemáte nějakou aktuální distribuci nebo nepoužíváte &#8220;backports&#8221;, bude instalace ze zdroje asi nejlepší možností.</p>
+<h3 id='zmna_posledn_revize'>Změna poslední revize</h3>
 
-<p>Git závisí na několika knihovnách, bez kterých ho nenainstalujete: curl, zlib, openssl, expat a libiconv. Např. pokud máte distribuci užívající balíčkovací systém Yum (Fedora) nebo Apt (Debian a distribuce na něm založené), můžete použít jeden z těchto příkazů k instalaci těchto závislostí.</p>
+<p>Změna poslední revize je pravděpodobně nejobvyklejším způsobem přepsání historie, který budete provádět. Na poslední revizi budete často chtít měnit dvě věci: zprávu k revizi nebo čerstvě zapsaný snímek, v němž budete chtít přidat, změnit nebo odstranit soubory.</p>
 
-<pre><code>$ yum install curl-devel expat-devel gettext-devel \
-  openssl-devel zlib-devel
+<p>Chcete-li pouze změnit zprávu k poslední revizi, je to velmi jednoduché:</p>
 
-$ apt-get install libcurl4-gnutls-dev libexpat1-dev gettext \
-  libz-dev</code></pre>
+<pre><code>$ git commit --amend</code></pre>
 
-<p>Když jste už všechno nainstalovali, můžete pokročit dále a stáhnout si poslední verzi z webových stránek Gitu:</p>
+<p>Tím se přesunete do textového editoru, v němž bude otevřena vaše poslední zpráva k revizi. Nyní ji můžete upravit. Po uložení změn a zavření editoru zapíše editor novou revizi, která bude obsahovat upravenou zprávu a která bude vaší novou poslední revizí.</p>
 
-<pre><code>http://git-scm.com/download</code></pre>
+<p>Pokud jste zapsali revizi a uvědomíte si, že jste např. zapomněli přidat nově vytvořený soubor, a proto byste chtěli zapsaný snímek změnit (tedy přidat nebo změnit soubory), je postup ke změně v podstatě stejný. Změny, které chcete zapsat, připravíte tím způsobem, že upravíte příslušné soubory a použijete na ně příkaz <code>git add</code>, resp. <code>git rm</code>. Příkaz <code>git commit --amend</code> poté vezme vaši oblast připravených změn v aktuální podobě a vytvoří snímek nové revize.</p>
 
-<p>Rozbalíme, přeložíme a nainstalujeme:</p>
+<p>Tady byste měli být opatrní, protože oprava revize změní také její hodnotu SHA-1. Je to něco jako malé přeskládání – neopravujte poslední revizi, pokud jste ji už odeslali.</p>
 
-<pre><code>$ tar -zxf git-1.6.0.5.tar.gz
-$ cd git-1.6.0.5
-$ make prefix=/usr/local all
-$ sudo make prefix=/usr/local install</code></pre>
+<h3 id='zmna_nkolika_zprv_k_revizm'>Změna několika zpráv k revizím</h3>
 
-<p>Když jsme hotovi, můžeme také získat Git prostřednictvím jeho samotného (možnost další aktualizace):</p>
+<p>Chcete-li změnit revizi, která leží hlouběji ve vaší historii, budete muset sáhnout po složitějších nástrojích. Git nemá zvláštní nástroj k úpravě historie, ale můžete využít nástroje přeskládání, jímž přeskládáte sérii revizí na revizi HEAD, na níž se původně zakládaly. Revize není třeba přesouvat jinam. S interaktivním nástrojem přeskládání pak můžete zastavit po každé revizi, kterou chcete upravit, a změnit u ní zprávu, přidat soubory nebo cokoli dalšího. Interaktivní režim přeskládání spustíte příkazem <code>git rebase</code> s parametrem <code>-i</code>. Musíte specifikovat, jak hluboko do historie se chcete vrátit a přepisovat revize. K příkazu proto musíte zadat, na jakou revizi si přejete přeskládání provést.</p>
 
-<pre><code>$ git clone git://git.kernel.org/pub/scm/git/git.git</code></pre>
+<p>Pokud chcete například změnit zprávy u posledních tří revizí nebo jakoukoli zprávu k revizi z této skupiny, přidejte jako parametr k příkazu <code>git rebase -i</code> rodiče poslední revize, kterou chcete upravovat, v tomto případě tedy <code>HEAD~2^</code> nebo <code>HEAD~3</code>. Snazší k zapamatování je varianta s výrazem <code>~3</code>, neboť se pokoušíte upravit poslední tři revize. Nezapomeňte ale, že tím ve skutečnosti označujete čtvrtou revizi od konce, tedy rodiče poslední revize, kterou chcete upravit:</p>
 
-<h3 id='instalujeme_na_linuxu'>Instalujeme na Linuxu</h3>
+<pre><code>$ git rebase -i HEAD~3</code></pre>
 
-<p>Pokud chcete instalovat Git na Linuxu z binárního balíčku, měli byste použít váš balíčkovací program podle vaší distribuce, který udělá vše za vás. Pokud máte Fedoru, můžete použít Yum:</p>
+<p>Mějte na paměti, že se stále jedná o příkaz přeskládání a každá revize zahrnutá v intervalu <code>HEAD~3..HEAD</code> bude přepsána, ať už její zprávu změníte, nebo ponecháte. Neměňte tímto způsobem žádné revize, které už jste odeslali na centrální server, způsobili byste tím problémy ostatním vývojářům, kteří by se museli potýkat s jinou verzí téže změny.</p>
 
-<pre><code>$ yum install git-core</code></pre>
+<p>Spuštěním tohoto příkazu otevřete textový editor se seznamem revizí zhruba v této podobě:</p>
 
-<p>Nebo pokud jste na distribuci založené na Debianu (např. Ubuntu), použijte Apt:</p>
+<pre><code>pick f7f3f6d changed my name a bit
+pick 310154e updated README formatting and added blame
+pick a5f4a0d added cat-file
 
-<pre><code>$ apt-get install git-core</code></pre>
+# Rebase 710f0f8..a5f4a0d onto 710f0f8
+#
+# Commands:
+#  p, pick = use commit
+#  e, edit = use commit, but stop for amending
+#  s, squash = use commit, but meld into previous commit
+#
+# If you remove a line here THAT COMMIT WILL BE LOST.
+# However, if you remove everything, the rebase will be aborted.
+#</code></pre>
 
-<h3 id='instalujeme_na_macu'>Instalujeme na Macu</h3>
+<p>Tady bychom chtěli upozornit, že revize jsou uvedeny v opačném pořadí, než jste zvyklí v případě příkazu <code>log</code>. Po spuštění příkazu <code>log</code> by se zobrazilo následující:</p>
 
-<p>Existují dva jednoduché způsoby, jak nainstalovat Git na Mac. Nejjednodušší je použít grafický instalátor, který si můžete stáhnout ze stránek Google Code (viz obr. 1-7):</p>
+<pre><code>$ git log --pretty=format:&quot;%h %s&quot; HEAD~3..HEAD
+a5f4a0d added cat-file
+310154e updated README formatting and added blame
+f7f3f6d changed my name a bit</code></pre>
 
-<pre><code>http://code.google.com/p/git-osx-installer</code></pre>
+<p>Všimněte si, že se pořadí obrátilo. V interaktivním režimu přeskládání se nyní spustí skript. Začne na revizi, kterou jste označili na příkazovém řádku (<code>HEAD~3</code>), a přehraje změny provedené v každé z těchto revizí od shora dolů. Seznam uvádí nejstarší revizi nahoře z toho důvodu, že to bude první revize, kterou příkaz přehraje.</p>
 
-<p><center><img src="/figures/ch1/18333fig0107-tn.png"></center><br/> Obrázek 1-7. Git OS X installer</p>
+<p>Skript je třeba upravit tak, aby zastavil na revizi, v níž chcete provést změny. Změňte proto slovo pick na edit pro každou z revizí, po níž má skript zastavit. Chcete-li například změnit pouze zprávu ke třetí revizi, změňte soubor následovně:</p>
 
-<p>Druhá základní možnost je přes MacPorts (<code>http://www.macports.org</code>). Když už je máte, instalujete Git pomocí</p>
+<pre><code>edit f7f3f6d changed my name a bit
+pick 310154e updated README formatting and added blame
+pick a5f4a0d added cat-file</code></pre>
 
-<pre><code>$ sudo port install git-core +svn +doc +bash_completion +gitweb</code></pre>
+<p>Po uložení změn a zavření editoru vás Git vrátí zpět na poslední revizi v seznamu a zobrazí vám příkazový řádek s touto zprávou:</p>
 
-<p>Nemusíte samozřejmě přidávat všechny extra balíčky, ale určitě si vyberete např. +svn, pokud musíte ještě používat Git s repozitáři Subversion (více v kapitole 8).</p>
+<pre><code>$ git rebase -i HEAD~3
+Stopped at 7482e0d... updated the gemspec to hopefully work better
+You can amend the commit now, with
 
-<h3 id='instalujeme_na_windows'>Instalujeme na Windows</h3>
+       git commit --amend
 
-<p>Nainstalovat Git na Windows je velmi jednoduché. Stáhněte si exe instalátor ze stránek Google Code a spusťte ho:</p>
+Once you’re satisfied with your changes, run
 
-<pre><code>http://code.google.com/p/msysgit</code></pre>
+       git rebase --continue</code></pre>
 
-<p>Po dokončení instalace máte jak verzi pro příkazový řádek (včetně SSH klienta, který se bude hodit později), tak standardní grafické rozhraní.</p>
+<p>Tyto instrukce vám sdělují, že nyní můžete upravit revizi příkazem git commit &#8211;amend, a až budete se změnami hotovi, spustit příkaz git rebase &#8211;continue. Zadejme tedy:</p>
+
+<pre><code>$ git commit --amend</code></pre>
+
+<p>Změňte zprávu k revizi a zavřete textový editor. Poté spusťte příkaz:</p>
+
+<pre><code>$ git rebase --continue</code></pre>
+
+<p>Tento příkaz automaticky aplikuje zbývající dvě revize. Tím je celý proces dokončen. Změníte-li výraz pick na edit na více řádcích, můžete tyto kroky opakovat pro každou revizi, u níž jste změnu provedli. Git pokaždé zastaví, nechá vás revizi upravit, a až budete hotovi, bude pokračovat.</p>
+
+<h3 id='zmna_poad_reviz'>Změna pořadí revizí</h3>
+
+<p>Interaktivní přeskládání můžete použít rovněž ke změně pořadí revizí nebo k jejich odstranění. Budete-li chtít odstranit revizi „added cat-file“ a současně změnit pořadí, v němž se vyskytují zbývající dvě revize, změňte skript přeskládání z podoby:</p>
+
+<pre><code>pick f7f3f6d changed my name a bit
+pick 310154e updated README formatting and added blame
+pick a5f4a0d added cat-file</code></pre>
+
+<p>na:</p>
+
+<pre><code>pick 310154e updated README formatting and added blame
+pick f7f3f6d changed my name a bit</code></pre>
+
+<p>Jakmile uložíte změny a zavřete editor, Git vrátí vaši větev zpět na rodiče těchto revizí, aplikuje revizi <code>310154e</code>, po ní revizi <code>f7f3f6d</code> a zastaví. Jednoduše jste změnili pořadí těchto revizí a zároveň jste zcela odstranili revizi „added cat-file“.</p>
+
+<h3 id='komprimace_revize'>Komprimace revize</h3>
+
+<p>Další možností, jak lze využít interaktivního nástroje přeskládání, je komprimace série revizí do jediné revize. Skript vám ve zprávě k přeskládání podává užitečné instrukce:</p>
+
+<pre><code>#
+# Commands:
+#  p, pick = use commit
+#  e, edit = use commit, but stop for amending
+#  s, squash = use commit, but meld into previous commit
+#
+# If you remove a line here THAT COMMIT WILL BE LOST.
+# However, if you remove everything, the rebase will be aborted.
+#</code></pre>
+
+<p>Zadáte-li místo pick nebo edit instrukci pro komprimaci squash, Git aplikuje změnu na tomto řádku a změnu těsně před ní a zároveň sloučí dohromady obě zprávy k revizím. Chcete-li tedy vytvořit jedinou revizi z těchto tří revizí, bude skript vypadat takto:</p>
+
+<pre><code>pick f7f3f6d changed my name a bit
+squash 310154e updated README formatting and added blame
+squash a5f4a0d added cat-file</code></pre>
+
+<p>Po uložení změn a zavření editoru aplikuje Git všechny tři změny a znovu otevře textový editor, abyste sloučili všechny zprávy k revizím:</p>
+
+<pre><code># This is a combination of 3 commits.
+# The first commit&#39;s message is:
+changed my name a bit
+
+# This is the 2nd commit message:
+
+updated README formatting and added blame
+
+# This is the 3rd commit message:
+
+added cat-file</code></pre>
+
+<p>Po uložení zprávy budete mít jedinou revizi, která bude obsahovat všechny změny předchozích tří revizí.</p>
+
+<h3 id='rozdlen_revize'>Rozdělení revize</h3>
+
+<p>Rozdělení revize vrátí všechny změny v revizi obsažené a po částech je znovu připraví a zapíše do tolika revizí, kolik určíte jako konečný počet. Řekněme, že chcete rozdělit třeba prostřední ze svých tří revizí. Revizi „updated README formatting and added blame“ chcete rozdělit do dvou jiných: „updated README formatting“ jako první a „added blame“ jako druhou. Můžete to provést pomocí skriptu <code>rebase -i</code>. U revize, kterou si přejete rozdělit, změňte instrukci na edit:</p>
+
+<pre><code>pick f7f3f6d changed my name a bit
+edit 310154e updated README formatting and added blame
+pick a5f4a0d added cat-file</code></pre>
+
+<p>Až vás poté skript přesune na příkazový řádek, resetujete revizi, vezmete změny, které jste resetovali, a vytvoříte z nich několik dílčích revizí. Až uložíte změny a zavřete editor, Git se vrátí na rodiče první revize ve vašem seznamu, aplikuje první revizi (<code>f7f3f6d</code>), aplikuje druhou revizi (<code>310154e</code>) a přesune vás na konzoli. Tam můžete vytvořit smíšený reset této revize pomocí příkazu <code>git reset HEAD^</code>, který efektivně vrátí všechny změny v revizi a ponechá změněné soubory nepřipraveny k zapsání. Nyní můžete připravit a zapsat soubory. Až budete mít jednotlivé revize hotové a budete spokojeni s jejich podobou, zadejte příkaz <code>git rebase --continue</code>:</p>
+
+<pre><code>$ git reset HEAD^
+$ git add README
+$ git commit -m &#39;updated README formatting&#39;
+$ git add lib/simplegit.rb
+$ git commit -m &#39;added blame&#39;
+$ git rebase --continue</code></pre>
+
+<p>Git aplikuje poslední revizi (<code>a5f4a0d</code>) ve skriptu. Vaše historie bude vypadat takto:</p>
+
+<pre><code>$ git log -4 --pretty=format:&quot;%h %s&quot;
+1c002dd added cat-file
+9b29157 added blame
+35cfb2b updated README formatting
+f3cc40e changed my name a bit</code></pre>
+
+<p>Také v tomto případě se změní hodnoty SHA všech revizí v seznamu, a proto se nejprve ujistěte, že seznam neobsahuje žádné revize, které jste už odeslali do sdíleného repozitáře.</p>
+
+<h3 id='pitbul_mezi_pkazy_filterbranch'>Pitbul mezi příkazy: filter-branch</h3>
+
+<p>Existuje ještě další možnost přepisu historie, kterou vám Git nabízí pro případy, kdy potřebujete skriptovatelným způsobem přepsat větší počet revizí, např. globálně změnit e-mailovou adresu nebo odstranit jeden soubor ze všech revizí. Příkaz pro tento případ je <code>filter-branch</code>. Dokáže přepsat velké části vaší historie, a proto byste ho určitě neměli používat, pokud už byl váš projekt zveřejněn a ostatní uživatelé už založili svou práci na revizích, které hodláte přepsat. Příkaz přesto může být velmi užitečný. Dále poznáte několik běžných situací, v nichž ho lze použít, a získáte tak představu, co všechno příkaz dovede.</p>
+
+<h4 id='odstrann_souboru_ze_vech_reviz'>Odstranění souboru ze všech revizí</h4>
+
+<p>Toto je opravdu velmi častá situace. Někdo příkazem <code>git add .</code> bezmyšlenkovitě zapsal obří binární soubor a vy ho chcete odstranit ze všech revizí. Nebo jste omylem zapsali soubor obsahující vaše heslo, ale chcete, aby byl váš projekt veřejný. Nástrojem, který hledáte k opravení celé historie, je <code>filter-branch</code>. Pro odstranění souboru s názvem passwords.txt z celé historie můžete použít parametr <code>--tree-filter</code>, který přidáte k příkazu <code>filter-branch</code>:</p>
+
+<pre><code>$ git filter-branch --tree-filter &#39;rm -f passwords.txt&#39; HEAD
+Rewrite 6b9b3cf04e7c5686a9cb838c3f36a8cb6a0fc2bd (21/21)
+Ref &#39;refs/heads/master&#39; was rewritten</code></pre>
+
+<p>Parametr <code>--tree-filter</code> spustí zadaný příkaz po každém checkoutu projektu a znovu zapíše jeho výsledky. V tomto případě odstraníte soubor s názvem passwords.txt ze všech snímků, ať v nich existuje, nebo neexistuje. Chcete-li odstranit všechny nedopatřením zapsané záložní soubory editoru, můžete spustit zhruba toto: <code>git filter-branch --tree-filter &#39;rm -f *~&#39; HEAD</code>.</p>
+
+<p>Uvidíte, jak Git přepisuje stromy a revize a poté přemístí ukazatel větve na konec. Většinou se vyplatí provádět toto všechno v testovací větvi a k tvrdému resetu hlavní větve přistoupit až poté, co se ujistíte, že výsledek odpovídá vašim očekáváním. Chcete-li spustit příkaz <code>filter-branch</code> na všech větvích, zadejte k příkazu parametr <code>--all</code>.</p>
+
+<h4 id='poven_podadrese_na_nov_koenov_adres'>Povýšení podadresáře na nový kořenový adresář</h4>
+
+<p>Předpokládejme, že jste dokončili import z jiného systému ke správě zdrojového kódu a máte podadresáře, které nedávají žádný smysl (trunk, tags apod.). Chcete-li udělat z podadresáře <code>trunk</code> nový kořenový adresář projektu pro všechny revize, i s tím vám pomůže příkaz <code>filter-branch</code>:</p>
+
+<pre><code>$ git filter-branch --subdirectory-filter trunk HEAD
+Rewrite 856f0bf61e41a27326cdae8f09fe708d679f596f (12/12)
+Ref &#39;refs/heads/master&#39; was rewritten</code></pre>
+
+<p>Vaším nový kořenovým adresářem je nyní obsah podadresáře <code>trunk</code>. Git také automaticky odstraní revize, které nemají na podadresář žádný vliv.</p>
+
+<h4 id='globln_zmna_emailov_adresy'>Globální změna e-mailové adresy</h4>
+
+<p>Dalším častým případem bývá, že uživatel zapomene spustit příkaz <code>git config</code> a nastavit své jméno a e-mailovou adresu, než začne se systémem Git pracovat. Stejně tak se může stát, že budete chtít převést pracovní projekt na otevřený zdrojový kód a změnit všechny své pracovní e-mailové adresy na soukromé. V obou těchto případech můžete změnit e-mailové adresy v několika revizích hromadně příkazem <code>filter-branch</code>. Měli byste být opatrní, abyste změnili jen e-mailové adresy, které jsou opravdu vaše. Použijte proto parametr <code>--commit-filter</code>:</p>
+
+<pre><code>$ git filter-branch --commit-filter &#39;
+        if [ &quot;$GIT_AUTHOR_EMAIL&quot; = &quot;schacon@localhost&quot; ];
+        then
+                GIT_AUTHOR_NAME=&quot;Scott Chacon&quot;;
+                GIT_AUTHOR_EMAIL=&quot;schacon@example.com&quot;;
+                git commit-tree &quot;$@&quot;;
+        else
+                git commit-tree &quot;$@&quot;;
+        fi&#39; HEAD</code></pre>
+
+<p>Příkaz projde a přepíše všechny revize tak, aby obsahovaly novou adresu. Protože revize obsahují hodnoty SHA-1 svých rodičů, změní tento příkaz SHA všech revizí ve vaší historii, ne pouze těch, které mají odpovídající e-mailovou adresu.</p>
 
 <div id='nav'>
 <a href='ch1-3.html'>prev</a> | <a href='ch1-5.html'>next</a>

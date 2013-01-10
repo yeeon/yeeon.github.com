@@ -1,75 +1,42 @@
 ---
 layout: translation
-title: Pro Git 4.4 Git sur le serveur Mise en place du serveur
+title: Pro Git 4.4 Les branches avec Git Travailler avec les branches
 ---
-<h2 id='mise_en_place_du_serveur'>Mise en place du serveur</h2>
+<h2 id='travailler_avec_les_branches'>Travailler avec les branches</h2>
 
-<p>Parcourons les étapes de la mise en place d&#8217;un accès SSH côté serveur. Dans cet exemple, vous utiliserez la méthode des <code>authorized_keys</code> pour authentifier vos utilisateurs. Nous supposerons également que vous utilisez une distribution Linux standard telle qu&#8217;Ubuntu. Premièrement, créez un utilisateur &#8216;git&#8217; et un répertoire <code>.ssh</code> pour cet utilisateur.</p>
+<p>Après avoir acquis les bases pour brancher et fusionner, que pouvons-nous ou devons-nous en faire ? Ce chapitre traite des différents styles de développement que cette gestion de branche légère permet de mettre en place, pour vous aider à décider d&#8217;en incorporer une dans votre cycle de développement.</p>
 
-<pre><code>$ sudo adduser git
-$ su git
-$ cd
-$ mkdir .ssh</code></pre>
+<h3 id='branches_au_long_cours'>Branches au long cours</h3>
 
-<p>Ensuite, vous devez ajouter la clef publique d&#8217;un développeur au fichier <code>authorized_keys</code> de l&#8217;utilisateur git. Supposons que vous avez reçu quelques clefs par e-mail et les avez sauvées dans des fichiers temporaires. Pour rappel, une clef publique ressemble à ceci :</p>
+<p>Comme Git utilise une fusion à 3 branches, fusionner une branche dans une autre plusieurs fois sur une longue période est généralement facile. Cela signifie que vous pouvez travailler sur plusieurs branches ouvertes en permanence pendant plusieurs étapes de votre cycle de développement ; vous pouvez fusionner régulièrement certaines dans d&#8217;autres.</p>
 
-<pre><code>$ cat /tmp/id_rsa.john.pub
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCB007n/ww+ouN4gSLKssMxXnBOvf9LGt4L
-ojG6rs6hPB09j9R/T17/x4lhJA0F3FR1rP6kYBRsWj2aThGw6HXLm9/5zytK6Ztg3RPKK+4k
-Yjh6541NYsnEAZuXz0jTTyAUfrtU3Z5E003C4oxOj6H0rfIF1kKI9MAQLMdpGW1GYEIgS9Ez
-Sdfd8AcCIicTDWbqLAcU4UpkaX8KyGlLwsNuuGztobF8m72ALC/nLF6JLtPofwFBlgc+myiv
-O7TCUSBdLQlgMVOFq1I2uPWQOkOWQAHukEOmfjy2jctxSDBQ220ymjaNsHT4kgtZg2AYYgPq
-dAv8JggJICUvax2T9va5 gsg-keypair</code></pre>
+<p>De nombreux développeurs utilisent Git avec une méthode qui utilise cette approche, telle que n&#8217;avoir que du code entièrement stable et testé dans la branche <code>master</code>, voire seulement du code qui a été ou sera publié. Ils ont une autre branche en parallèle appelée develop ou suite, sur laquelle ils travaillent ou utilisent pour en tester la stabilité — elle n&#8217;est pas nécessairement toujours stable, mais quand elle le devient, elle peut être fusionnée dans <code>master</code>. Cette branche est utilisée pour tirer des branches spécifiques à un sujet (branches avec une faible durée de vie, telles que notre branche <code>prob53</code>) quand elles sont prêtes, pour s&#8217;assurer qu&#8217;elles passent l&#8217;integralité des tests et n&#8217;introduisent pas de bugs.</p>
 
-<p>Il suffit de les ajouter au fichier <code>authorized_keys</code> :</p>
+<p>En réalité, nous parlons de pointeurs qui se déplacent le long des lignes des <em>commits</em> réalisés. Les branches stables sont plus en profondeur dans la ligne de l&#8217;historique des <em>commits</em> tandis que les branches des derniers développements sont plus en hauteur dans l&#8217;historique (voir figure 3-18).</p>
 
-<pre><code>$ cat /tmp/id_rsa.john.pub &gt;&gt; ~/.ssh/authorized_keys
-$ cat /tmp/id_rsa.josie.pub &gt;&gt; ~/.ssh/authorized_keys
-$ cat /tmp/id_rsa.jessica.pub &gt;&gt; ~/.ssh/authorized_keys</code></pre>
+<p><center><img src="/figures/ch4/18333fig0318-tn.png"></center><br/> Figure 3-18. Les branches les plus stables sont généralement plus bas dans l&#8217;historique des <em>commits</em>.</p>
 
-<p>Maintenant, vous pouvez créer un dépôt vide nu en lançant la commande <code>git init</code> avec l&#8217;option <code>--bare</code>, ce qui initialise un dépôt sans répertoire de travail :</p>
+<p>C&#8217;est généralement plus simple d&#8217;y penser en terme de silos de tâches, où un ensemble de <em>commits</em> évolue vers un silo plus stable quand il a été complètement testé (voir figure 3-19).</p>
 
-<pre><code>$ cd /opt/git
-$ mkdir projet.git
-$ cd projet.git
-$ git --bare init</code></pre>
+<p><center><img src="/figures/ch4/18333fig0319-tn.png"></center><br/> Figure 3-19. Représentation des branches comme des silos.</p>
 
-<p>Alors, John, Josie ou Jessica peuvent pousser la première version de leur projet vers ce dépôt en l&#8217;ajoutant en tant que dépôt distant et en lui poussant une branche. Notons que quelqu&#8217;un doit se connecter au serveur et créer un dépôt nu pour chaque ajout de projet. Supposons que le nom du serveur soit <code>gitserveur</code>. Si vous l&#8217;hébergez en interne et avez réglé le DNS pour faire pointer <code>gitserver</code> sur ce serveur, alors vous pouvez utiliser les commandes suivantes telle quelle :</p>
+<p>Vous pouvez reproduire ce schéma sur plusieurs niveaux de stabilité. Des projets plus gros ont aussi une branche <code>proposed</code> ou <code>pu</code> (proposed updates) qui permet d&#8217;intégrer des branches qui ne sont pas encore prêtes pour la prochaine version ou pour <code>master</code>. L&#8217;idée reste que les branches évoluent à différents niveaux de stabilité ; quand elles atteignent un niveau plus stable, elles peuvent être fusionnées dans la branche de stabilité supérieure. Une fois encore, les branches au long cours ne sont pas nécessaires, mais s&#8217;avèrent souvent utiles, spécialement dans le cadre de projets gros ou complexes.</p>
 
-<pre><code># Sur l&#39;ordinateur de John
-$ cd monproject
-$ git init
-$ git add .
-$ git commit -m &#39;premiere validation&#39;
-$ git remote add origin git@gitserveur:/opt/git/projet.git
-$ git push origin master</code></pre>
+<h3 id='les_branches_thmatiques'>Les branches thématiques</h3>
 
-<p>À présent, les autres utilisateurs peuvent cloner le dépôt et y pousser leurs modifications aussi simplement :</p>
+<p>Les branches thématiques sont tout de même utiles quelle que soit la taille du projet. Une branche thématique est une branche de courte durée de vie créée et utilisée pour une fonctionnalité ou une tâche particulière. C&#8217;est une manière d&#8217;opérer que vous n&#8217;avez vraisemblablement jamais utilisée avec un autre VCS parce qu&#8217;il est généralement trop lourd de créer et fusionner des branches. Mais dans Git, créer, développer, fusionner et effacer des branches plusieurs fois par jour est monnaie courante.</p>
 
-<pre><code>$ git clone git@gitserveur:/opt/git/projet.git
-$ vim LISEZMOI
-$ git commit -am &#39;correction fichier LISEZMOI&#39;
-$ git push origin master</code></pre>
+<p>Vous l&#8217;avez remarqué dans la section précédente avec les branches <code>prob53</code> et <code>correctif</code> que vous avez créées. Vous avez réalisé quelques validations sur elles et vous les avez effacées juste après les avoir fusionnées dans votre branche principale. Cette technique vous permet de basculer de contexte complètement et immédiatement. Il est beaucoup plus simple de réaliser des revues de code parce que votre travail est isolé dans des silos où toutes les modifications sont liées au sujet . Vous pouvez entreposer vos modifications ici pendant des minutes, des jours ou des mois, puis les fusionner quand elles sont prêtes, indépendamment de l&#8217;ordre dans lequel elles ont été créées ou de développées.</p>
 
-<p>De cette manière, vous pouvez rapidement mettre en place un serveur Git en lecture/écriture pour une poignée de développeurs.</p>
+<p>Supposons un exemple où pendant un travail (sur <code>master</code>), vous branchiez pour un problème (<code>prob91</code>), travailliez un peu dessus, vous branchiez une seconde branche pour essayer de trouver une autre manière de le résoudre (<code>prob91v2</code>), vous retourniez sur la branche <code>master</code> pour y travailler pendant un moment, pour finalement brancher sur une dernière branche (<code>ideeidiote</code>) contenant une idée dont vous doutez. Votre historique de <em>commit</em> pourrait ressembler à la figure 3-20.</p>
 
-<p>En précaution supplémentaire, vous pouvez simplement restreindre l&#8217;utilisateur &#8216;git&#8217; à des actions Git avec un shell limité appelé <code>git-shell</code> qui est fourni avec Git. Si vous positionnez ce shell comme shell de login de l&#8217;utilisateur &#8216;git&#8217;, l&#8217;utilisateur git ne peut pas avoir de shell normal sur ce serveur. Pour utiliser cette fonction, spécifiez <code>git-shell</code> en lieu et place de bash ou csh pour shell de l&#8217;utilisateur. Cela se réalise généralement en éditant le fichier <code>/etc/passwd</code> :</p>
+<p><center><img src="/figures/ch4/18333fig0320-tn.png"></center><br/> Figure 3-20. Votre historique de <em>commit</em> avec de multiples branches thématiques.</p>
 
-<pre><code>$ sudo vim /etc/passwd</code></pre>
+<p>Maintenant, supposons que vous décidiez que vous préférez la seconde solution pour le problème (<code>prob91v2</code>) et que vous ayez montré la branche <code>ideeidiote</code> à vos collègues qui vous ont dit qu&#8217;elle était géniale. Vous pouvez jeter la branche <code>prob91</code> originale (en effaçant les <em>commits</em> C5 et C6) et fusionner les deux autres. Votre historique ressemble à présent à la figure 3-21.</p>
 
-<p>Tout au bas, vous devriez trouver une ligne qui ressemble à ceci :</p>
+<p><center><img src="/figures/ch4/18333fig0321-tn.png"></center><br/> Figure 3-21. Votre historique après la fusion de <code>ideeidiote</code> et <code>prob91v2</code>.</p>
 
-<pre><code>git:x:1000:1000::/home/git:/bin/sh</code></pre>
-
-<p>Modifiez <code>/bin/sh</code> en <code>/usr/bin/git-shell</code> (ou le résultat de la commande <code>which git-shell</code> qui indique où il est installé). La ligne devrait maintenant ressembler à ceci :</p>
-
-<pre><code>git:x:1000:1000::/home/git:/usr/bin/git-shell</code></pre>
-
-<p>À présent, l&#8217;utilisateur &#8216;git&#8217; ne peut plus utiliser la connexion SSH que pour pousser et tirer sur des dépôts Git, il ne peut plus ouvrir un shell. Si vous essayez, vous verrez un rejet de login :</p>
-
-<pre><code>$ ssh git@gitserveur
-fatal: What do you think I am? A shell?
-Connection to gitserveur closed.</code></pre>
+<p>Souvenez-vous que lors de la réalisation de ces actions, toutes ces branches sont complètement locales. Lorsque vous branchez et fusionnez, tout est réalisé dans votre dépôt Git. Aucune communication avec un serveur n&#8217;a lieu.</p>
 
 <div id='nav'>
 <a href='ch4-3.html'>prev</a> | <a href='ch4-5.html'>next</a>

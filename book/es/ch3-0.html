@@ -1,13 +1,17 @@
 ---
 layout: translation
-title: Pro Git 3.0 Ramificaciones en Git
+title: Pro Git 3.0 Los entesijos internos de Git
 ---
-<h1>Chapter 3</h1><h1 id='ramificaciones_en_git'>Ramificaciones en Git</h1>
+<h1>Chapter 3</h1><h1 id='los_entesijos_internos_de_git'>Los entesijos internos de Git</h1>
 
-<p>Cualquier sistema de control de versiones moderno tiene algún mecanismo para soportar distintos ramales. Cuando hablamos de ramificaciones, significa que tu has tomado la rama principal de desarrollo (master) y a partir de ahí has continuado trabajando sin seguir la rama principal de desarrollo. En muchas sistemas de control de versiones este proceso es costoso, pues a menudo requiere crear una nueva copia del código, lo cual puede tomar mucho tiempo cuando se trata de proyectos grandes.</p>
+<p>Puedes que hayas llegado a este capítulo saltando desde alguno previo o puede que hayas llegado tras leer todo el resto del libro. &#8211;En uno u otro caso, aquí es donde aprenderás acerca del funcionamiento interno y la implementación de Git&#8211;. Me parece que esta información es realmente importante para entender cúan util y potente es Git. Pero algunas personas opinan que puede ser confuso e innecesariamente complejo para novatos. Por ello, lo he puesto al final del libro; de tal forma que puedas leerlo antes o después, en cualquier momento, a lo largo de tu proceso de aprendizaje. Lo dejo en tus manos.</p>
 
-<p>Algunas personas resaltan que uno de los puntos mas fuertes de Git es su sistema de ramificaciones y lo cierto es que esto le hace resaltar sobre los otros sistemas de control de versiones. ¿Porqué esto es tan importante? La forma en la que Git maneja las ramificaciones es increíblemente rápida, haciendo así de las operaciones de ramificación algo casi instantáneo, al igual que el avance o el retroceso entre distintas ramas, lo cual también es tremendamente rápido. A diferencia de otros sistemas de control de versiones, Git promueve un ciclo de desarrollo donde las ramas se crean y se unen ramas entre sí, incluso varias veces en el mismo día. Entender y manejar esta opción te proporciona una poderosa y exclusiva herramienta que puede, literalmente, cambiar la forma en la que desarrollas.</p>
+<p>Y, ahora que estamos aquí, comencemos con el tema. Ante todo, por si no estuviera suficientemente claro ya, Git es fundamentalmente un sistema de archivo (filesystem) con un interface de usuario (VCS) escrito sobre él. En breve lo veremos con más detalle.</p>
+
+<p>En los primeros tiempos de Git (principalmente antes de la versión 1.5), el interface de usuario era mucho más complejo, ya que se centraba en el sistema de archivos en lugar de en el VCS. En los últimos años, el IU se ha refinado hasta llegar a ser tan limpio y sencillo de usar como el de cualquier otro sistema; pero frecuentemente, el estereotipo sigue mostrando a Git como complejo y dificil de aprender.</p>
+
+<p>La capa del sistema de archivos que almacena el contenido es increiblemente interesante; por ello, es lo primero que voy a desarrollar en este capítulo. A continuación mostraré los mecanismos de transporte y las tareas de mantenimiento del repositorio que posiblemente necesites usar alguna vez.</p>
 
 <div id='nav'>
-<a href='ch2-8.html'>prev</a> | <a href='ch3-1.html'>next</a>
+<a href='ch2-4.html'>prev</a> | <a href='ch3-1.html'>next</a>
 </div>

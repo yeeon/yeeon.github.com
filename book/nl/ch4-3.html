@@ -1,41 +1,45 @@
 ---
 layout: translation
-title: Pro Git 4.3 Git op de Server Je Publieke SSH Sleutel Genereren
+title: Pro Git 4.3 Branchen in Git Branch beheer
 ---
-<h2 id='je_publieke_ssh_sleutel_genereren'>Je Publieke SSH Sleutel Genereren</h2>
+<h2 id='branch_beheer'>Branch beheer</h2>
 
-<p>Dat gezegd hebbende, zijn er vele Git servers die verifieren met een publieke SSH sleutel. Om een publieke sleutel te hebben, zal iedere gebruiker in je systeem er een moeten genereren als ze er nog geen hebben. Dit proces is bij alle operating systemen vergelijkbaar. Als eerste moet je controleren dat je er niet al een hebt. Standaard staan de SSH sleutels van de gebruikers in hun eigen <code>~/.ssh</code> map. Je kunt makkelijk nagaan of je al een sleutel hebt door naar die map te gaan en de inhoud te tonen:</p>
+<p>Nu heb je wat branches aangemaakt, samengevoegd, en verwijderd. Laten we eens kijken naar wat branch beheer applicaties die handig zijn als je begint met het doorlopend gebruik van branches.</p>
 
-<pre><code>$ cd ~/.ssh
-$ ls
-authorized_keys2  id_dsa       known_hosts
-config            id_dsa.pub</code></pre>
+<p>Het <code>git branch</code> commando doet meer dan alleen branches aanmaken en verwijderen. Als je het zonder argumenten uitvoert, dan krijg je een eenvoudige uitvoer van je huidige branches:</p>
 
-<p>Je bent op zoek naar een aantal bestanden genaamd iets en iets.pub, waarbij het <code>iets</code> meestal zoiets is als <code>id_dsa</code> of <code>id_rsa</code>. Het <code>.pub</code> bestand is je publieke sleutel en het andere bestand is je private sleutel. Als je deze bestanden niet hebt (of als je zelfs geen <code>.ssh</code> map hebt), dan kun je ze aanmaken door een applicatie genaamd <code>ssh-keygen</code> uit te voeren, wat meegeleverd wordt met het SSH pakket op Linux/Mac systemen en meegeleverd wordt met het MSysGit pakket op Windows:</p>
+<pre><code>$ git branch
+  iss53
+* master
+  testing</code></pre>
 
-<pre><code>$ ssh-keygen 
-Generating public/private rsa key pair.
-Enter file in which to save the key (/Users/schacon/.ssh/id_rsa): 
-Enter passphrase (empty for no passphrase): 
-Enter same passphrase again: 
-Your identification has been saved in /Users/schacon/.ssh/id_rsa.
-Your public key has been saved in /Users/schacon/.ssh/id_rsa.pub.
-The key fingerprint is:
-43:c5:5b:5f:b1:f1:50:43:ad:20:a6:92:6a:1f:9a:3a schacon@agadorlaptop.local</code></pre>
+<p>Neem notie van het <code>*</code> karakter dat vooraf gaat aan de <code>master</code> branch: het geeft de branch aan die je op dit moment uitgechecked hebt. Dit betekent dat als je op dit punt commit, de <code>master</code> branch vooruit zal gaan met je nieuwe werk. Om de laatste commit op iedere branch te zien, kun je <code>git branch -v</code> uitvoeren:</p>
 
-<p>Eerst bevestigt het de lokatie waar je de sleutel wilt opslaan (<code>.ssh/id_rsa</code>), en vervolgens vraagt het tweemaal om een wachtzin, die je leeg kunt laten als je geen wachtwoord wilt intypen op het moment dat je de sleutel gebruikt.</p>
+<pre><code>$ git branch -v
+  iss53   93b412c fix javascript issue
+* master  7a98805 Merge branch &#39;iss53&#39;
+  testing 782fd34 add scott to the author list in the readmes</code></pre>
 
-<p>Iedere gebruiker die dit doet, moet zijn sleutel sturen naar jou of degene die de Git server beheert (aangenomen dat je een SSH server gebruikt die publieke sleutels vereist). Het enige dat ze hoeven doen is de inhoud van het <code>.pub</code> bestand kopieeren en e-mailen. De publieke sleutel ziet er ongeveer zo uit:</p>
+<p>Een andere handige optie om uit te vogelen in welke staat je branches zijn, is om deze lijst te filteren op branches die je wel of nog niet samengevoegd hebt in de branch waar je nu op zit. De handige <code>--merged</code> en <code>--no-merged</code> opties zijn voor dit doel beschikbaar in Git sinds versie 1.5.6. Om te zien welke branches al samengevoegd zijn in de branch waar je nu op zit, kun je <code>git branch --merged</code> uitvoeren:</p>
 
-<pre><code>$ cat ~/.ssh/id_rsa.pub 
-ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAklOUpkDHrfHY17SbrmTIpNLTGK9Tjom/BWDSU
-GPl+nafzlHDTYW7hdI4yZ5ew18JH4JW9jbhUFrviQzM7xlELEVf4h9lFX5QVkbPppSwg0cda3
-Pbv7kOdJ/MTyBlWXFCR+HAo3FXRitBqxiX1nKhXpHAZsMciLq8V6RjsNAQwdsdMFvSlVK/7XA
-t3FaoJoAsncM1Q9x5+3V0Ww68/eIFmb1zuUFljQJKprrX88XypNDvjYNby6vw/Pb0rwert/En
-mZ+AW4OZPnTPI89ZPmVMLuayrD2cE86Z/il8b+gw3r3+1nKatmIkjn2so1d01QraTlMqVSsbx
-NrRFi9wrf+M7Q== schacon@agadorlaptop.local</code></pre>
+<pre><code>$ git branch --merged
+  iss53
+* master</code></pre>
 
-<p>Voor een uitgebreide tutorial over het aanmaken van een SSH sleutel op meerdere operating systemen, zie de GitHub handleiding over SSH sleutels op <code>http://github.com/guides/providing-your-ssh-key</code>.</p>
+<p>Omdat je <code>iss53</code> al eerder hebt samengevoegd, zie je het terug in je lijst. Branches op deze lijst zonder de <code>*</code> ervoor zijn over het algemeen geschikt om te verwijderen met <code>git branch -d</code>: je hebt hun werk al in een andere branch zitten, dus je zult niets kwijtraken.</p>
+
+<p>Om alle branches te zien die werk bevatten dat je nog niet samengevoegd hebt, kun je <code>git branch --no-merged</code> uitvoeren:</p>
+
+<pre><code>$ git branch --no-merged
+  testing</code></pre>
+
+<p>Dit toont je andere branch. Omdat het werk bevat dat nog niet samengevoegd is, zal het proberen te verwijderen met <code>git branch -d</code> falen:</p>
+
+<pre><code>$ git branch -d testing
+error: The branch &#39;testing&#39; is not an ancestor of your current HEAD.
+If you are sure you want to delete it, run &#39;git branch -D testing&#39;.</code></pre>
+
+<p>Als je de branch echt wilt verwijderen en dat werk wilt verliezen, dan kun je het forceren met <code>-D</code>, zoals het behulpzame bericht verteld.</p>
 
 <div id='nav'>
 <a href='ch4-2.html'>prev</a> | <a href='ch4-4.html'>next</a>

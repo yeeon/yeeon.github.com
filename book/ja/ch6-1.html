@@ -1,248 +1,286 @@
 ---
 layout: translation
-title: Pro Git 6.1 Git のさまざまなツール リビジョンの選択
+title: Pro Git 6.1 Git のカスタマイズ Git の設定
 ---
-<h2 id='id126'>リビジョンの選択</h2>
+<h2 id='git_'>Git の設定</h2>
 
-<p>Git で特定のコミットやコミットの範囲を指定するにはいくつかの方法があります。明白なものばかりではありませんが、知っておくと役立つでしょう。</p>
+<p>第 1 章で手短にごらんいただいたように、<code>git config</code> コマンドで Git の設定をすることができます。まず最初にすることと言えば、名前とメールアドレスの設定でしょう。</p>
 
-<h3 id='id127'>単一のリビジョン</h3>
+<pre><code>$ git config --global user.name &quot;John Doe&quot;
+$ git config --global user.email johndoe@example.com</code></pre>
 
-<p>SHA-1 ハッシュを指定すれば、コミットを明確に参照することができます。しかしそれ以外にも、より人間にやさしい方式でコミットを参照することもできます。このセクションでは単一のコミットを参照するためのさまざまな方法の概要を説明します。</p>
+<p>ここでは、同じようにして設定できるより興味深い項目をいくつか身につけ、Git をカスタマイズしてみましょう。</p>
 
-<h3 id='sha_'>SHA の短縮形</h3>
+<p>Git の設定については最初の章でちらっと説明しましたが、ここでもう一度振り返っておきます。Git では、いくつかの設定ファイルを使ってデフォルト以外の挙動を定義します。まず最初に Git が見るのは <code>/etc/gitconfig</code> で、ここにはシステム上の全ユーザーの全リポジトリ向けの設定値を記述します。<code>git config</code> にオプション <code>--system</code> を指定すると、このファイルの読み書きを行います。</p>
 
-<p>Git は、最初の数文字をタイプしただけであなたがどのコミットを指定したいのかを汲み取ってくれます。条件は、SHA-1 の最初の 4 文字以上を入力していることと、それでひとつのコミットが特定できる (現在のリポジトリに、入力した文字ではじまる SHA-1 のコミットがひとつしかない) ことです。</p>
+<p>次に Git が見るのは <code>~/.gitconfig</code> で、これは各ユーザー専用のファイルです。Git でこのファイルの読み書きをするには、<code>--global</code> オプションを指定します。</p>
 
-<p>あるコミットを指定するために <code>git log</code> コマンドを実行し、とある機能を追加したコミットを見つけました。</p>
+<p>最後に Git が設定値を探すのは、現在使用中のリポジトリの設定ファイル (<code>.git/config</code>) です。この値は、そのリポジトリだけで有効なものです。後から読んだ値がその前の値を上書きします。したがって、たとえば <code>.git/config</code> に書いた値は <code>/etc/gitconfig</code> での設定よりも優先されます。これらのファイルを手動で編集して正しい構文で値を追加することもできますが、通常は <code>git config</code> コマンドを使ったほうが簡単です。</p>
 
-<pre><code>$ git log
-commit 734713bc047d87bf7eac9674765ae793478c50d3
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Fri Jan 2 18:32:33 2009 -0800
+<h3 id='id504'>基本的なクライアントのオプション</h3>
 
-    fixed refs handling, added gc auto, updated tests
+<p>Git の設定オプションは、おおきく二種類に分類できます。クライアント側のオプションとサーバー側のオプションです。大半のオプションは、クライアント側のもの、つまり個人的な作業環境を設定するためのものとなります。大量のオプションがありますが、ここでは一般的に使われているものやワークフローに大きな影響を及ぼすものに絞っていくつかを紹介します。その他のオプションの多くは特定の場合にのみ有用なものなので、ここでは扱いません。Git で使えるすべてのオプションを知りたい場合は、次のコマンドを実行しましょう。</p>
 
-commit d921970aadf03b3cf0e71becdaab3147ba71cdef
-Merge: 1c002dd... 35cfb2b...
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Thu Dec 11 15:08:43 2008 -0800
+<pre><code>$ git config --help</code></pre>
 
-    Merge commit &#39;phedders/rdocs&#39;
+<p>また、<code>git config</code> のマニュアルページには、利用できるすべてのオプションについて詳しい説明があります。</p>
 
-commit 1c002dd4b536e7479fe34593e72e6c6c1819e53b
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Thu Dec 11 14:58:32 2008 -0800
+<h4 id='coreeditor'>core.editor</h4>
 
-    added some blame and merge stuff</code></pre>
+<p>コミットやタグのメッセージを編集するときに使うエディタは、ユーザーがデフォルトエディタとして設定したものとなります。デフォルトエディタが設定されていない場合は Vi エディタを使います。このデフォルト設定を別のものに変更するには <code>core.editor</code> を設定します。</p>
 
-<p>探していたのは、<code>1c002dd....</code> で始まるコミットです。<code>git show</code> でこのコミットを見るときは、次のどのコマンドでも同じ結果になります (短いバージョンで、重複するコミットはないものとします)。</p>
+<pre><code>$ git config --global core.editor emacs</code></pre>
 
-<pre><code>$ git show 1c002dd4b536e7479fe34593e72e6c6c1819e53b
-$ git show 1c002dd4b536e7479f
-$ git show 1c002d</code></pre>
+<p>これで、シェルのデフォルトエディタを設定していない場合に Git が起動するエディタが Emacs に変わりました。</p>
 
-<p>一意に特定できる範囲での SHA-1 の短縮形を Git に見つけさせることもできます。<code>git log</code> コマンドで <code>--abbrev-commit</code> を指定すると、コミットを一意に特定できる範囲の省略形で出力します。デフォルトでは 7 文字ぶん表示しますが、それだけで SHA-1 を特定できない場合はさらに長くなります。</p>
+<h4 id='committemplate'>commit.template</h4>
 
-<pre><code>$ git log --abbrev-commit --pretty=oneline
-ca82a6d changed the version number
-085bb3b removed unnecessary test code
-a11bef0 first commit</code></pre>
+<p>システム上のファイルへのパスをここに設定すると、Git はそのファイルをコミット時のデフォルトメッセージとして使います。たとえば、次のようなテンプレートファイルを作って <code>$HOME/.gitmessage.txt</code> においたとしましょう。</p>
 
-<p>ひとつのプロジェクト内での一意性を確保するには、普通は 8 文字から 10 文字もあれば十分すぎることでしょう。最も大規模な Git プロジェクトのひとつである Linux カーネルの場合は、40 文字のうち先頭の 12 文字を指定しないと一意性を確保できません。</p>
+<pre><code>subject line
 
-<h3 id='sha1_'>SHA-1 に関するちょっとしたメモ</h3>
+what happened
 
-<p>「リポジトリ内のふたつのオブジェクトがたまたま同じ SHA-1 ハッシュ値を持ってしまったらどうするの?」と心配する人も多いでしょう。実際、どうなるのでしょう?</p>
+[ticket: X]</code></pre>
 
-<p>すでにリポジトリに存在するオブジェクトと同じ SHA-1 値を持つオブジェクトをコミットしてした場合、Git はすでにそのオブジェクトがデータベースに格納されているものと判断します。そのオブジェクトを後からどこかで取得しようとすると、常に最初のオブジェクトのデータが手元にやってきます (訳注: つまり、後からコミットした内容は存在しないことになってしまう)。</p>
+<p><code>git commit</code> のときにエディタに表示されるデフォルトメッセージをこれにするには、<code>commit.template</code> の設定を変更します。</p>
 
-<p>しかし、そんなことはまず起こりえないということを知っておくべきでしょう。SHA-1 ダイジェストの大きさは 20 バイト (160 ビット) です。ランダムなハッシュ値がつけられた中で、たった一つの衝突が 50% の確率で発生するために必要なオブジェクトの数は約 2^80 となります (衝突の可能性の計算式は <code>p = (n(n-1)/2) * (1/2^160)</code> です)。2^80 は、ほぼ 1.2 x 10^24 、つまり一兆二千億のそのまた一兆倍です。これは、地球上にあるすべての砂粒の数の千二百倍にあたります。</p>
+<pre><code>$ git config --global commit.template $HOME/.gitmessage.txt
+$ git commit</code></pre>
 
-<p>SHA-1 の衝突を見るにはどうしたらいいのか、ひとつの例をごらんに入れましょう。地球上の人類 65 億人が全員プログラムを書いていたとします。そしてその全員が、Linux カーネルのこれまでの開発履歴 (100 万の Git オブジェクト) と同等のコードを一秒で書き上げ、馬鹿でかい単一の Git リポジトリにプッシュしていくとします。これを五年間続けたとして、SHA-1 オブジェクトの衝突がひとつでも発生する可能性がやっと 50% になります。それよりも「あなたの所属する開発チームの全メンバーが、同じ夜にそれぞれまったく無関係の事件で全員オオカミに殺されてしまう」可能性のほうがよっぽど高いことでしょう。</p>
+<p>すると、コミットメッセージの雛形としてこのような内容がエディタに表示されます。</p>
 
-<h3 id='id128'>ブランチの参照</h3>
+<pre><code>subject line
 
-<p>特定のコミットを参照するのに一番直感的なのは、そのコミットを指すブランチがある場合です。コミットオブジェクトや SHA-1 値を指定する場面ではどこでも、その代わりにブランチ名を指定することができます。たとえば、あるブランチ上の最新のコミットを表示したい場合は次のふたつのコマンドが同じ意味となります (<code>topic1</code> ブランチが <code>ca82a6d</code> を指しているものとします)。</p>
+what happened
 
-<pre><code>$ git show ca82a6dff817ec66f44342007202690a93763949
-$ git show topic1</code></pre>
+[ticket: X]
+# Please enter the commit message for your changes. Lines starting
+# with &#39;#&#39; will be ignored, and an empty message aborts the commit.
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+# modified:   lib/test.rb
+#
+~
+~
+&quot;.git/COMMIT_EDITMSG&quot; 14L, 297C</code></pre>
 
-<p>あるブランチがいったいどの SHA を指しているのか、あるいはその他の例の内容が結局のところどの SHA に行き着くのかといったことを知るには、Git の調査用ツールである <code>rev-parse</code> を使います。こういった調査用ツールのより詳しい情報は第 9 章で説明します。<code>rev-parse</code> は低レベルでの操作用のコマンドであり、日々の操作で使うためのものではありません。しかし、今実際に何が起こっているのかを知る必要があるときなどには便利です。ブランチ上で <code>rev-parse</code> を実行すると、このようになります。</p>
+<p>コミットメッセージについて所定の決まりがあるのなら、その決まりに従ったテンプレートをシステム上に作って Git にそれを使わせるようにするとよいでしょう。そうすれば、その決まりに従ってもらいやすくなります。</p>
 
-<pre><code>$ git rev-parse topic1
-ca82a6dff817ec66f44342007202690a93763949</code></pre>
+<h4 id='corepager'>core.pager</h4>
 
-<h3 id='id129'>参照ログの短縮形</h3>
+<p>core.pager は、Git が <code>log</code> や <code>diff</code> などを出力するときに使うページャを設定します。<code>more</code> などのお好みのページャを設定したり (デフォルトは <code>less</code> です)、空文字列を設定してページャを使わないようにしたりすることができます。</p>
 
-<p>あなたがせっせと働いている間に Git が裏でこっそり行っていることのひとつが、参照ログ (reflog) の管理です。これは、HEAD とブランチの参照が過去数ヶ月間どのように動いてきたかをあらわすものです。</p>
+<pre><code>$ git config --global core.pager &#39;&#39;</code></pre>
 
-<p>参照ログを見るには <code>git reflog</code> を使います。</p>
+<p>これを実行すると、すべてのコマンドの出力を、どんなに長くなったとしても全部 Git が出力するようになります。</p>
 
-<pre><code>$ git reflog
-734713b... HEAD@{0}: commit: fixed refs handling, added gc auto, updated
-d921970... HEAD@{1}: merge phedders/rdocs: Merge made by recursive.
-1c002dd... HEAD@{2}: commit: added some blame and merge stuff
-1c36188... HEAD@{3}: rebase -i (squash): updating HEAD
-95df984... HEAD@{4}: commit: # This is a combination of two commits.
-1c36188... HEAD@{5}: rebase -i (squash): updating HEAD
-7e05da5... HEAD@{6}: rebase -i (pick): updating HEAD</code></pre>
+<h4 id='usersigningkey'>user.signingkey</h4>
 
-<p>何らかの理由でブランチの先端が更新されるたびに、Git はその情報をこの一時履歴に格納します。そして、このデータを使って過去のコミットを指定することもできます。リポジトリの HEAD の五つ前の状態を知りたい場合は、先ほど見た reflog の出力のように <code>@{n}</code> 形式で参照することができます。</p>
+<p>署名入りの注釈付きタグ (第 2 章で取り上げました) を作る場合は、GPG 署名用の鍵を登録しておくと便利です。鍵の ID を設定するには、このようにします。</p>
 
-<pre><code>$ git show HEAD@{5}</code></pre>
+<pre><code>$ git config --global user.signingkey &lt;gpg-key-id&gt;</code></pre>
 
-<p>この構文を使うと、指定した期間だけさかのぼったときに特定のブランチがどこを指していたかを知ることもできます。たとえば <code>master</code> ブランチの昨日の状態を知るには、このようにします。</p>
+<p>これで、<code>git tag</code> コマンドでいちいち鍵を指定しなくてもタグに署名できるようになりました。</p>
 
-<pre><code>$ git show master@{yesterday}</code></pre>
+<pre><code>$ git tag -s &lt;tag-name&gt;</code></pre>
 
-<p>こうすると、そのブランチの先端が昨日どこを指していたかを表示します。この技が使えるのは参照ログにデータが残っている間だけなので、直近数ヶ月よりも前のコミットについては使うことができません。</p>
+<h4 id='coreexcludesfile'>core.excludesfile</h4>
 
-<p>参照ログの情報を <code>git log</code> の出力風の表記で見るには <code>git log -g</code> を実行します。</p>
+<p>プロジェクトごとの <code>.gitignore</code> ファイルでパターンを指定すると、<code>git add</code> したときに Git がそのファイルを無視してステージしないようになります。これについては第 2 章で説明しました。しかし、これらの内容をプロジェクトの外部で管理したい場合は、そのファイルがどこにあるのかを <code>core.excludesfile</code> で設定します。ここに設定する内容はファイルのパスです。ファイルの中身は <code>.gitignore</code> と同じ形式になります。</p>
 
-<pre><code>$ git log -g master
-commit 734713bc047d87bf7eac9674765ae793478c50d3
-Reflog: master@{0} (Scott Chacon &lt;schacon@gmail.com&gt;)
-Reflog message: commit: fixed refs handling, added gc auto, updated 
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Fri Jan 2 18:32:33 2009 -0800
+<h4 id='helpautocorrect'>help.autocorrect</h4>
 
-    fixed refs handling, added gc auto, updated tests
+<p>このオプションが使えるのは Git 1.6.1 以降だけです。Git 1.6 でコマンドを打ち間違えると、こんなふうに表示されます。</p>
 
-commit d921970aadf03b3cf0e71becdaab3147ba71cdef
-Reflog: master@{1} (Scott Chacon &lt;schacon@gmail.com&gt;)
-Reflog message: merge phedders/rdocs: Merge made by recursive.
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Thu Dec 11 15:08:43 2008 -0800
+<pre><code>$ git com
+git: &#39;com&#39; is not a git-command. See &#39;git --help&#39;.
 
-    Merge commit &#39;phedders/rdocs&#39;</code></pre>
+Did you mean this?
+     commit</code></pre>
 
-<p>参照ログの情報は、完全にローカルなものであることに気をつけましょう。これは、あなた自身が自分のリポジトリで何をしたのかを示す記録です。つまり、同じリポジトリをコピーした別の人の参照ログとは異なる内容になります。また、最初にリポジトリをクローンした直後の参照ログは空となります。まだリポジトリ上であなたが何もしていないからです。<code>git show HEAD@{2.months.ago}</code> が動作するのは、少なくとも二ヶ月以上前にそのリポジトリをクローンした場合のみで、もしつい 5 分前にクローンしたばかりなら何も結果を返しません。</p>
+<p><code>help.autocorrect</code> を 1 にしておくと、同じような場面でもし候補がひとつしかなければ自動的にそれを実行します。</p>
 
-<h3 id='id130'>家系の参照</h3>
+<h3 id='git_'>Git における色</h3>
 
-<p>コミットを特定する方法として他によく使われるのが、その家系をたどっていく方法です。参照の最後に <code>^</code> をつけると、Git はそれを「指定したコミットの親」と解釈します。あなたのプロジェクトの歴史がこのようになっていたとしましょう。</p>
+<p>Git では、ターミナルへの出力に色をつけることができます。ぱっと見て、すばやくお手軽に出力内容を把握できるようになるでしょう。さまざまなオプションで、お好みに合わせて色を設定しましょう。</p>
 
-<pre><code>$ git log --pretty=format:&#39;%h %s&#39; --graph
-* 734713b fixed refs handling, added gc auto, updated tests
-*   d921970 Merge commit &#39;phedders/rdocs&#39;
-|\  
-| * 35cfb2b Some rdoc changes
-* | 1c002dd added some blame and merge stuff
-|/  
-* 1c36188 ignore *.gem
-* 9b29157 add open3_detach to gemspec file list</code></pre>
+<h4 id='colorui'>color.ui</h4>
 
-<p>直前のコミットを見るには <code>HEAD^</code> を指定します。これは &#8220;HEAD の親&#8221; という意味になります。</p>
+<p>あらかじめ指定しておけば、Git は自動的に大半の出力に色づけをします。何にどのような色をつけるかをこと細かに指定することもできますが、すべてをターミナルのデフォルト色設定にまかせるなら <code>color.ui</code> を true にします。</p>
 
-<pre><code>$ git show HEAD^
-commit d921970aadf03b3cf0e71becdaab3147ba71cdef
-Merge: 1c002dd... 35cfb2b...
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Thu Dec 11 15:08:43 2008 -0800
+<pre><code>$ git config --global color.ui true</code></pre>
 
-    Merge commit &#39;phedders/rdocs&#39;</code></pre>
+<p>これを設定すると、出力がターミナルに送られる場合に Git がその出力を色づけします。ほかに false という値を指定することもでき、これは出力に決して色をつけません。また always を指定すると、すべての場合に色をつけます。すべての場合とは、Git コマンドをファイルにリダイレクトしたり他のコマンドにパイプでつないだりする場合も含みます。この設定項目は Git バージョン 1.5.5 で追加されました。それより前のバージョンを使っている場合は、すべての色設定を個別に指定しなければなりません。</p>
 
-<p><code>^</code> の後に数字を指定することもできます。たとえば <code>d921970^2</code> は &#8220;d921970 の二番目の親&#8221; という意味になります。これが役立つのはマージコミット (親が複数存在する) のときくらいでしょう。最初の親はマージを実行したときにいたブランチとなり、二番目の親は取り込んだブランチ上のコミットとなります。</p>
+<p><code>color.ui = always</code> を使うことは、まずないでしょう。たいていの場合は、カラーコードを含む結果をリダイレクトしたい場合は Git コマンドに <code>--color</code> フラグを渡してカラーコードの使用を強制します。ふだんは <code>color.ui = true</code> の設定で要望を満たせるでしょう。</p>
 
-<pre><code>$ git show d921970^
-commit 1c002dd4b536e7479fe34593e72e6c6c1819e53b
-Author: Scott Chacon &lt;schacon@gmail.com&gt;
-Date:   Thu Dec 11 14:58:32 2008 -0800
+<h4 id='id505'><code>color.*</code></h4>
 
-    added some blame and merge stuff
+<p>どのコマンドをどのように色づけするかをより細やかに指定したい場合、あるいはバージョンが古くて先ほどの設定が使えない場合は、コマンド単位の色づけ設定を使用します。これらの項目には <code>true</code>、<code>false</code> あるいは <code>always</code> を指定することができます。</p>
 
-$ git show d921970^2
-commit 35cfb2b795a55793d7cc56a6cc2060b4bb732548
-Author: Paul Hedderly &lt;paul+git@mjr.org&gt;
-Date:   Wed Dec 10 22:22:03 2008 +0000
+<pre><code>color.branch
+color.diff
+color.interactive
+color.status</code></pre>
 
-    Some rdoc changes</code></pre>
+<p>さらに、これらの項目ではサブ設定が使え、出力の一部について特定の色を使うように指定することもできます。たとえば、diff の出力でのメタ情報を青の太字で出力させたい場合は次のようにします。</p>
 
-<p>家系の指定方法としてもうひとつよく使うのが <code>~</code> です。これも最初の親を指します。つまり <code>HEAD~</code> と <code>HEAD^</code> は同じ意味になります。違いが出るのは、数字を指定したときです。<code>HEAD~2</code> は &#8220;最初の親の最初の親&#8221; つまり &#8220;祖父母&#8221; という意味になります。指定した数だけ、順に最初の親をさかのぼっていくことになります。たとえば、先ほど示したような歴史上では <code>HEAD~3</code> は次のようになります。</p>
+<pre><code>$ git config --global color.diff.meta “blue black bold”</code></pre>
 
-<pre><code>$ git show HEAD~3
-commit 1c3618887afb5fbcbea25b7c013f4e2114448b8d
-Author: Tom Preston-Werner &lt;tom@mojombo.com&gt;
-Date:   Fri Nov 7 13:47:59 2008 -0500
+<p>色として指定できる値は normal、black、red、green、yellow、blue、magenta、cyan あるいは white のいずれかです。先ほどの例の bold のように属性を指定することもできます。bold、dim、ul、blink および reverse のいずれかを指定できます。</p>
 
-    ignore *.gem</code></pre>
+<p><code>git config</code> のマニュアルページに、すべてのサブ設定がまとめられていますので参照ください。</p>
 
-<p>これは <code>HEAD^^^</code> のようにあらわすこともできます。これは「最初の親の最初の親の最初の親」という意味になります。</p>
+<h3 id='_diff_'>外部のマージツールおよび Diff ツール</h3>
 
-<pre><code>$ git show HEAD^^^
-commit 1c3618887afb5fbcbea25b7c013f4e2114448b8d
-Author: Tom Preston-Werner &lt;tom@mojombo.com&gt;
-Date:   Fri Nov 7 13:47:59 2008 -0500
+<p>Git には diff の実装が組み込まれておりそれを使うことができますが、外部のツールを使うよう設定することもできます。また、コンフリクトを手動で解決するのではなくグラフィカルなコンフリクト解消ツールを使うよう設定することもできます。ここでは Perforce Visual Merge Tool (P4Merge) を使って diff の表示とマージの処理を行えるようにする例を示します。これはすばらしいグラフィカルツールで、しかもフリーだからです。</p>
 
-    ignore *.gem</code></pre>
+<p>P4Merge はすべての主要プラットフォーム上で動作するので、実際に試してみたい人は試してみるとよいでしょう。この例では、Mac や Linux 形式のパス名を例に使います。Windows の場合は、<code>/usr/local/bin</code> のところを環境に合わせたパスに置き換えてください。</p>
 
-<p>これらふたつの構文を組み合わせることもできます。直近の参照 (マージコミットだったとします) の二番目の親を取得するには <code>HEAD~3^2</code> などとすればいいのです。</p>
+<p>まず、P4Merge をここからダウンロードします。</p>
 
-<h3 id='id131'>コミットの範囲指定</h3>
+<pre><code>http://www.perforce.com/perforce/downloads/component.html</code></pre>
 
-<p>個々のコミットを指定できるようになったので、次はコミットの範囲を指定する方法を覚えていきましょう。これは、ブランチをマージするときに便利です。たくさんのブランチを持っている場合など「で、このブランチの作業のなかでまだメインブランチにマージしていないのはどれだったっけ?」といった疑問に答えるために範囲指定を使えます。</p>
+<p>最初に、コマンドを実行するための外部ラッパースクリプトを用意します。この例では、Mac 用の実行パスを使います。他のシステムで使う場合は、<code>p4merge</code> のバイナリがインストールされた場所に置き換えてください。次のようなマージ用ラッパースクリプト <code>extMerge</code> を用意しました。これは、すべての引数を受け取ってバイナリをコールします。</p>
 
-<h4 id='id132'>ダブルドット</h4>
+<pre><code>$ cat /usr/local/bin/extMerge
+#!/bin/sh
+/Applications/p4merge.app/Contents/MacOS/p4merge $*</code></pre>
 
-<p>範囲指定の方法としてもっとも一般的なのが、ダブルドット構文です。これは、ひとつのコミットからはたどれるけれどもうひとつのコミットからはたどれないというコミットの範囲を Git に調べさせるものです。図 6-1 のようなコミット履歴を例に考えましょう。</p>
+<p>diff のラッパーは、7 つの引数が渡されていることを確認したうえでそのうちのふたつをマージスクリプトに渡します。デフォルトでは、Git は次のような引数を diff プログラムに渡します。</p>
 
-<p><center><img src="/figures/ch6/18333fig0601-tn.png"></center><br/> 図 6-1. 範囲指定選択用の歴史の例</p>
+<pre><code>path old-file old-hex old-mode new-file new-hex new-mode</code></pre>
 
-<p>experiment ブランチの内容のうち、まだ master ブランチにマージされていないものを調べることになりました。対象となるコミットのログを見るには、Git に <code>master..experiment</code> と指示します。これは &#8220;experiment からはたどれるけれど、master からはたどれないすべてのコミット&#8221; という意味です。説明を短く簡潔にするため、実際のログの出力のかわりに上の図の中でコミットオブジェクトをあらわす文字を使うことにします。</p>
+<p>ここで必要な引数は <code>old-file</code> と <code>new-file</code> だけなので、ラッパースクリプトではこれらを渡すようにします。</p>
 
-<pre><code>$ git log master..experiment
-D
-C</code></pre>
+<pre><code>$ cat /usr/local/bin/extDiff 
+#!/bin/sh
+[ $# -eq 7 ] &amp;&amp; /usr/local/bin/extMerge &quot;$2&quot; &quot;$5&quot;</code></pre>
 
-<p>もし逆に、<code>master</code> には存在するけれども <code>experiment</code> には存在しないすべてのコミットが知りたいのなら、ブランチ名を逆にすればいいのです。<code>experiment..master</code> とすれば、<code>master</code> のすべてのコミットのうち <code>experiment</code> からたどれないものを取得できます。</p>
+<p>また、これらのツールは実行可能にしておかなければなりません。</p>
 
-<pre><code>$ git log experiment..master
-F
-E</code></pre>
+<pre><code>$ sudo chmod +x /usr/local/bin/extMerge 
+$ sudo chmod +x /usr/local/bin/extDiff</code></pre>
 
-<p>これは、<code>experiment</code> ブランチを最新の状態に保つために何をマージしなければならないのかを知るのに便利です。もうひとつ、この構文をよく使う例としてあげられるのが、これからリモートにプッシュしようとしている内容を知りたいときです。</p>
+<p>これで、自前のマージツールや diff ツールを使えるように設定する準備が整いました。設定項目はひとつだけではありません。まず <code>merge.tool</code> でどんなツールを使うのかを Git に伝え、<code>mergetool.*.cmd</code> でそのコマンドを実行する方法を指定し、<code>mergetool.trustExitCode</code> では「そのコマンドの終了コードでマージが成功したかどうかを判断できるのか」を指定し、<code>diff.external</code> では diff の際に実行するコマンドを指定します。つまり、このような 4 つのコマンドを実行することになります。</p>
 
-<pre><code>$ git log origin/master..HEAD</code></pre>
+<pre><code>$ git config --global merge.tool extMerge
+$ git config --global mergetool.extMerge.cmd \
+    &#39;extMerge &quot;$BASE&quot; &quot;$LOCAL&quot; &quot;$REMOTE&quot; &quot;$MERGED&quot;&#39;
+$ git config --global mergetool.trustExitCode false
+$ git config --global diff.external extDiff</code></pre>
 
-<p>このコマンドは、現在のブランチ上でのコミットのうち、リモート <code>origin</code> の <code>master</code> ブランチに存在しないものをすべて表示します。現在のブランチが <code>origin/master</code> を追跡しているときに <code>git push</code> を実行すると、<code>git log origin/master..HEAD</code> で表示されたコミットがサーバーに転送されます。この構文で、どちらか片方を省略することもできます。その場合、Git は省略したほうを HEAD とみなします。たとえば、<code>git log origin/master..</code> と入力すると先ほどの例と同じ結果が得られます。Git は、省略した側を HEAD に置き換えて処理を進めるのです。</p>
+<p>あるいは、<code>~/.gitconfig</code> ファイルを編集してこのような行を追加します。</p>
 
-<h4 id='id133'>複数のポイント</h4>
+<pre><code>[merge]
+  tool = extMerge
+[mergetool &quot;extMerge&quot;]
+  cmd = extMerge &quot;$BASE&quot; &quot;$LOCAL&quot; &quot;$REMOTE&quot; &quot;$MERGED&quot;
+  trustExitCode = false
+[diff]
+  external = extDiff</code></pre>
 
-<p>ダブルドット構文は、とりあえず使うぶんには便利です。しかし、二つよりもっと多くのブランチを指定してリビジョンを特定したいこともあるでしょう。複数のブランチの中から現在いるブランチには存在しないコミットを見つける場合などです。Git でこれを行うには <code>^</code> 文字を使うか、あるいはそこからたどりつけるコミットが不要な参照の前に <code>--not</code> をつけます。これら三つのコマンドは、同じ意味となります。</p>
+<p>すべて設定し終えたら、</p>
 
-<pre><code>$ git log refA..refB
-$ git log ^refA refB
-$ git log refB --not refA</code></pre>
+<pre><code>$ git diff 32d1776b1^ 32d1776b1</code></pre>
 
-<p>これらの構文が便利なのは、二つよりも多くの参照を使って指定できるというところです。ダブルドット構文では二つの参照しか指定できませんでした。たとえば、<code>refA</code> と <code>refB</code> のどちらかからはたどれるけれども <code>refC</code> からはたどれないコミットを取得したい場合は、次のいずれかを実行します。</p>
+<p>このような diff コマンドを実行すると、結果をコマンドラインに出力するかわりに P4Merge を立ち上げ、図 7-1 のようになります。</p>
 
-<pre><code>$ git log refA refB ^refC
-$ git log refA refB --not refC</code></pre>
+<p><center><img src="/figures/ch6/18333fig0701-tn.png"></center><br/> 図 7-1. P4Merge</p>
 
-<p>この非常に強力なリビジョン問い合わせシステムを使えば、今あなたのブランチに何があるのかを知るのに非常に役立つことでしょう。</p>
+<p>ふたつのブランチをマージしてコンフリクトが発生した場合は <code>git mergetool</code> を実行します。すると P4Merge が立ち上がり、コンフリクトの解決を GUI ツールで行えるようになります。</p>
 
-<h4 id='id134'>トリプルドット</h4>
+<p>このようなラッパーを設定しておくと、あとで diff ツールやマージツールを変更したくなったときにも簡単に変更することができます。たとえば <code>extDiff</code> や <code>extMerge</code> で KDiff3 を実行させるように変更するには <code>extMerge</code> ファイルをこのように変更するだけでよいのです。</p>
 
-<p>範囲指定選択の主な構文であとひとつ残っているのがトリプルドット構文です。これは、ふたつの参照のうちどちらか一方からのみたどれるコミット (つまり、両方からたどれるコミットは含まない) を指定します。図 6-1 で示したコミット履歴の例を振り返ってみましょう。<code>master</code> あるいは <code>experiment</code> に存在するコミットのうち、両方に存在するものを除いたコミットを知りたい場合は次のようにします。</p>
+<pre><code>$ cat /usr/local/bin/extMerge
+#!/bin/sh	
+/Applications/kdiff3.app/Contents/MacOS/kdiff3 $*</code></pre>
 
-<pre><code>$ git log master...experiment
-F
-E
-D
-C</code></pre>
+<p>これで、Git での diff の閲覧やコンフリクトの解決の際に KDiff3 が立ち上がるようになりました。</p>
 
-<p>これは通常の <code>log</code> の出力と同じですが、これら四つのコミットについての情報しか表示しません。表示順は、従来どおりコミット日時順となります。</p>
+<p>Git にはさまざまなマージツール用の設定が事前に準備されており、特に設定しなくても利用することができます。事前に設定が準備されているツールは kdiff3、opendiff、tkdiff、meld、xxdiff、emerge、vimdiff そして gvimdiff です。KDiff3 を diff ツールとしてではなくマージのときにだけ使いたい場合は、kdiff3 コマンドにパスが通っている状態で次のコマンドを実行します。</p>
 
-<p>この場合に <code>log</code> コマンドでよく使用するスイッチが <code>--left-right</code> です。このスイッチは、それぞれのコミットがどちら側に存在するのかを表示します。これを使うとデータをより活用しやすくなるでしょう。</p>
+<pre><code>$ git config --global merge.tool kdiff3</code></pre>
 
-<pre><code>$ git log --left-right master...experiment
-&lt; F
-&lt; E
-&gt; D
-&gt; C</code></pre>
+<p><code>extMerge</code> や <code>extDiff</code> を準備せずにこのコマンドを実行すると、マージの解決の際には KDiff3 を立ち上げて diff の際には通常の Git の diff ツールを使うようになります。</p>
 
-<p>これらのツールを使えば、より簡単に「どれを調べたいのか」を Git に伝えられるようになります。</p>
+<h3 id='id506'>書式設定と空白文字</h3>
+
+<p>書式設定や空白文字の問題は微妙にうっとうしいもので、とくにさまざまなプラットフォームで開発している人たちと共同作業をするときに問題になりがちです。使っているエディタが知らぬ間に空白文字を埋め込んでしまっていたり Windows で開発している人が行末にキャリッジリターンを付け加えてしまったりなどしてパッチが面倒な状態になってしまうことも多々あります。Git では、こういった問題に対処するための設定項目も用意しています。</p>
+
+<h4 id='coreautocrlf'>core.autocrlf</h4>
+
+<p>自分が Windows で開発していたり、チームの中に Windows で開発している人がいたりといった場合に、改行コードの問題に巻き込まれることがありがちです。Windows ではキャリッジリターンとラインフィードでファイルの改行を表すのですが、Mac や Linux ではラインフィードだけで改行を表すという違いが原因です。ささいな違いではありますが、さまざまなプラットフォームにまたがる作業では非常に面倒なものです。</p>
+
+<p>Git はこの問題に対処するために、コミットする際には行末の CRLF を LF に自動変換し、ファイルシステム上にチェックアウトするときには逆の変換を行うようにすることができます。この機能を使うには <code>core.autocrlf</code> を設定します。Windows で作業をするときにこれを <code>true</code> に設定すると、コードをチェックアウトするときに行末の LF を CRLF に自動変換してくれます。</p>
+
+<pre><code>$ git config --global core.autocrlf true</code></pre>
+
+<p>Linux や Mac などの行末に LF を使うシステムで作業をしている場合は、Git にチェックアウト時の自動変換をされてしまうと困ります。しかし、行末が CRLF なファイルが紛れ込んでしまった場合には Git に自動修正してもらいたいものです。コミット時の CRLF から LF への変換はさせたいけれどもそれ以外の自動変換が不要な場合は、<code>core.autocrlf</code> を input に設定します。</p>
+
+<pre><code>$ git config --global core.autocrlf input</code></pre>
+
+<p>この設定は、Windows にチェックアウトしたときの CRLF への変換は行いますが、Mac や Linux へのチェックアウト時は LF のままにします。またリポジトリにコミットする際には LF への変換を行います。</p>
+
+<p>Windows のみのプロジェクトで作業をしているのなら、この機能を無効にしてキャリッジリターンをそのままリポジトリに記録してもよいでしょう。その場合は、値 <code>false</code> を設定します。</p>
+
+<pre><code>$ git config --global core.autocrlf false</code></pre>
+
+<h4 id='corewhitespace'>core.whitespace</h4>
+
+<p>Git には、空白文字に関する問題を見つけて修正するための設定もあります。空白文字に関する主要な四つの問題に対応するもので、そのうち二つはデフォルトで有効になっています。残りの二つはデフォルトでは有効になっていませんが、有効化することができます。</p>
+
+<p>デフォルトで有効になっている設定は、行末の空白文字を見つける <code>trailing-space</code> と行頭のタブ文字より前にある空白文字を見つける <code>space-before-tab</code> です。</p>
+
+<p>デフォルトでは無効だけれども有効にすることもできる設定は、行頭にある八文字以上の空白文字を見つける <code>indent-with-non-tab</code> と行末のキャリッジリターンを許容する <code>cr-at-eol</code> です。</p>
+
+<p>これらのオン・オフを切り替えるには、<code>core.whitespace</code> にカンマ区切りで項目を指定します。無効にしたい場合は、設定文字列でその項目を省略するか、あるいは項目名の前に <code>-</code> をつけます。たとえば <code>cr-at-eol</code> 以外のすべてを設定したい場合は、このようにします。</p>
+
+<pre><code>$ git config --global core.whitespace \
+    trailing-space,space-before-tab,indent-with-non-tab</code></pre>
+
+<p><code>git diff</code> コマンドを実行したときに Git がこれらの問題を検出すると、その部分を色付けして表示します。修正してからコミットするようにしましょう。この設定は、<code>git apply</code> でパッチを適用する際にも助けとなります。空白に関する問題を含むパッチを適用するときに警告を発してほしい場合には、次のようにします。</p>
+
+<pre><code>$ git apply --whitespace=warn &lt;patch&gt;</code></pre>
+
+<p>あるいは、問題を自動的に修正してからパッチを適用したい場合は、次のようにします。</p>
+
+<pre><code>$ git apply --whitespace=fix &lt;patch&gt;</code></pre>
+
+<p>これらの設定は、リベースのオプションにも適用されます。空白に関する問題を含むコミットをしたけれどまだそれを公開リポジトリにプッシュしていない場合は、<code>rebase</code> に <code>--whitespace=fix</code> オプションをつけて実行すれば、パッチを書き換えて空白問題を自動修正してくれます。</p>
+
+<h3 id='id507'>サーバーの設定</h3>
+
+<p>Git のサーバー側の設定オプションはそれほど多くありませんが、いくつか興味深いものがあるので紹介します。</p>
+
+<h4 id='receivefsckobjects'>receive.fsckObjects</h4>
+
+<p>デフォルトでは、Git はプッシュで受け取ったオブジェクトの一貫性をチェックしません。各オブジェクトの SHA-1 チェックサムが一致していて有効なオブジェクトを指しているということを Git にチェックさせることもできますが、デフォルトでは毎回のプッシュ時のチェックは行わないようになっています。このチェックは比較的重たい処理であり、リポジトリのサイズが大きかったりプッシュする量が多かったりすると、毎回チェックさせるのには時間がかかるでしょう。毎回のプッシュの際に Git にオブジェクトの一貫性をチェックさせたい場合は、<code>receive.fsckObjects</code> を true にして強制的にチェックさせるようにします。</p>
+
+<pre><code>$ git config --system receive.fsckObjects true</code></pre>
+
+<p>これで、Git がリポジトリの整合性を確認してからでないとプッシュが認められないようになります。壊れたデータをまちがって受け入れてしまうことがなくなりました。</p>
+
+<h4 id='receivedenynonfastforwards'>receive.denyNonFastForwards</h4>
+
+<p>すでにプッシュしたコミットをリベースしてもう一度プッシュした場合、あるいはリモートブランチが現在指しているコミットを含まないコミットをプッシュしようとした場合は、プッシュが拒否されます。これは悪くない方針でしょう。しかしリベースの場合は、自分が何をしているのかをきちんと把握していれば、プッシュの際に <code>-f</code> フラグを指定して強制的にリモートブランチを更新することができます。</p>
+
+<p>このような強制更新機能を無効にするには、<code>receive.denyNonFastForwards</code> を設定します。</p>
+
+<pre><code>$ git config --system receive.denyNonFastForwards true</code></pre>
+
+<p>もうひとつの方法として、サーバー側の receive フックを使うこともできます。こちらの方法については後ほど簡単に説明します。receive フックを使えば、特定のユーザーだけ強制更新を無効にするなどより細やかな制御ができるようになります。</p>
+
+<h4 id='receivedenydeletes'>receive.denyDeletes</h4>
+
+<p><code>denyNonFastForwards</code> の制限を回避する方法として、いったんブランチを削除してから新しいコミットを参照するブランチをプッシュしなおすことができます。その対策として、新しいバージョン (バージョン 1.6.1 以降) の Git では <code>receive.denyDeletes</code> を true に設定することができます。</p>
+
+<pre><code>$ git config --system receive.denyDeletes true</code></pre>
+
+<p>これは、プッシュによるブランチやタグの削除を一切拒否し、誰も削除できないようにします。リモートブランチを削除するには、サーバー上の ref ファイルを手で削除しなければなりません。ACL を使って、ユーザー単位でこれを制限することもできますが、その方法は本章の最後で扱います。</p>
 
 <div id='nav'>
 <a href='ch6-0.html'>prev</a> | <a href='ch6-2.html'>next</a>

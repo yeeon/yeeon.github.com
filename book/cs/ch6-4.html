@@ -1,210 +1,338 @@
 ---
 layout: translation
-title: Pro Git 6.4 Git Tools Rewriting History
+title: Pro Git 6.4 Individuální přizpůsobení systému Git Příklad standardů kontrolovaných systémem Git
 ---
-<h2 id='rewriting_history'>Rewriting History</h2>
+<h2 id='pklad_standard_kontrolovanch_systmem_git'>Příklad standardů kontrolovaných systémem Git</h2>
 
-<p>Many times, when working with Git, you may want to revise your commit history for some reason. One of the great things about Git is that it allows you to make decisions at the last possible moment. You can decide what files go into which commits right before you commit with the staging area, you can decide that you didn’t mean to be working on something yet with the stash command, and you can rewrite commits that already happened so they look like they happened in a different way. This can involve changing the order of the commits, changing messages or modifying files in a commit, squashing together or splitting apart commits, or removing commits entirely — all before you share your work with others.</p>
+<p>V této části použijeme to, co jsme se naučili o vytváření pracovního postupu v systému Git. Systém může kontrolovat formát uživatelovy zprávy k revizi, dovolit pouze aktualizace „rychle vpřed“ a umožňovat změnu obsahu konkrétních podadresářů projektu pouze vybraným uživatelům. V této části vytvoříte skripty pro klienta, které vývojářům pomohou zjistit, zda budou jejich revize odmítnuty, a skripty na server, které si specifikované požadavky přímo vynutí.</p>
 
-<p>In this section, you’ll cover how to accomplish these very useful tasks so that you can make your commit history look the way you want before you share it with others.</p>
+<p>Já jsem k napsání skriptů použil Ruby, zaprvé proto, že je to můj oblíbený skriptovací jazyk, zadruhé proto, že ho považuji za skriptovací jazyk, který nejvíce vypadá jako pseudokód. Díky tomu byste měli kód bez problému rozluštit, i když Ruby nepoužíváte. Stejně dobře však pochodíte i s jakýmkoli jiným jazykem. Všechny vzorové skripty zásuvných modulů distribuované se systémem Git jsou buď ve skriptování Perl, nebo Bash. Podíváte-li se tyto vzorové skripty, budete mít i spoustu příkladů zásuvných modulů v těchto jazycích.</p>
 
-<h3 id='changing_the_last_commit'>Changing the Last Commit</h3>
+<h3 id='zsuvn_modul_na_stran_serveru'>Zásuvný modul na straně serveru</h3>
 
-<p>Changing your last commit is probably the most common rewriting of history that you’ll do. You’ll often want to do two basic things to your last commit: change the commit message, or change the snapshot you just recorded by adding, changing and removing files.</p>
+<p>Veškerá práce na straně serveru bude uložena do souboru update v adresáři hooks. Soubor update bude spuštěn jednou na každou odesílanou větev a jako parametr použije referenci, do níž se odesílá, starou revizi, kde byla tato větev umístěna, a novou, odesílanou revizi. Pokud jsou revize odesílány prostřednictvím SSH, budete mít přístup také k uživateli, který data odesílá. Pokud jste všem povolili připojení s jedním uživatelem (např. „git“) na základě ověření veřejného klíče, možná budete muset poskytnout těmto uživatelům shellový wrapper, který určuje, který uživatel se připojuje na základě veřejného klíče, a nastavit proměnnou prostředí, jež tyto uživatele stanoví. V tomto okamžiku předpokládám, že je připojující se uživatel v proměnné prostředí <code>$USER</code>, a skript update tak začne shromažďovat všechny potřebné informace:</p>
 
-<p>If you only want to modify your last commit message, it’s very simple:</p>
+<pre><code>#!/usr/bin/env ruby
 
-<pre><code>$ git commit --amend</code></pre>
+$refname = ARGV[0]
+$oldrev  = ARGV[1]
+$newrev  = ARGV[2]
+$user    = ENV[&#39;USER&#39;]
 
-<p>That drops you into your text editor, which has your last commit message in it, ready for you to modify the message. When you save and close the editor, the editor writes a new commit containing that message and makes it your new last commit.</p>
+puts &quot;Enforcing Policies... \n(#{$refname}) (#{$oldrev[0,6]}) (#{$newrev[0,6]})&quot;</code></pre>
 
-<p>If you’ve committed and then you want to change the snapshot you committed by adding or changing files, possibly because you forgot to add a newly created file when you originally committed, the process works basically the same way. You stage the changes you want by editing a file and running <code>git add</code> on it or <code>git rm</code> to a tracked file, and the subsequent <code>git commit --amend</code> takes your current staging area and makes it the snapshot for the new commit.</p>
+<p>Ano, je to tak, používám globální proměnné. Ale neodsuzujte mne – náš příklad díky tomu bude názornější.</p>
 
-<p>You need to be careful with this technique because amending changes the SHA-1 of the commit. It’s like a very small rebase — don’t amend your last commit if you’ve already pushed it.</p>
+<h4 id='standardizovan_zprva_k_revizi'>Standardizovaná zpráva k revizi</h4>
 
-<h3 id='changing_multiple_commit_messages'>Changing Multiple Commit Messages</h3>
+<p>Vaším prvním úkolem bude zajistit, aby všechny zprávy k revizím splňovaly předepsaný formát. Abychom si stanovili nějaký cíl, řekněme, že každá zpráva musí obsahovat řetězec ve tvaru „ref: 1234“, protože potřebujete, aby se každá revize vztahovala k jedné pracovní položce vašeho tiketovacího systému. Každou odesílanou revizi si musíte prohlédnout, zjistit, zda zpráva k revizi obsahuje daný řetězec, a pokud v některé z nich chybí, vrátit nenulovou hodnotu, čímž odesílanou revizi odmítnete.</p>
 
-<p>To modify a commit that is farther back in your history, you must move to more complex tools. Git doesn’t have a modify-history tool, but you can use the rebase tool to rebase a series of commits onto the HEAD they were originally based on instead of moving them to another one. With the interactive rebase tool, you can then stop after each commit you want to modify and change the message, add files, or do whatever you wish. You can run rebase interactively by adding the <code>-i</code> option to <code>git rebase</code>. You must indicate how far back you want to rewrite commits by telling the command which commit to rebase onto.</p>
+<p>Vezmete-li hodnoty <code>$newrev</code> a <code>$oldrev</code> a zadáte je k nízkoúrovňovému příkazu <code>git rev-list</code>, získáte seznam hodnot SHA-1 všech odesílaných revizí. Tento příkaz má v podstatě stejnou funkci jako <code>git log</code>, jeho výstupem jsou ale pouze hodnoty SHA-1 bez dalších informací. Pokud tedy chcete získat seznam všech hodnot SHA revizí provedených mezi dvěma konkrétními revizemi, můžete spustit zhruba toto:</p>
 
-<p>For example, if you want to change the last three commit messages, or any of the commit messages in that group, you supply as an argument to <code>git rebase -i</code> the parent of the last commit you want to edit, which is <code>HEAD~2^</code> or <code>HEAD~3</code>. It may be easier to remember the <code>~3</code> because you’re trying to edit the last three commits; but keep in mind that you’re actually designating four commits ago, the parent of the last commit you want to edit:</p>
+<pre><code>$ git rev-list 538c33..d14fc7
+d14fc7c847ab946ec39590d87783c69b031bdfb7
+9f585da4401b0a3999e84113824d15245c13f0be
+234071a1be950e2a8d078e6141f5cd20c1e61ad3
+dfa04c9ef3d5197182f13fb5b9b1fb7717d2222a
+17716ec0f1ff5c77eff40b7fe912f9f6cfd0e475</code></pre>
 
-<pre><code>$ git rebase -i HEAD~3</code></pre>
+<p>Tento výstup můžete vzít, projít všechny hodnoty SHA jednotlivých revizí, vzít jejich zprávy a otestovat je proti regulárnímu výrazu, který vyhledává vzor.</p>
 
-<p>Remember again that this is a rebasing command — every commit included in the range <code>HEAD~3..HEAD</code> will be rewritten, whether you change the message or not. Don’t include any commit you’ve already pushed to a central server — doing so will confuse other developers by providing an alternate version of the same change.</p>
+<p>Budete muset najít postup, jak získat zprávy všech těchto revizí, které mají být otestovány. Chcete-li získat syrová data revizí, můžete použít další nízkoúrovňový příkaz: <code>git cat-file</code>. Všem těmto nízkoúrovňovým příkazům se budu podrobněji věnovat v kapitole 9. Pro tuto chvíli se jen podívejme, co příkazem získáme:</p>
 
-<p>Running this command gives you a list of commits in your text editor that looks something like this:</p>
+<pre><code>$ git cat-file commit ca82a6
+tree cfda3bf379e4f8dba8717dee55aab78aef7f4daf
+parent 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+author Scott Chacon &lt;schacon@gmail.com&gt; 1205815931 -0700
+committer Scott Chacon &lt;schacon@gmail.com&gt; 1240030591 -0700
 
-<pre><code>pick f7f3f6d changed my name a bit
-pick 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file
+changed the version number</code></pre>
 
-# Rebase 710f0f8..a5f4a0d onto 710f0f8
-#
-# Commands:
-#  p, pick = use commit
-#  e, edit = use commit, but stop for amending
-#  s, squash = use commit, but meld into previous commit
-#
-# If you remove a line here THAT COMMIT WILL BE LOST.
-# However, if you remove everything, the rebase will be aborted.
-#</code></pre>
+<p>Jednoduchým způsobem, jak z revize, k níž máte hodnotu SHA-1, extrahovat její zprávu, je přejít k prvnímu prázdnému řádku a vzít vše, co následuje za ním. V systémech Unix to lze provést příkazem <code>sed</code>:</p>
 
-<p>It’s important to note that these commits are listed in the opposite order than you normally see them using the <code>log</code> command. If you run a <code>log</code>, you see something like this:</p>
+<pre><code>$ git cat-file commit ca82a6 | sed &#39;1,/^$/d&#39;
+changed the version number</code></pre>
 
-<pre><code>$ git log --pretty=format:&quot;%h %s&quot; HEAD~3..HEAD
-a5f4a0d added cat-file
-310154e updated README formatting and added blame
-f7f3f6d changed my name a bit</code></pre>
+<p>Tento výraz můžete použít k extrakci zpráv ze všech odesílaných revizí a skript ukončit, jestliže najdete něco, co neodpovídá požadavkům. Chcete-li skript ukončit a odesílaná data odmítnout, návratová hodnota musí být nenulová. Celá metoda vypadá takto:</p>
 
-<p>Notice the reverse order. The interactive rebase gives you a script that it’s going to run. It will start at the commit you specify on the command line (<code>HEAD~3</code>) and replay the changes introduced in each of these commits from top to bottom. It lists the oldest at the top, rather than the newest, because that’s the first one it will replay.</p>
+<pre><code>$regex = /\[ref: (\d+)\]/
 
-<p>You need to edit the script so that it stops at the commit you want to edit. To do so, change the word pick to the word edit for each of the commits you want the script to stop after. For example, to modify only the third commit message, you change the file to look like this:</p>
+# enforced custom commit message format
+def check_message_format
+  missed_revs = `git rev-list #{$oldrev}..#{$newrev}`.split(&quot;\n&quot;)
+  missed_revs.each do |rev|
+    message = `git cat-file commit #{rev} | sed &#39;1,/^$/d&#39;`
+    if !$regex.match(message)
+      puts &quot;[POLICY] Your message is not formatted correctly&quot;
+      exit 1
+    end
+  end
+end
+check_message_format</code></pre>
 
-<pre><code>edit f7f3f6d changed my name a bit
-pick 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file</code></pre>
+<p>Pokud toto vložíte do skriptu <code>update</code>, budou odmítnuty všechny aktualizace s revizemi, které mají zprávu neodpovídající zadanému pravidlu.</p>
 
-<p>When you save and exit the editor, Git rewinds you back to the last commit in that list and drops you on the command line with the following message:</p>
+<h4 id='systm_acl_podle_uivatel'>Systém ACL podle uživatelů</h4>
 
-<pre><code>$ git rebase -i HEAD~3
-Stopped at 7482e0d... updated the gemspec to hopefully work better
-You can amend the commit now, with
+<p>Předpokládejme, že chcete přidat mechanismus, který bude používat seznam oprávnění ACL (access control list), v němž bude stanoveno, kteří uživatelé smějí do které části vašeho projektu odesílat změny. Někteří uživatelé budou mít plný přístup, jiní budou mít přístup jen do některých podadresářů nebo ke konkrétním souborům. Základ tohoto systému bude představovat soubor <code>acl</code>, který bude uložen v adresáři repozitáře na serveru a do nějž zapíšete všechna příslušná pravidla. Zásuvný modul <code>update</code> se podívá na tato pravidla, zjistí, jaké soubory byly ve všech odesílaných revizích doručeny, a určí, zda má odesílatel oprávnění aktualizovat všechny tyto soubory.</p>
 
-       git commit --amend
+<p>Prvním krokem, který budete muset udělat, je vytvoření seznamu ACL. Tady budete používat formát velmi podobný mechanismu CVS ACL. Využívá posloupnosti řádků, kdy v prvním poli stojí <code>avail</code> nebo <code>unavail</code>, v dalším poli je čárkami oddělený seznam uživatelů, jichž se pravidlo týká, a v posledním poli je uvedeno umístění, na něž se pravidlo vztahuje (prázdné pole označuje otevřený přístup). Všechna tato pole jsou oddělena svislicí (<code>|</code>).</p>
 
-Once you’re satisfied with your changes, run
+<p>V našem příkladu máte několik správců, několik tvůrců dokumentace s přístupem do adresáře <code>doc</code> a jednoho vývojáře, který má jako jediný přístup do adresářů <code>lib</code> a <code>tests</code>. Soubor ACL proto bude vypadat následovně:</p>
 
-       git rebase --continue</code></pre>
+<pre><code>avail|nickh,pjhyett,defunkt,tpw
+avail|usinclair,cdickens,ebronte|doc
+avail|schacon|lib
+avail|schacon|tests</code></pre>
 
-<p>These instructions tell you exactly what to do. Type</p>
+<p>Začnete načtením těchto dat do struktury, kterou můžete použít. Abychom příklad nekomplikovali, budete vyžadovat pouze direktivy <code>avail</code> (využít). Používá se tu metoda asociativních polí, kdy klíč představuje jméno uživatele a hodnotu tvoří sada umístění, k nimž má uživatel oprávnění pro zápis:</p>
 
-<pre><code>$ git commit --amend</code></pre>
+<pre><code>def get_acl_access_data(acl_file)
+  # read in ACL data
+  acl_file = File.read(acl_file).split(&quot;\n&quot;).reject { |line| line == &#39;&#39; }
+  access = {}
+  acl_file.each do |line|
+    avail, users, path = line.split(&#39;|&#39;)
+    next unless avail == &#39;avail&#39;
+    users.split(&#39;,&#39;).each do |user|
+      access[user] ||= []
+      access[user] &lt;&lt; path
+    end
+  end
+  access
+end</code></pre>
 
-<p>Change the commit message, and exit the editor. Then, run</p>
+<p>V kombinaci se souborem ACL, který jsme si ukázali před chvílí, poskytne tato metoda <code>get_acl_access_data</code> datovou strukturu v této podobě:</p>
+
+<pre><code>{&quot;defunkt&quot;=&gt;[nil],
+ &quot;tpw&quot;=&gt;[nil],
+ &quot;nickh&quot;=&gt;[nil],
+ &quot;pjhyett&quot;=&gt;[nil],
+ &quot;schacon&quot;=&gt;[&quot;lib&quot;, &quot;tests&quot;],
+ &quot;cdickens&quot;=&gt;[&quot;doc&quot;],
+ &quot;usinclair&quot;=&gt;[&quot;doc&quot;],
+ &quot;ebronte&quot;=&gt;[&quot;doc&quot;]}</code></pre>
+
+<p>Nyní, když jste uspořádali příslušná oprávnění, zbývá zjistit, která umístění odesílané revize změnily, abyste měli jistotu, že k nim ke všem má odesílající uživatel přístup.</p>
 
-<pre><code>$ git rebase --continue</code></pre>
+<p>Zjistit, které soubory byly v jedné revizi změněny, lze velmi snadno pomocí příkazu <code>git log</code> s parametrem <code>--name-only</code> (stručně popsáno v kapitole 2):</p>
 
-<p>This command will apply the other two commits automatically, and then you’re done. If you change pick to edit on more lines, you can repeat these steps for each commit you change to edit. Each time, Git will stop, let you amend the commit, and continue when you’re finished.</p>
+<pre><code>$ git log -1 --name-only --pretty=format:&#39;&#39; 9f585d
 
-<h3 id='reordering_commits'>Reordering Commits</h3>
+README
+lib/test.rb</code></pre>
 
-<p>You can also use interactive rebases to reorder or remove commits entirely. If you want to remove the &#8220;added cat-file&#8221; commit and change the order in which the other two commits are introduced, you can change the rebase script from this</p>
+<p>Jestliže používáte strukturu ACL získanou metodou <code>get_acl_access_data</code> a kontrolujete ji proti seznamu souborů v každé revizi, můžete určit, zda bude mít uživatel oprávnění odesílat všechny své revize:</p>
 
-<pre><code>pick f7f3f6d changed my name a bit
-pick 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file</code></pre>
+<pre><code># only allows certain users to modify certain subdirectories in a project
+def check_directory_perms
+  access = get_acl_access_data(&#39;acl&#39;)
 
-<p>to this:</p>
+  # see if anyone is trying to push something they can&#39;t
+  new_commits = `git rev-list #{$oldrev}..#{$newrev}`.split(&quot;\n&quot;)
+  new_commits.each do |rev|
+    files_modified = `git log -1 --name-only --pretty=format:&#39;&#39; #{rev}`.split(&quot;\n&quot;)
+    files_modified.each do |path|
+      next if path.size == 0
+      has_file_access = false
+      access[$user].each do |access_path|
+        if !access_path || # user has access to everything
+          (path.index(access_path) == 0) # access to this path
+          has_file_access = true
+        end
+      end
+      if !has_file_access
+        puts &quot;[POLICY] You do not have access to push to #{path}&quot;
+        exit 1
+      end
+    end
+  end
+end
 
-<pre><code>pick 310154e updated README formatting and added blame
-pick f7f3f6d changed my name a bit</code></pre>
+check_directory_perms</code></pre>
 
-<p>When you save and exit the editor, Git rewinds your branch to the parent of these commits, applies <code>310154e</code> and then <code>f7f3f6d</code>, and then stops. You effectively change the order of those commits and remove the &#8220;added cat-file&#8221; commit completely.</p>
+<p>Většina uvedeného by měla být jasná. Příkazem <code>git rev-list</code> získáte výpis nových revizí odesílaných na váš server. U každé z revizí uvidíte také soubory, které byly změněny, a budete se moci přesvědčit, zda má odesílající uživatel přístup ke všem umístěním, která svými daty mění. Snad jediným specifickým Ruby výrazem, který nemusí být jasný, je <code>path.index(access_path) == 0</code>, který je pravdivý, pokud kontrolovaná cesta začíná řetězcem <code>access_path</code> (cesta oprávnění) – díky tomu nepovoluje cesta v <code>access_path</code> jen konkrétní místo na disku (soubor nebo adresář), ale také všechny soubory nebo adresáře, které začínají tímto řetězcem.</p>
 
-<h3 id='squashing_a_commit'>Squashing a Commit</h3>
+<p>Vaši uživatelé tak už teď nebudou moci odesílat revize se zprávami v nepatřičném tvaru nebo se soubory změněnými mimo umístění jim vyhrazená.</p>
 
-<p>It’s also possible to take a series of commits and squash them down into a single commit with the interactive rebasing tool. The script puts helpful instructions in the rebase message:</p>
+<h4 id='pouze_rychle_vped'>Pouze „rychle vpřed“</h4>
 
-<pre><code>#
-# Commands:
-#  p, pick = use commit
-#  e, edit = use commit, but stop for amending
-#  s, squash = use commit, but meld into previous commit
-#
-# If you remove a line here THAT COMMIT WILL BE LOST.
-# However, if you remove everything, the rebase will be aborted.
-#</code></pre>
+<p>Poslední věcí, která nám ještě zbývá, je povolit pouze odeslání směřující „rychle vpřed“ (fast forward). Ve verzi 1.6 systému Git a novějších lze nastavit možnosti <code>receive.denyDeletes</code> a <code>receive.denyNonFastForwards</code>. Pokud však totéž nastavíte pomocí zásuvného modulu, pochodíte i ve starších verzích systému Git a navíc ho můžete nastavit pouze pro konkrétní uživatele nebo na cokoli jiného, s čím se kdy setkáte.</p>
 
-<p>If, instead of &#8220;pick&#8221; or &#8220;edit&#8221;, you specify &#8220;squash&#8221;, Git applies both that change and the change directly before it and makes you merge the commit messages together. So, if you want to make a single commit from these three commits, you make the script look like this:</p>
+<p>Kontrolu můžete provést tak, že se podíváte, zda jsou některé revize dostupné ze starších verzí, ale nejsou dostupné z novějších. Pokud žádná taková revize neexistuje, směřovalo odeslání rychle vpřed. V opačném případě můžete odeslané revize odmítnout:</p>
 
-<pre><code>pick f7f3f6d changed my name a bit
-squash 310154e updated README formatting and added blame
-squash a5f4a0d added cat-file</code></pre>
+<pre><code># enforces fast-forward only pushes
+def check_fast_forward
+  missed_refs = `git rev-list #{$newrev}..#{$oldrev}`
+  missed_ref_count = missed_refs.split(&quot;\n&quot;).size
+  if missed_ref_count &gt; 0
+    puts &quot;[POLICY] Cannot push a non fast-forward reference&quot;
+    exit 1
+  end
+end
 
-<p>When you save and exit the editor, Git applies all three changes and then puts you back into the editor to merge the three commit messages:</p>
+check_fast_forward</code></pre>
 
-<pre><code># This is a combination of 3 commits.
-# The first commit&#39;s message is:
-changed my name a bit
+<p>Nyní je vše nastaveno. Spustíte-li příkaz <code>chmod u+x .git/hooks/update</code>, což je soubor, do nějž byste měli celý tento kód vložit a poté zkusit odeslat referenci, která nesměřuje rychle vpřed, dostanete následující výstup:</p>
 
-# This is the 2nd commit message:
+<pre><code>$ git push -f origin master
+Counting objects: 5, done.
+Compressing objects: 100% (3/3), done.
+Writing objects: 100% (3/3), 323 bytes, done.
+Total 3 (delta 1), reused 0 (delta 0)
+Unpacking objects: 100% (3/3), done.
+Enforcing Policies...
+(refs/heads/master) (8338c5) (c5b616)
+[POLICY] Cannot push a non fast-forward reference
+error: hooks/update exited with error code 1
+error: hook declined to update refs/heads/master
+To git@gitserver:project.git
+ ! [remote rejected] master -&gt; master (hook declined)
+error: failed to push some refs to &#39;git@gitserver:project.git&#39;</code></pre>
 
-updated README formatting and added blame
+<p>Výstup obsahuje řadu zajímavých informací. Zaprvé si všimněte místa, kde byl spuštěn zásuvný modul.</p>
 
-# This is the 3rd commit message:
+<pre><code>Enforcing Policies...
+(refs/heads/master) (8338c5) (c5b616)</code></pre>
 
-added cat-file</code></pre>
+<p>Všimněte si, že toto bylo posláno na standardní výstup „stdout“ na samém začátku skriptu update. Měli bychom také upozornit, že všechno, co váš skript vypíše do standardního výstupu stdout, bude přeneseno také klientovi.</p>
 
-<p>When you save that, you have a single commit that introduces the changes of all three previous commits.</p>
+<p>Další věcí, jíž si všimnete, je chybové hlášení.</p>
 
-<h3 id='splitting_a_commit'>Splitting a Commit</h3>
+<pre><code>[POLICY] Cannot push a non fast-forward reference
+error: hooks/update exited with error code 1
+error: hook declined to update refs/heads/master</code></pre>
 
-<p>Splitting a commit undoes a commit and then partially stages and commits as many times as commits you want to end up with. For example, suppose you want to split the middle commit of your three commits. Instead of &#8220;updated README formatting and added blame&#8221;, you want to split it into two commits: &#8220;updated README formatting&#8221; for the first, and &#8220;added blame&#8221; for the second. You can do that in the <code>rebase -i</code> script by changing the instruction on the commit you want to split to &#8220;edit&#8221;:</p>
+<p>První řádek jste vytvořili vy, dalšími dvěma řádky vám Git sděluje, že je výstup skriptu update nenulový, a proto bude odeslání odmítnuto. A na konci stojí následující:</p>
 
-<pre><code>pick f7f3f6d changed my name a bit
-edit 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file</code></pre>
+<pre><code>To git@gitserver:project.git
+ ! [remote rejected] master -&gt; master (hook declined)
+error: failed to push some refs to &#39;git@gitserver:project.git&#39;</code></pre>
 
-<p>Then, when the script drops you to the command line, you reset that commit, take the changes that have been reset, and create multiple commits out of them. When you save and exit the editor, Git rewinds to the parent of the first commit in your list, applies the first commit (<code>f7f3f6d</code>), applies the second (<code>310154e</code>), and drops you to the console. There, you can do a mixed reset of that commit with <code>git reset HEAD^</code>, which effectively undoes that commit and leaves the modified files unstaged. Now you can stage and commit files until you have several commits, and run <code>git rebase --continue</code> when you’re done:</p>
+<p>Pro každou referenci, kterou váš zásuvný modul odmítne, se zobrazí jedna zpráva o odmítnutí vzdálené reference. Ze zprávy vyčtete, že byla reference odmítnuta kvůli chybě zásuvného modulu.</p>
 
-<pre><code>$ git reset HEAD^
-$ git add README
-$ git commit -m &#39;updated README formatting&#39;
-$ git add lib/simplegit.rb
-$ git commit -m &#39;added blame&#39;
-$ git rebase --continue</code></pre>
+<p>Pokud navíc není ukazatel reference v některé z vašich revizí, zobrazí se chybové hlášení, které jste pro tento účel určili.</p>
 
-<p>Git applies the last commit (<code>a5f4a0d</code>) in the script, and your history looks like this:</p>
+<pre><code>[POLICY] Your message is not formatted correctly</code></pre>
 
-<pre><code>$ git log -4 --pretty=format:&quot;%h %s&quot;
-1c002dd added cat-file
-9b29157 added blame
-35cfb2b updated README formatting
-f3cc40e changed my name a bit</code></pre>
+<p>Nebo pokud se někdo pokusí upravit soubor, k němuž nemá přístup, a odešle revizi, jejíž součástí bude tento soubor, zobrazí se podobná zpráva. Pokud se například autor dokumentace pokusí odeslat revizi, která mění obsah adresáře <code>lib</code>, zobrazí se mu upozornění:</p>
 
-<p>Once again, this changes the SHAs of all the commits in your list, so make sure no commit shows up in that list that you’ve already pushed to a shared repository.</p>
+<pre><code>[POLICY] You do not have access to push to lib/test.rb</code></pre>
 
-<h3 id='the_nuclear_option_filterbranch'>The Nuclear Option: filter-branch</h3>
+<p>A to je vše. Od této chvíle budete mít k dispozici skript <code>update</code> ve spustitelné podobě, váš repozitář nikdy nebude převinut zpět a nikdy nepřijme zprávu k revizi, která by neodpovídala předepsanému vzoru. Uživatelé se navíc budou moci pohybovat jen ve vymezeném prostoru.</p>
 
-<p>There is another history-rewriting option that you can use if you need to rewrite a larger number of commits in some scriptable way — for instance, changing your e-mail address globally or removing a file from every commit. The command is <code>filter-branch</code>, and it can rewrite huge swaths of your history, so you probably shouldn’t use it unless your project isn’t yet public and other people haven’t based work off the commits you’re about to rewrite. However, it can be very useful. You’ll learn a few of the common uses so you can get an idea of some of the things it’s capable of.</p>
+<h3 id='zsuvn_moduly_na_stran_klienta'>Zásuvné moduly na straně klienta</h3>
 
-<h4 id='removing_a_file_from_every_commit'>Removing a File from Every Commit</h4>
+<p>Nevýhodou uvedeného postupu jsou nářky vašich uživatelů, které vás nevyhnutelně čekají jako výsledek odmítnutí jejich revizí. Odmítnete-li na poslední chvíli práci, na níž si dávali záležet, budou vaši uživatelé zmatení a otrávení, nemluvě o tom, že budou muset kvůli opravě měnit svou historii, což může bázlivější povahy odradit.</p>
 
-<p>This occurs fairly commonly. Someone accidentally commits a huge binary file with a thoughtless <code>git add .</code>, and you want to remove it everywhere. Perhaps you accidentally committed a file that contained a password, and you want to make your project open source. <code>filter-branch</code> is the tool you probably want to use to scrub your entire history. To remove a file named passwords.txt from your entire history, you can use the <code>--tree-filter</code> option to <code>filter-branch</code>:</p>
+<p>Problém vám mohou pomoci vyřešit zásuvné moduly na straně klienta. Poskytněte je svým uživatelům a ti budou upozorněni pokaždé, až provedou něco, co by server s největší pravděpodobností odmítl. Všechny problémy tak budou moci opravit, dokud to ještě není příliš složité a dokud je nezapsali do revize. Jelikož se zásuvné moduly při naklonování projektu nekopírují, musíte tyto skripty distribuovat jinak a uživatelům zadat instrukce, aby je zkopírovali do svého adresáře <code>.git/hooks</code> a zajistili, že budou spustitelné. Zásuvné moduly můžete distribuovat v rámci projektu nebo v samostatném projektu, nelze je však nastavit automaticky.</p>
 
-<pre><code>$ git filter-branch --tree-filter &#39;rm -f passwords.txt&#39; HEAD
-Rewrite 6b9b3cf04e7c5686a9cb838c3f36a8cb6a0fc2bd (21/21)
-Ref &#39;refs/heads/master&#39; was rewritten</code></pre>
+<p>Pro začátek byste měli zkontrolovat zprávy k revizi, než tyto revize nahrajete, abyste měli jistotu, že server vaše změny neodmítne jen kvůli zprávám v nesprávném formátu. K tomuto účelu můžete použít zásuvný modul <code>commit-msg</code>. Necháte-li zásuvný modul přečíst zprávu k revizi ze souboru, který zadáte jako první parametr, a srovnat se vzorem, můžete systému Git uložit, aby odmítl revize, které vzoru neodpovídají:</p>
 
-<p>The <code>--tree-filter</code> option runs the specified command after each checkout of the project and then recommits the results. In this case, you remove a file called passwords.txt from every snapshot, whether it exists or not. If you want to remove all accidentally committed editor backup files, you can run something like <code>git filter-branch --tree-filter &#39;rm -f *~&#39; HEAD</code>.</p>
+<pre><code>#!/usr/bin/env ruby
+message_file = ARGV[0]
+message = File.read(message_file)
 
-<p>You’ll be able to watch Git rewriting trees and commits and then move the branch pointer at the end. It’s generally a good idea to do this in a testing branch and then hard-reset your master branch after you’ve determined the outcome is what you really want. To run <code>filter-branch</code> on all your branches, you can pass <code>--all</code> to the command.</p>
+$regex = /\[ref: (\d+)\]/
 
-<h4 id='making_a_subdirectory_the_new_root'>Making a Subdirectory the New Root</h4>
+if !$regex.match(message)
+  puts &quot;[POLICY] Your message is not formatted correctly&quot;
+  exit 1
+end</code></pre>
 
-<p>Suppose you’ve done an import from another source control system and have subdirectories that make no sense (trunk, tags, and so on). If you want to make the <code>trunk</code> subdirectory be the new project root for every commit, <code>filter-branch</code> can help you do that, too:</p>
+<p>Je-li skript na svém místě (<code>.git/hooks/commit-msg</code>) a je spustitelný, pak v případě, že zapíšete revizi se zprávou v nedovoleném formátu, zobrazí se následující:</p>
 
-<pre><code>$ git filter-branch --subdirectory-filter trunk HEAD
-Rewrite 856f0bf61e41a27326cdae8f09fe708d679f596f (12/12)
-Ref &#39;refs/heads/master&#39; was rewritten</code></pre>
+<pre><code>$ git commit -am &#39;test&#39;
+[POLICY] Your message is not formatted correctly</code></pre>
 
-<p>Now your new project root is what was in the <code>trunk</code> subdirectory each time. Git will also automatically remove commits that did not affect the subdirectory.</p>
+<p>V takovém případě nebyla zapsána žádná revize. Pokud však zpráva obsahuje správný vzor, Git vám umožní revizi zapsat:</p>
 
-<h4 id='changing_email_addresses_globally'>Changing E-Mail Addresses Globally</h4>
+<pre><code>$ git commit -am &#39;test [ref: 132]&#39;
+[master e05c914] test [ref: 132]
+ 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
 
-<p>Another common case is that you forgot to run <code>git config</code> to set your name and e-mail address before you started working, or perhaps you want to open-source a project at work and change all your work e-mail addresses to your personal address. In any case, you can change e-mail addresses in multiple commits in a batch with <code>filter-branch</code> as well. You need to be careful to change only the e-mail addresses that are yours, so you use <code>--commit-filter</code>:</p>
+<p>Dále se budete chtít ujistit, že neměníte soubory, jejichž úpravu vám zakazuje seznam ACL. Pokud adresář <code>.git</code> vašeho projektu obsahuje kopii souboru ACL, který jsme používali naposledy, příslušná omezení přístupu pro vás ohlídá tento skript <code>pre-commit</code>:</p>
 
-<pre><code>$ git filter-branch --commit-filter &#39;
-        if [ &quot;$GIT_AUTHOR_EMAIL&quot; = &quot;schacon@localhost&quot; ];
-        then
-                GIT_AUTHOR_NAME=&quot;Scott Chacon&quot;;
-                GIT_AUTHOR_EMAIL=&quot;schacon@example.com&quot;;
-                git commit-tree &quot;$@&quot;;
-        else
-                git commit-tree &quot;$@&quot;;
-        fi&#39; HEAD</code></pre>
+<pre><code>#!/usr/bin/env ruby
 
-<p>This goes through and rewrites every commit to have your new address. Because commits contain the SHA-1 values of their parents, this command changes every commit SHA in your history, not just those that have the matching e-mail address.</p>
+$user    = ENV[&#39;USER&#39;]
+
+# [ insert acl_access_data method from above ]
+
+# only allows certain users to modify certain subdirectories in a project
+def check_directory_perms
+  access = get_acl_access_data(&#39;.git/acl&#39;)
+
+  files_modified = `git diff-index --cached --name-only HEAD`.split(&quot;\n&quot;)
+  files_modified.each do |path|
+    next if path.size == 0
+    has_file_access = false
+    access[$user].each do |access_path|
+    if !access_path || (path.index(access_path) == 0)
+      has_file_access = true
+    end
+    if !has_file_access
+      puts &quot;[POLICY] You do not have access to push to #{path}&quot;
+      exit 1
+    end
+  end
+end
+
+check_directory_perms</code></pre>
+
+<p>Jedná se o přibližně stejný skript, jaký funguje na serveru, avšak se dvěma podstatnými rozdíly. Zaprvé je soubor ACL na jiném místě, protože se tento skript spouští z vašeho pracovního adresáře, a ne z adresáře Git. Cestu k souboru ACL budete muset změnit z</p>
+
+<pre><code>access = get_acl_access_data(&#39;acl&#39;)</code></pre>
+
+<p>na:</p>
+
+<pre><code>access = get_acl_access_data(&#39;.git/acl&#39;)</code></pre>
+
+<p>Druhým důležitým rozdílem je způsob, jak se zobrazí seznam změněných souborů. Protože serverová metoda využívá záznam revizí, ale ve vašem případě ještě nebyla revize zaznamenána, musí být seznam souborů pořízen na základě oblasti připravených změn. Místo</p>
+
+<pre><code>files_modified = `git log -1 --name-only --pretty=format:&#39;&#39; #{ref}`</code></pre>
+
+<p>budete muset použít:</p>
+
+<pre><code>files_modified = `git diff-index --cached --name-only HEAD`</code></pre>
+
+<p>Toto jsou však jediné dvě změny, v ostatních ohledech pracuje skript stejně. Je však třeba upozornit, že skript očekává, že lokálně pracujete v roli stejného uživatele jako odesíláte data na vzdálený server. Pokud nejsou uživatelé stejní, budete muset ručně nastavit proměnnou <code>$user</code>.</p>
+
+<p>Posledním krokem, který budete muset provést, je ověření, že nebudete odesílat reference nesměřující rychle vpřed. Tento krok však už není tak jednoduchý. Chcete-li vyhledat reference nesměřující rychle vpřed, budete muset buď provést přeskládání po revizi, kterou jste již odeslali, nebo se do stejné vzdálené větve pokusit odeslat jinou lokální větev.</p>
+
+<p>Vzhledem k tomu, že vám server sdělí, že nelze odesílat revize nesměřující rychle vpřed, a zásuvný modul neumožní odeslat revize nesplňující dané požadavky, je vaší poslední možností přeskládat revize, které jste již odeslali.</p>
+
+<p>Jako příklad uvedeme skript pre-rebase, který bude toto pravidlo kontrolovat. Použije seznam všech revizí, které hodláte přepsat, a ověří, zda neexistují už v některé z vašich vzdálených referencí. Pokud najde revizi, která je dostupná z některé z vašich vzdálených referencí, proces přeskládání přeruší:</p>
+
+<pre><code>#!/usr/bin/env ruby
+
+base_branch = ARGV[0]
+if ARGV[1]
+  topic_branch = ARGV[1]
+else
+  topic_branch = &quot;HEAD&quot;
+end
+
+target_shas = `git rev-list #{base_branch}..#{topic_branch}`.split(&quot;\n&quot;)
+remote_refs = `git branch -r`.split(&quot;\n&quot;).map { |r| r.strip }
+
+target_shas.each do |sha|
+  remote_refs.each do |remote_ref|
+    shas_pushed = `git rev-list ^#{sha}^@ refs/remotes/#{remote_ref}`
+    if shas_pushed.split(“\n”).include?(sha)
+      puts &quot;[POLICY] Commit #{sha} has already been pushed to #{remote_ref}&quot;
+      exit 1
+    end
+  end
+end</code></pre>
+
+<p>Tento skript používá syntax, které jsme se v části Výběr revize v kapitole 6 nevěnovali. Seznam revizí, které už byly odeslány, získáte takto:</p>
+
+<pre><code>git rev-list ^#{sha}^@ refs/remotes/#{remote_ref}</code></pre>
+
+<p>Syntax <code>SHA^@</code> se vztahuje na všechny rodiče této revize. Vyhledáváte všechny revize, které jsou dostupné z poslední revize na vzdáleném serveru a nejsou dostupné z žádného rodiče jakékoli hodnoty SHA, kterou se pokoušíte odeslat. Tímto způsobem lze označit odeslání „rychle vpřed“.</p>
+
+<p>Největší nevýhodou tohoto postupu je, že může být velmi pomalý a není vždy nutný. Pokud se nesnažíte vynutit si odeslání parametrem <code>-f</code>, server vás sám upozorní a odesílané revize nepřijme. Skript je však zajímavým cvičením a teoreticky vám může pomoci předejít nutnosti vracet se v historii a přeskládávat revize kvůli opravě chyby.</p>
 
 <div id='nav'>
 <a href='ch6-3.html'>prev</a> | <a href='ch6-5.html'>next</a>

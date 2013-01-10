@@ -1,8 +1,65 @@
 ---
 layout: translation
-title: Pro Git 7.5 Customizing Git Git Hooks
+title: Pro Git 7.5 Los geht&#8217;s Git konfigurieren
 ---
-<h2 id='git_hooks'>Git Hooks</h2>
+<h2 id='git_konfigurieren'>Git konfigurieren</h2>
+
+<p>Nachdem Du jetzt Git auf deinem System installiert hast, solltest Du deine Git Konfiguration anpassen. Das brauchst Du nur einmal zu tun, die Konfiguration bleibt auch bestehen, wenn Du Git auf eine neuere Version aktualisierst. Du kannst sie jederzeit ändern, indem Du die folgenden Befehle einfach noch einmal ausführst.</p>
+
+<p>Git umfasst das Werkzeug <code>git config</code>, das dir erlaubt, Konfigurationswerte zu verändern. Auf diese Weise kannst Du anpassen, wie Git aussieht und arbeitet. Diese Werte sind an drei verschiedenen Orten gespeichert:</p>
+
+<ul>
+<li>Die Datei <code>/etc/gitconfig</code> enthält Werte, die für jeden Anwender des Systems und all ihre Projekte gelten. Wenn Du <code>git config</code> mit der Option <code>--system</code> verwendest, wird diese Datei verwendet.</li>
+
+<li>Die Werte in der Datei <code>~/.gitconfig</code> gelten ausschließlich für dich und all deine Projekte. Wenn Du <code>git config</code> mit der Option <code>--global</code> verwendest, wird diese Datei verwendet.</li>
+
+<li>Die Datei <code>.git/config</code> im Git Verzeichnis eines Projektes enthält Werte, die nur für das jeweilige Projekt gelten. Diese Dateien überschreiben Werte aus den jeweils vorhergehenden Dateien in dieser Reihenfolge. D.h. Werte in beispielsweise <code>.git/config</code> überschreiben diejenigen in <code>/etc/gitconfig</code>.</li>
+</ul>
+
+<p>Auf Windows Systemen sucht Git nach der <code>.gitconfig</code> Datei im <code>$HOME</code> Verzeichnis (für die meisten Leute ist das das Verzeichnis <code>C:\Dokumente und Einstellungen\$USER</code>). Git sucht außerdem auch nach dem Verzeichnis /etc/gitconfig, aber es sucht relativ demjenigen Verzeichnis, in dem Du Git mit Hilfe des Installers installiert hast.</p>
+
+<h3 id='deine_identitt'>Deine Identität</h3>
+
+<p>Nachdem Du Git installiert hast, solltest Du als erstes deinen Namen und deine E-Mail Adresse konfigurieren. Das ist wichtig, weil Git diese Information für jeden Commit verwendet, den Du anlegst, und sie ist unveränderlich in deine Commits eingebaut (xxx):</p>
+
+<pre><code>$ git config --global user.name &quot;John Doe&quot;
+$ git config --global user.email johndoe@example.com</code></pre>
+
+<p>Du brauchst diese Konfiguration, wie schon erwähnt, nur einmal vorzunehmen, wenn Du die <code>--global</code> Option verwendest, weil Git diese Information dann für all deine Projekte verwenden wird. Wenn Du sie für ein spezielles Projekt mit einem anderen Namen oder einer anderen E-Mail Adresse überschreiben willst, kannst Du dazu den Befehl ohne die <code>--global</code> Option innerhalb dieses Projektes ausführen.</p>
+
+<h3 id='dein_editor'>Dein Editor</h3>
+
+<p>Nachdem Du deine Identität jetzt konfiguriert hast, kannst Du einstellen, welchen Texteditor Git in Situationen verwenden soll, in denen Du eine Nachricht eingeben mußt. Normalerweise verwendet Git den Standard-Texteditor deines Systems - das ist üblicherweise Vi oder Vim. Wenn Du einen anderen Texteditor, z.B. Emacs, verwenden willst, kannst Du das wie folgt festlegen:</p>
+
+<pre><code>$ git config --global core.editor emacs</code></pre>
+
+<h3 id='dein_diff_programm'>Dein Diff Programm</h3>
+
+<p>Eine andere nützliche Einstellung, die Du möglicherweise vornehmen willst, ist welches Diff Programm Git verwendet. Mit diesem Programm kannst Du Konflikte auflösen, die während der Arbeit mit Git manchmal auftreten. Wenn Du beispielsweise vimdiff verwenden willst, kannst Du das so festlegen:</p>
+
+<pre><code>$ git config --global merge.tool vimdiff</code></pre>
+
+<p>Git kann von Hause aus mit den folgenden Diff Programmen arbeiten: kdiff3, tkdiff, meld, xxdiff, emerge, vimdiff, gvimdiff, ecmerge, and opendiff. Außerdem kannst Du ein eigenes Programm aufsetzen. Wir werden in Kapitel 7 darauf eingehen, wie das geht.</p>
+
+<h3 id='deine_einstellungen_berprfen'>Deine Einstellungen überprüfen</h3>
+
+<p>Wenn Du deine Einstellungen überprüfen willst, kannst Du mit dem Befehl <code>git config --list</code> alle Einstellungen anzuzeigen, die Git an dieser Stelle (z.B. innerhalb eines bestimmten Projektes) bekannt sind:</p>
+
+<pre><code>$ git config --list
+user.name=Scott Chacon
+user.email=schacon@gmail.com
+color.status=auto
+color.branch=auto
+color.interactive=auto
+color.diff=auto
+...</code></pre>
+
+<p>Manche Variablen werden möglicherweise mehrfach aufgelistet, weil Git dieselbe Variable in verschiedenen Dateien (z.B. <code>/etc/gitconfig</code> und <code>~/.gitconfig</code>) findet. In diesem Fall verwendet Git dann den jeweils zuletzt aufgelisteten Wert.</p>
+
+<p>Außerdem kannst Du mit dem Befehl <code>git config {key}</code> prüfen, welchen Wert Git für einen bestimmten Variablennamen verwendet:</p>
+
+<pre><code>$ git config user.name
+Scott Chacon</code></pre>
 
 <div id='nav'>
 <a href='ch7-4.html'>prev</a> | <a href='ch7-6.html'>next</a>

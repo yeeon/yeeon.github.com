@@ -1,108 +1,85 @@
 ---
 layout: translation
-title: Pro Git 4.1 Git on the Server The Protocols
+title: Pro Git 4.1 Гранење со Git Што е гранење
 ---
-<h2 id='the_protocols'>The Protocols</h2>
+<h2 id='__'>Што е гранење</h2>
 
-<p>Git can use four major network protocols to transfer data: Local, Secure Shell (SSH), Git, and HTTP. Here we’ll discuss what they are and in what basic circumstances you would want (or not want) to use them.</p>
+<p>За да може да го разбереме начинот на кој Git врши гранење мора да направиме еден чекор наназад и да разгледаме како Git ги зачувува податоците. Во Погавје 1 беше наведено дека Git не ги зачувува податоците како серија од промени, туку зачувува целосни слики од вашиот проект.</p>
 
-<p>It’s important to note that with the exception of the HTTP protocols, all of these require Git to be installed and working on the server.</p>
+<p>Секогаш кога сакате да зачувате податоци во Git, Git запишува објект во кој се состои покажувач до целосната слика која сте ја поставиле на сцена (stage), авторот и мета-податоци, нула или повеќе покажувачи до зачуваните податоци кои се директни родители на овој запис (commit): ниеден родител за првиот запис, еден родител за нормален запис, и повеќе родители за запис кој произлегува од спојување на две или повеќе гранки.</p>
 
-<h3 id='local_protocol'>Local Protocol</h3>
+<p>Да претпоставиме дека имате папка во која се содржат три датотеки и ги поставувате сите три на сцена, а потоа ги комитувате (зачувувате). Со поставување на сцена се креира контролна сума на секоја од датотеките (SHA-1 хеш спомнат во Поглавје 1), се зачувува верзијата на датотеката во базата на податоци (Git ги именува како blobs) и ја поставува контролната сума на сцена:</p>
 
-<p>The most basic is the <em>Local protocol</em>, in which the remote repository is in another directory on disk. This is often used if everyone on your team has access to a shared filesystem such as an NFS mount, or in the less likely case that everyone logs in to the same computer. The latter wouldn’t be ideal, because all your code repository instances would reside on the same computer, making a catastrophic loss much more likely.</p>
+<pre><code>$ git add README test.rb LICENSE
+$ git commit -m &#39;initial commit of my project&#39;</code></pre>
 
-<p>If you have a shared mounted filesystem, then you can clone, push to, and pull from a local file-based repository. To clone a repository like this or to add one as a remote to an existing project, use the path to the repository as the URL. For example, to clone a local repository, you can run something like this:</p>
+<p>Кога правете комит со командата <code>git commit</code>, Git пресметува контролна сума за сите папки (во овој случај само главната папка на проектот) и ги запишува овие три објекти во базата на податоци. Потоа Git креира комит објект во кој се содржат мета-податоците и покажувач кон коренот (root) на дрвото на проектот за потоа кога ке има потреба да може да крира слика од проектот.</p>
 
-<pre><code>$ git clone /opt/git/project.git</code></pre>
+<p>Во овој момент вашата база на податоци содржи 5 објекти: еден blob за зодржината на секој од трите директориуми, едно дрво со кое е прикажана содржината на папката и во кое се наведени имињата на директориумите за секој blob и еден комит со покажувач до дрвото и комитираните мета-податоци. Концептуално податоците во базата на податоци изгледаат како на Слика 3-1.</p>
 
-<p>Or you can do this:</p>
+<p><center><img src="/figures/ch4/18333fig0301-tn.png"></center><br/> Слика 3-1. Приказ на базата на податоци после еден комит.</p>
 
-<pre><code>$ git clone file:///opt/git/project.git</code></pre>
+<p>Ако направите некоја промена и извршите повторно комит, овој комит зачувува покажувач кон записот кој дошол непосредно пред него. После две нови комитувања, вашата историја би можела да изгледа како на Слика 3-2.</p>
 
-<p>Git operates slightly differently if you explicitly specify <code>file://</code> at the beginning of the URL. If you just specify the path, Git tries to use hardlinks or directly copy the files it needs. If you specify <code>file://</code>, Git fires up the processes that it normally uses to transfer data over a network which is generally a lot less efficient method of transferring the data. The main reason to specify the <code>file://</code> prefix is if you want a clean copy of the repository with extraneous references or objects left out — generally after an import from another version-control system or something similar (see Chapter 9 for maintenance tasks). We’ll use the normal path here because doing so is almost always faster.</p>
+<p><center><img src="/figures/ch4/18333fig0302-tn.png"></center><br/> Слика 3-2. Git објекти после повеќе запишувања.</p>
 
-<p>To add a local repository to an existing Git project, you can run something like this:</p>
+<p>Гранка во Git преставува едноставен покажувач кон еден од овие записи. Основната гранка се нарекува главна гранка или master. При првиот запис ви се доделува master гранка која покажува до последниот запис што сте го направиле. Секогаш кога запишувате (комитирате) покажувачот автоматски се поместува нанапред.</p>
 
-<pre><code>$ git remote add local_proj /opt/git/project.git</code></pre>
+<p><center><img src="/figures/ch4/18333fig0303-tn.png"></center><br/> Слика 3-3. Гранка која покажува кон историјата на записите.</p>
 
-<p>Then, you can push to and pull from that remote as though you were doing so over a network.</p>
+<p>Што се случува кога креирате нова гранка? Со креирање на нова гранка се креира нов покажувач со кој може да се поместувате помеѓу записите. Да претпоставиме дека имаме креирано нова гранка со име testing. Ова се прави со командата <code>git branch</code>.</p>
 
-<h4 id='the_pros'>The Pros</h4>
+<pre><code>$ git branch testing</code></pre>
 
-<p>The pros of file-based repositories are that they’re simple and they use existing file permissions and network access. If you already have a shared filesystem to which your whole team has access, setting up a repository is very easy. You stick the bare repository copy somewhere everyone has shared access to and set the read/write permissions as you would for any other shared directory. We’ll discuss how to export a bare repository copy for this purpose in the next section, “Getting Git on a Server.”</p>
+<p>Со ова се креира нов покажувач кој покажува на истиот запис кој го користете во моментот на креирањето на гранката (Слика 3-4).</p>
 
-<p>This is also a nice option for quickly grabbing work from someone else’s working repository. If you and a co-worker are working on the same project and they want you to check something out, running a command like <code>git pull /home/john/project</code> is often easier than them pushing to a remote server and you pulling down.</p>
+<p><center><img src="/figures/ch4/18333fig0304-tn.png"></center><br/> Слика 3-4. Повеќе гранки кои покажуваат кон историјата на записите.</p>
 
-<h4 id='the_cons'>The Cons</h4>
+<p>Како Git препознава на која гранка моментално се наоѓате? Се чува посебен покажувач кој се нарекува HEAD. Овој покажувач е различен од концептот за HEAD во останатите VSC кои ви се познати, како што се Subversion или CVS. Во Git HEAD е покажувач до локалната гранка на која моментално се наоѓате. Во овој случај тој е поставен на главната гранка - master гранка. Командата git branch само креира нова гранка но не го поместува HEAD покажувачот кон ново креираната гранка (Слика 3-5).</p>
 
-<p>The cons of this method are that shared access is generally more difficult to set up and reach from multiple locations than basic network access. If you want to push from your laptop when you’re at home, you have to mount the remote disk, which can be difficult and slow compared to network-based access.</p>
+<p><center><img src="/figures/ch4/18333fig0305-tn.png"></center><br/> Слика 3-5. HEAD датотека која покажува кон гранката на која се наоѓате.</p>
 
-<p>It’s also important to mention that this isn’t necessarily the fastest option if you’re using a shared mount of some kind. A local repository is fast only if you have fast access to the data. A repository on NFS is often slower than the repository over SSH on the same server, allowing Git to run off local disks on each system.</p>
+<p>За да се префрлите кон веќе постоечка гранка се користи командата <code>git checkout</code>:</p>
 
-<h3 id='the_ssh_protocol'>The SSH Protocol</h3>
+<pre><code>$ git checkout testing</code></pre>
 
-<p>Probably the most common transport protocol for Git is SSH. This is because SSH access to servers is already set up in most places — and if it isn’t, it’s easy to do. SSH is also the only network-based protocol that you can easily read from and write to. The other two network protocols (HTTP and Git) are generally read-only, so even if you have them available for the unwashed masses, you still need SSH for your own write commands. SSH is also an authenticated network protocol; and because it’s ubiquitous, it’s generally easy to set up and use.</p>
+<p>Ова го поместува HEAD да покажува кон гранката testing (Слика 3-6).</p>
 
-<p>To clone a Git repository over SSH, you can specify ssh:// URL like this:</p>
+<p><center><img src="/figures/ch4/18333fig0306-tn.png"></center><br/> Слика 3-6. HEAD покажува кон друга гранка кога се поместуваме на друга гранка.</p>
 
-<pre><code>$ git clone ssh://user@server:project.git</code></pre>
+<p>Кое е значењето на ова? Да направиме уште еден комит:</p>
 
-<p>Or you can not specify a protocol — Git assumes SSH if you aren’t explicit:</p>
+<pre><code>$ vim test.rb
+$ git commit -a -m &#39;made a change&#39;</code></pre>
 
-<pre><code>$ git clone user@server:project.git</code></pre>
+<p>Слика 3-7 го прикажува резултатот.</p>
 
-<p>You can also not specify a user, and Git assumes the user you’re currently logged in as.</p>
+<p><center><img src="/figures/ch4/18333fig0307-tn.png"></center><br/> Слика 3-7. Гранката кон која покажува HEAD се поместува нанапред со секој комит.</p>
 
-<h4 id='the_pros'>The Pros</h4>
+<p>Ова е доста интересно бидејќи сега вашата гранка testing се придвижува нанапред, но вашата master гранка сеуште покажува кон записот на кој се наоѓавте кога е повикана командата <code>git checkout</code>. Да се придвижиме назад кон master гранката:</p>
 
-<p>The pros of using SSH are many. First, you basically have to use it if you want authenticated write access to your repository over a network. Second, SSH is relatively easy to set up — SSH daemons are commonplace, many network admins have experience with them, and many OS distributions are set up with them or have tools to manage them. Next, access over SSH is secure — all data transfer is encrypted and authenticated. Last, like the Git and Local protocols, SSH is efficient, making the data as compact as possible before transferring it.</p>
+<pre><code>$ git checkout master</code></pre>
 
-<h4 id='the_cons'>The Cons</h4>
+<p>Слика 3-8 го прикажува резултатот.</p>
 
-<p>The negative aspect of SSH is that you can’t serve anonymous access of your repository over it. People must have access to your machine over SSH to access it, even in a read-only capacity, which doesn’t make SSH access conducive to open source projects. If you’re using it only within your corporate network, SSH may be the only protocol you need to deal with. If you want to allow anonymous read-only access to your projects, you’ll have to set up SSH for you to push over but something else for others to pull over.</p>
+<p><center><img src="/figures/ch4/18333fig0308-tn.png"></center><br/> Слика 3-8. HEAD се поместува кон друга гранка со командата checkout.</p>
 
-<h3 id='the_git_protocol'>The Git Protocol</h3>
+<p>Оваа команда направи две работи. Го помести HEAD да покажува кон master гранката и ги врати директориумите во работната папка кон целосната слика кон која покажува master гранката. Ова значи дека промените кои ќе настанат од овој момент ќе потекнуваат од постара верзија на проектот. Генерално означува дека се враќаме назад и привремено ги одфрламе промените кои се направени на гранката testing со цел да продолжиме во различна насока.</p>
 
-<p>Next is the Git protocol. This is a special daemon that comes packaged with Git; it listens on a dedicated port (9418) that provides a service similar to the SSH protocol, but with absolutely no authentication. In order for a repository to be served over the Git protocol, you must create the <code>git-export-daemon-ok</code> file — the daemon won’t serve a repository without that file in it — but other than that there is no security. Either the Git repository is available for everyone to clone or it isn’t. This means that there is generally no pushing over this protocol. You can enable push access; but given the lack of authentication, if you turn on push access, anyone on the internet who finds your project’s URL could push to your project. Suffice it to say that this is rare.</p>
+<p>Да направиме уште некои измени и повторно да комитираме:</p>
 
-<h4 id='the_pros'>The Pros</h4>
+<pre><code>$ vim test.rb
+$ git commit -a -m &#39;made other changes&#39;</code></pre>
 
-<p>The Git protocol is the fastest transfer protocol available. If you’re serving a lot of traffic for a public project or serving a very large project that doesn’t require user authentication for read access, it’s likely that you’ll want to set up a Git daemon to serve your project. It uses the same data-transfer mechanism as the SSH protocol but without the encryption and authentication overhead.</p>
+<p>Сега историјата на вашиот проект се разграни (Слика 3-9). Креиравме нова гранка и се префрливме на неа, направивме некои измени, а потоа се префрливме на main гранката и исто така направивме измени. Двете измени се изолирани во посебни гранки: може во секој момент да се префрлиме на некоја од гранките и да ги споиме кога ќе завршеме со сите потребни измени. Целата оваа работа е извршена со едноставни <code>branch</code> и <code>checkout</code> команди.</p>
 
-<h4 id='the_cons'>The Cons</h4>
+<p><center><img src="/figures/ch4/18333fig0309-tn.png"></center><br/> Слика 3-9. Разгранување на гранката.</p>
 
-<p>The downside of the Git protocol is the lack of authentication. It’s generally undesirable for the Git protocol to be the only access to your project. Generally, you’ll pair it with SSH access for the few developers who have push (write) access and have everyone else use <code>git://</code> for read-only access. It’s also probably the most difficult protocol to set up. It must run its own daemon, which is custom — we’ll look at setting one up in the “Gitosis” section of this chapter — it requires <code>xinetd</code> configuration or the like, which isn’t always a walk in the park. It also requires firewall access to port 9418, which isn’t a standard port that corporate firewalls always allow. Behind big corporate firewalls, this obscure port is commonly blocked.</p>
+<p>Бидејќи гранка во Git е всушност едноставен директориум кој содржи SHA-1 контролна сума на записот кон кој покажува со големина од 40 карактери, гранките завземаат малку ресурси при креирање и бришење на истите. Креирање на нова гранка е едноставен процес на запишување на 41 бајт во директориум (40 карактери и 1 карактер за нов ред).</p>
 
-<h3 id='the_https_protocol'>The HTTP/S Protocol</h3>
+<p>Овој принцип на креирање на гранки е доста различен од начинот на кој останатите VCS алатки вршат гранење, најчесто со копирање на целиот проект во нова папка. Ова одзема неколку секунди па дури и минути, во зависност од големината на проектот, додека во Git овој процес е секогаш моментален. Исто така бидејќи се запишува и родителот кога комитираме, наоѓањето на стартната точка при спојувањето на гранките се врши автоматски и генерално е многу лесно да се изведе. Овие карактеристики ги охрабруваат програмерите почесто да креираат и да користат гранки.</p>
 
-<p>Last we have the HTTP protocol. The beauty of the HTTP or HTTPS protocol is the simplicity of setting it up. Basically, all you have to do is put the bare Git repository under your HTTP document root and set up a specific <code>post-update</code> hook, and you’re done (See Chapter 7 for details on Git hooks). At that point, anyone who can access the web server under which you put the repository can also clone your repository. To allow read access to your repository over HTTP, do something like this:</p>
-
-<pre><code>$ cd /var/www/htdocs/
-$ git clone --bare /path/to/git_project gitproject.git
-$ cd gitproject.git
-$ mv hooks/post-update.sample hooks/post-update
-$ chmod a+x hooks/post-update</code></pre>
-
-<p>That’s all. The <code>post-update</code> hook that comes with Git by default runs the appropriate command (<code>git update-server-info</code>) to make HTTP fetching and cloning work properly. This command is run when you push to this repository over SSH; then, other people can clone via something like</p>
-
-<pre><code>$ git clone http://example.com/gitproject.git</code></pre>
-
-<p>In this particular case, we’re using the <code>/var/www/htdocs</code> path that is common for Apache setups, but you can use any static web server — just put the bare repository in its path. The Git data is served as basic static files (see Chapter 9 for details about exactly how it’s served).</p>
-
-<p>It’s possible to make Git push over HTTP as well, although that technique isn’t as widely used and requires you to set up complex WebDAV requirements. Because it’s rarely used, we won’t cover it in this book. If you’re interested in using the HTTP-push protocols, you can read about preparing a repository for this purpose at <code>http://www.kernel.org/pub/software/scm/git/docs/howto/setup-git-server-over-http.txt</code>. One nice thing about making Git push over HTTP is that you can use any WebDAV server, without specific Git features; so, you can use this functionality if your web-hosting provider supports WebDAV for writing updates to your web site.</p>
-
-<h4 id='the_pros'>The Pros</h4>
-
-<p>The upside of using the HTTP protocol is that it’s easy to set up. Running the handful of required commands gives you a simple way to give the world read access to your Git repository. It takes only a few minutes to do. The HTTP protocol also isn’t very resource intensive on your server. Because it generally uses a static HTTP server to serve all the data, a normal Apache server can serve thousands of files per second on average — it’s difficult to overload even a small server.</p>
-
-<p>You can also serve your repositories read-only over HTTPS, which means you can encrypt the content transfer; or you can go so far as to make the clients use specific signed SSL certificates. Generally, if you’re going to these lengths, it’s easier to use SSH public keys; but it may be a better solution in your specific case to use signed SSL certificates or other HTTP-based authentication methods for read-only access over HTTPS.</p>
-
-<p>Another nice thing is that HTTP is such a commonly used protocol that corporate firewalls are often set up to allow traffic through this port.</p>
-
-<h4 id='the_cons'>The Cons</h4>
-
-<p>The downside of serving your repository over HTTP is that it’s relatively inefficient for the client. It generally takes a lot longer to clone or fetch from the repository, and you often have a lot more network overhead and transfer volume over HTTP than with any of the other network protocols. Because it’s not as intelligent about transferring only the data you need — there is no dynamic work on the part of the server in these transactions — the HTTP protocol is often referred to as a <em>dumb</em> protocol. For more information about the differences in efficiency between the HTTP protocol and the other protocols, see Chapter 9.</p>
+<p>Да видиме зошто ова е корисно.</p>
 
 <div id='nav'>
 <a href='ch4-0.html'>prev</a> | <a href='ch4-2.html'>next</a>

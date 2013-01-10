@@ -1,75 +1,42 @@
 ---
 layout: translation
-title: Pro Git 4.4 Git op de Server De Server Instellen
+title: Pro Git 4.4 Branchen in Git Branch werkwijzen
 ---
-<h2 id='de_server_instellen'>De Server Instellen</h2>
+<h2 id='branch_werkwijzen'>Branch werkwijzen</h2>
 
-<p>Laten we het instellen van SSH toegang aan de server kant eens doorlopen. In dit voorbeeld zul je de <code>authorized_keys</code> methode gebruiken om je gebruikers te verifieren. We gaan er ook vanuit dat je een standaard Linux distributie gebruikt zoals Ubuntu. Als eerste creeer je een &#8216;git&#8217; gebruiker een een <code>.ssh</code> map voor die gebruiker.</p>
+<p>Nu dat je de basis van het branchen en samenvoegen onder de knie hebt, wat kan of zou je met ze kunnen doen? In dit gedeelte gaan we over een aantal veel voorkomende werkwijzen die deze lichtgewicht branches mogelijk maken, zodat je kunt beslissen of dat je ze wilt integreren in je ontwikkel cyclus.</p>
 
-<pre><code>$ sudo adduser git
-$ su git
-$ cd
-$ mkdir .ssh</code></pre>
+<h3 id='langlopende_branches'>Lang-lopende branches</h3>
 
-<p>Daarna moet je een aantal publieke SSH sleutels van ontwikkelaars aan het <code>authorized_keys</code> bestand toevoegen voor die gebruiker. Laten we aannemen dat je een aantal sleutels per e-mail ontvangen hebt en ze hebt opgeslagen in tijdelijke bestanden. Nogmaals, de sleutels zien er ongeveer zo uit:</p>
+<p>Omdat Git gebruik maakt van een eenvoudige drieweg samenvoeging, is het meerdere keren samenvoegen vanuit een branch met een andere over een langere periode over het algemeen eenvoudig om te doen. Dit betekent dat je meerdere branches kunt hebben, die altijd open staan en die je voor verschillende delen van je ontwikkel cyclus gebruikt; je kunt regelmatig samenvoegen van een aantal ervan in de anderen.</p>
 
-<pre><code>$ cat /tmp/id_rsa.john.pub
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCB007n/ww+ouN4gSLKssMxXnBOvf9LGt4L
-ojG6rs6hPB09j9R/T17/x4lhJA0F3FR1rP6kYBRsWj2aThGw6HXLm9/5zytK6Ztg3RPKK+4k
-Yjh6541NYsnEAZuXz0jTTyAUfrtU3Z5E003C4oxOj6H0rfIF1kKI9MAQLMdpGW1GYEIgS9Ez
-Sdfd8AcCIicTDWbqLAcU4UpkaX8KyGlLwsNuuGztobF8m72ALC/nLF6JLtPofwFBlgc+myiv
-O7TCUSBdLQlgMVOFq1I2uPWQOkOWQAHukEOmfjy2jctxSDBQ220ymjaNsHT4kgtZg2AYYgPq
-dAv8JggJICUvax2T9va5 gsg-keypair</code></pre>
+<p>Veel Git ontwikkelaars hebben een werkwijze die deze aanpak omarmd, zoals het hebben van alleen volledig stabiele code in hun <code>master</code> branch — waarschijnlijk alleen code die is of zal worden vrijgegeven. Ze hebben een andere parallelle branch genaamd develop of next waarop ze werken of die ze gebruiken om stabiliteit te testen — het is niet noodzakelijk altijd stabiel, maar zodra het naar een stabiele status gaat, kan het worden samengevoegd in <code>master</code>. Het wordt gebruikt om onderwerp branches (branches met een korte levensduur, zoals jou eerdere <code>iss53</code> branch) binnen te halen, zodra die klaar zijn, om er zeker van te zijn dat ze voor alle testen slagen en geen fouten introduceren.</p>
 
-<p>Je voegt ze slechts toe aan je <code>authorized_keys</code> bestand:</p>
+<p>In werkelijkheid praten we over verwijzingen die zich verplaatsen over de lijn van de commits die je maakt. De stabiele branches zijn verder naar achter in je commit historie, en de splinternieuwe branches zijn verder naar voren in de historie (zie Figuur 3-18).</p>
 
-<pre><code>$ cat /tmp/id_rsa.john.pub &gt;&gt; ~/.ssh/authorized_keys
-$ cat /tmp/id_rsa.josie.pub &gt;&gt; ~/.ssh/authorized_keys
-$ cat /tmp/id_rsa.jessica.pub &gt;&gt; ~/.ssh/authorized_keys</code></pre>
+<p><center><img src="/figures/ch4/18333fig0318-tn.png"></center><br/> Figuur 3-18. Meer stabiele branches zijn vaak verder naar achter in de commit historie.</p>
 
-<p>Nu kun je een leeg repository voor ze instellen door <code>git init</code> uit te voeren met de <code>--bare</code> optie, wat het repository initialiseert zonder een werkmap:</p>
+<p>Ze zijn over het algemeen makkelijker voor te stellen als werk silo&#8217;s, waar sets van commits slagen naar een meer stabiele silo als ze volledig getest zijn (zie Figuur 3-19).</p>
 
-<pre><code>$ cd /opt/git
-$ mkdir project.git
-$ cd project.git
-$ git --bare init</code></pre>
+<p><center><img src="/figures/ch4/18333fig0319-tn.png"></center><br/> Figuur 3-19. Het kan handig zijn om je branches voor te stellen als silo&#8217;s.</p>
 
-<p>Daarna kunnen John, Josie of Jessica de eerste versie van hun project in de repository pushen door het als een remote toe te voegen en naar een branch te pushen. Let op dat iemand met een shell op de machine zal moeten inloggen en een kale repository moet creeeren, iedere keer als je een project wilt toevoegen. Laten we <code>gitserver</code> als hostnaam gebruiken voor de server waar je je &#8216;git&#8217; gebruiker en repository hebt ingesteld. Als je het intern gaat draaien, en je de DNS instelt zodat <code>gitserver</code> naar die server wijst, dan kun je de commando&#8217;s vrijwel ongewijzigd gebruiken:</p>
+<p>Je kunt dit doen voor meerdere niveaus van stabiliteit. Sommige grotere projecten hebben ook een <code>proposed</code> of <code>pu</code> (proposed updates) branch die branches geïntegreerd heeft die wellicht nog niet klaar zijn om in de <code>next</code> of <code>master</code> branch te gaan. Het idee is dat je branches op verschillende niveaus van stabiliteit zitten; zodra ze een stabiel niveau bereiken, worden ze in de branch boven hun samengevoegd. Nogmaals, het hebben van langlopende branches is niet noodzakelijk, maar het helpt vaak wel, in het bijzonder als je moet omgaan met zeer grote of complexe projecten.</p>
 
-<pre><code># op Johns computer
-$ cd myproject
-$ git init
-$ git add .
-$ git commit -m &#39;initial commit&#39;
-$ git remote add origin git@gitserver:/opt/git/project.git
-$ git push origin master</code></pre>
+<h3 id='onderwerp_branches'>Onderwerp branches</h3>
 
-<p>Op dat punt kunnen de anderen het clonen en wijzigingen even gemakkelijk terug pushen:</p>
+<p>Maar, onderwerp branches zijn bruikbaar in projecten van iedere grootte. Een onderwerp branch is een kortlopende branch die je maakt en gebruikt om een enkele eigenschap of gerelateerd werk in te doen. Dit is iets wat je waarschijnlijk nooit van tevoren met een VCS gedaan hebt, omdat het over het algemeen te duur is om branches aan te maken en samen te voegen. Maar in Git komt het vaak voor om branches aan te maken, op te werken, en te verwijderen meerdere keren per dag.</p>
 
-<pre><code>$ git clone git@gitserver:/opt/git/project.git
-$ vim README
-$ git commit -am &#39;fix for the README file&#39;
-$ git push origin master</code></pre>
+<p>Je zag dit in het laatste gedeelte met de <code>iss53</code> en <code>hotfix</code> branches die je gemaakt had. Je hebt een aantal commits op ze gedaan en ze meteen verwijderd zodra je ze samengevoegd had in je hoofd branch. Deze techniek staat je toe om snel en volledig van context te veranderen — omdat je werk is gescheiden in silo&#8217;s waar alle wijzigingen in die branch met dat onderwerp te maken hebben, is het makkelijker te zien wat er is gebeurd tijdens een code review en dergelijke. Je kunt de wijzigingen daar minuten, dagen of maanden bewaren, en ze samenvoegen als je er klaar voor bent, ongeacht in de volgorde waarin ze gemaakt of aan gewerkt zijn.</p>
 
-<p>Met deze methode kun je snel een lees/schrijf Git server draaiend krijgen voor een handvol ontwikkelaars.</p>
+<p>Neem als voorbeeld een situatie waarbij wat werk gedaan wordt (op <code>master</code>), gebranched wordt voor een probleem (<code>iss91</code>), waar een beetje aan gewerkt wordt, gebranched wordt vanaf de tweede branch om op een andere manier te proberen hetzelfde op te lossen (<code>iss91v2</code>) terug te gaan naar je master branch en daar een tijdje te werken, en dan vanaf daar branchen om wat werk te doen waarvan je niet zeker weet of het wel een goed idee is (<code>dumbidea</code> branch). Je commit historie zal er uit zien als Figuur 3-20.</p>
 
-<p>Als een extra voorzorgsmaatregel kun je de &#8216;git&#8217; gebruiker makkelijk beperken tot het doen van alleen Git activiteiten, met een gelimiteerde shell applicatie genaamd <code>git-shell</code> die bij Git geleverd wordt. Als je dit als login shell voor je &#8216;git&#8217; gebruiker instelt, dan kan de &#8216;git&#8217; gebruiker geen normale shell toegang hebben op je server. Specificeer <code>git-shell</code> in plaats van bash of csh voor je gebruikers login shell om dit te gebruiken. Om dit te doen zul je waarschijnlijk het <code>/etc/passwd</code> bestand aan moeten passen:</p>
+<p><center><img src="/figures/ch4/18333fig0320-tn.png"></center><br/> Figuur 3-20. Je commit geschiedenis met meerdere onderwerp branches.</p>
 
-<pre><code>$ sudo vim /etc/passwd</code></pre>
+<p>Nu, laten we zeggen dat je beslist dat je de tweede oplossing voor je probleem het beste vindt (<code>iss91v2</code>); en je hebt de <code>dumbidea</code> branch aan je collega&#8217;s laten zien, en het blijkt geniaal te zijn. Je kunt dan de originele <code>iss91</code> weggooien (waarbij je commits C5 en C6 verliest), en de andere twee samenvoegen. Je historie ziet er dan uit als Figuur 3-21).</p>
 
-<p>Aan het einde zou je een regel moeten vinden die er ongeveer zo uit ziet:</p>
+<p><center><img src="/figures/ch4/18333fig0321-tn.png"></center><br/> Figuur 3-21. Je historie na het samenvoegen van dumbidea en iss91v2.</p>
 
-<pre><code>git:x:1000:1000::/home/git:/bin/sh</code></pre>
-
-<p>Verander <code>/bin/sh</code> in <code>/usr/bin/git-shell</code> (of voer <code>which git-shell</code> uit om te zien waar het geinstalleerd is). De regel moet er ongeveer zo uit zien:</p>
-
-<pre><code>git:x:1000:1000::/home/git:/usr/bin/git-shell</code></pre>
-
-<p>Nu kan de &#8216;git&#8217; gebruiker de SSH connectie alleen gebruiken om Git repositories te pushen en te pullen, en niet om in te loggen in de machine. Als je het probeert zul je een login weigering zoals deze zien:</p>
-
-<pre><code>$ ssh git@gitserver
-fatal: What do you think I am? A shell?
-Connection to gitserver closed.</code></pre>
+<p>Het is belangrijk om te onthouden dat wanneer je dit alles doet, deze branches volledig lokaal zijn. Als je aan het branchen of samenvoegen bent, dan wordt alles gedaan in jouw Git repository — dus er gebeurt geen server communicatie.</p>
 
 <div id='nav'>
 <a href='ch4-3.html'>prev</a> | <a href='ch4-5.html'>next</a>

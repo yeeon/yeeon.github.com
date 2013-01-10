@@ -1,30 +1,43 @@
 ---
 layout: translation
-title: Pro Git 9.1 Git Internals Plumbing and Porcelain
+title: Pro Git 9.1 Git sul server I protocolli
 ---
-<h2 id='plumbing_and_porcelain'>Plumbing and Porcelain</h2>
+<h2 id='i_protocolli'>I protocolli</h2>
 
-<p>Questo libro parla di come usare Git utilizzando più di 30 verbi, tra i quali <code>checkout</code>, <code>branch</code>, <code>remote</code> e così via. Siccome Git è stato inizialmente sviluppato come insieme di strumenti per un VCS piuttosto che un completo VCS user-friendly comprende un mucchio di verbi per fare lavori di basso livello e progettati per essere concatenati insieme in stile UNIX o invocati da script. Di solito ci si riferisce a questi comandi come &#8220;plumbing&#8221;, mentre i comandi più user-friendly sono detti comandi &#8220;porcelain&#8221;.</p>
+<p>Git può utilizzare quattro importanti protocolli di rete per trasferire i dati: locale, Secure Shell (SSH), Git, e HTTP. Qui vedremo cosa sono e in quali circostanze di base si vuole (o non si vuole) usarli.</p>
 
-<p>I primi otto capitoli del libro hanno a che fare quasi esclusivamente con comandi porcelain. In questo capitolo invece vedremo i comandi plumbing di basso livello, perchè permettono di accedere al funzionamento interno di Git ed aiutano a dimostrare come e perchè Git fà quello che fà. Questi comandi non sono pensati per essere lanciati manualmente dalla linea di comando ma sono da considerare piuttosto come mattoni con i quali costruire nuovi strumenti e script personallizzati.</p>
+<p>E&#8217; importante notare che, ad eccezione dei protocolli HTTP, tutti questi richiedono che Git sia installato e funzionante sul server.</p>
 
-<p>Lanciando <code>git init</code> in una directory nuova o esistente Git provvederà a creare la directory <code>.git</code> che contiene praticamente tutti i dati sui quali che Git. Se volete fare un backup o un clone del vostro repository vi basta copiare questa directory dal qualche altra parte per avere praticamente tutto quello che vi serve. Tutto questo capitolo ha a che fare con il contenuto di questa direcotry. La sua struttura è la seguente:</p>
+<h3 id='il_protocollo_locale'>Il protocollo locale</h3>
 
-<pre><code>$ ls 
-HEAD
-branches/
-config
-description
-hooks/
-index
-info/
-objects/
-refs/</code></pre>
+<p>Quello più semplice è il <em>protocollo locale</em>, in cui il repository remoto è in un&#8217;altra cartella sul disco. Questo è spesso utilizzato se ciascuno nel team ha accesso a un file system condiviso come l&#8217;NFS, o, nel caso meno probabile tutti accedano allo stesso computer. Quest&#8217;ultimo caso non è l&#8217;ideale, perché tutte le istanze del codice nel repository risiederebbero sullo stesso computer, facendo diventare molto più probabile una perdita catastrofica dei dati.</p>
 
-<p>Potreste trovare altri file, ma questo è il risultato di <code>git init</code> — è quello che vedete di default. La directory <code>branches</code> non è utilizzata dalle versioni più recenti di Git e il file <code>description</code> è utilizzato solamente dal programma GitHub, quindi potete ignorarli. Il file <code>config</code> contiene le configurazioni specifiche per il progetto e la directory <code>info</code> mantiene un file di exclude globale per ignorare i pattern dei quali non volete tenere traccia un in file .gitignore. La directory <code>hooks</code> contiene i vostri script di hook client- o server-side, dei quali abbiamo parlato in dettaglio nel capitolo 6.</p>
+<p>Se si dispone di un filesystem montato in comune, allora si può clonare, fare un push, e un pull da un repository locale basato su file. Per clonare un repository come questo o per aggiungerne uno da remoto per un progetto esistente, utilizzare il percorso al repository come URL. Ad esempio, per clonare un repository locale, è possibile eseguire qualcosa di simile a questo:</p>
 
-<p>Non abbiamo parlato di quattro voci: i file <code>HEAD</code> e <code>index</code> e le directory <code>objects</code> e <code>refs</code>. Queste sono le parti principali di Git. La directory <code>objects</code> conserva tutto il contenuto del vostro database, la directory <code>refs</code> conserva i puntatori agli oggetti commit (branches), il file <code>HEAD</code> punta al branch di cui avete fatto il checkout e il file <code>index</code> è dove Git conserva la informazioni sulla vostra area di staging Vedremo in dettaglio ognuna di queste sezioni per capire in che modo opera Git.</p>
+<pre><code>$ git clone /opt/git/project.git</code></pre>
 
-<div id='nav'>
-<a href='ch9-0.html'>prev</a> | <a href='ch9-2.html'>next</a>
+<p>O questo:</p>
+
+<pre><code>$ git clone file:///opt/git/project.git</code></pre>
+
+<p>Git funziona in modo leggermente diverso se si specifica esplicitamente <code>file://</code> all&#8217;inizio dell&#8217;URL. Se si specifica il percorso, Git tenta di utilizzare hardlink o copia direttamente i file necessari. Se si specifica <code>file://</code>, Git abilita i processi che utilizza normalmente per trasferire i dati su una rete, il che è generalmente un metodo molto meno efficace per il trasferimento dei dati. La ragione principale per specificare il prefisso <code>file://</code> è quella in cui si desidera una copia pulita del repository, lasciando fuori riferimenti estranei o oggetti - in genere dopo l&#8217;importazione da un altro sistema di controllo della versione o qualcosa di simile (si veda il Capitolo 9 relativo ai task per la manutenzione). Qui verrà usato il percorso normale, perché così facendo è quasi sempre più veloce.</p>
+
+<p>Per aggiungere un repository locale a un progetto Git esistente, è possibile eseguire qualcosa di simile a questo:</p>
+
+<pre><code>$ git remote add local_proj /opt/git/project.git</code></pre>
+
+<p>Quindi, si possono eseguire push e pull da remoto come se si stesse lavorando su una rete.</p>
+
+<h4 id='i_pro'>I Pro</h4>
+
+<p>I pro dei repository basati su file sono che sono semplici e che utilizzano i permessi sui file e l&#8217;accesso alla rete già esistenti. Se si ha già un filesystem condiviso a cui l&#8217;intero team ha accesso, la creazione di un repository è molto facile. Si mette la copia nuda del repository da qualche parte dove tutti hanno un accesso condiviso e si impostano i permessi di lettura / scrittura, come si farebbe per qualsiasi altra cartella condivisa. Si vedrà proprio per questo scopo come esportare una copia nuda del repository nella sezione successiva, &#8220;Installare Git su un server.&#8221;</p>
+
+<p>Questa è anche una interessante possibilità per recuperare rapidamente il lavoro dal repository di qualcun altro. Se una persona e un collega stanno lavorando allo stesso progetto e vogliono recuperare qualcosa da fuori, lanciare un comando tipo <code>git pull /home/john/project</code> è spesso più facile che fare push su un server remoto e poi fare pull per scaricarlo.</p>
+
+<h4 id='i_contro'>I Contro</h4>
+
+<p>Il contro di questo metodo è che l&#8217;accesso condiviso è generalmente più difficile da impostare e raggiungere da più postazioni, che un normale accesso di rete. Se si vuole fare push dal computer portatile quando si è a casa, bisogna montare il disco remoto, che può essere difficoltoso e lento rispetto ad un accesso si rete.</p>
+
+<p>E&#8217; anche importante ricordare che questa non è necessariamente l&#8217;opzione più veloce, se si utilizzando un mount condiviso di qualche tipo. Un repository locale è veloce solo se si dispone di un accesso veloce ai dati. Un repository su NFS è spesso più lento di un repository su SSH sullo stesso server, permettendo a Git di andare con dischi locali su ogni sistema.</p><div id='nav'>
+<a href='ch9-0.html'>prev</a> | <a href='index.html'>next</a>
 </div>

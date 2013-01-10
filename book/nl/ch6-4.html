@@ -1,210 +1,338 @@
 ---
 layout: translation
-title: Pro Git 6.4 Git Tools Geschiedenis Herschrijven
+title: Pro Git 6.4 Git op maat maken Een voorbeeld van Git-afgedwongen beleid
 ---
-<h2 id='geschiedenis_herschrijven'>Geschiedenis Herschrijven</h2>
+<h2 id='een_voorbeeld_van_gitafgedwongen_beleid'>Een voorbeeld van Git-afgedwongen beleid</h2>
 
-<p>Vaak zul je, als je met Git werkt, je commit geschiedenis om een of andere reden willen aanpassen. Eén van de mooie dingen van Git is dat het je toelaat om beslissingen op het laatste moment te kunnen maken. Je kunt bepalen welke bestanden in welke commits gaan vlak voordat je commit op het staging area, je kunt beslissen dat je niet aan iets bedoelde te werken met het stash commando en je kunt commits herschrijven ook al zijn ze reeds gebeurd, zodat het lijkt alsof ze op een andere manier gebeurd zijn. Dit kan bijvoorbeeld de volgorde van de commits zijn, berichten of bestanden wijzigen, commits samenvoegen of opsplitsen, of complete commits weghalen – dat alles voordat je je werk met anderen deelt.</p>
+<p>In dit gedeelte zul je gebruiken wat je geleerd hebt om een Git werkwijze vast te leggen, die controleert op een eigengemaakt commit boodschap formaat, afdwingt om alleen fast-forward pushes te accepteren, en alleen bepaalde gebruikers toestaat om bepaalde submappen te wijzigen in een project. Je zult client scripts maken die de ontwikkelaar helpen er achter te komen of hun push geweigerd zal worden, en server scripts die het beleid afdwingen.</p>
 
-<p>In deze sectie zul je leren hoe je deze handige taken doet, zodat je je commit geschiedenis er uit kunt laten zien zoals jij dat wilt, voordat je hem met anderen deelt.</p>
+<p>Ik heb Ruby gebruikt om ze te schrijven, zowel omdat het mijn voorkeur script taal is en omdat ik vind dat het de meest pseudo code uitziende taal is van de scripttalen; dus je zou in staat moeten zijn om de code redelijk te kunnen volgen zelfs als je geen Ruby gebruikt. Maar, iedere taal zal prima werken. Alle voorbeeld haak scripts die met Git meegeleverd worden zijn Perl of Bash scripts, dus je kunt ook genoeg voorbeelden van haken in die talen zijn door naar de voorbeelden te kijken.</p>
 
-<h3 id='de_laatste_commit_veranderen'>De Laatste Commit Veranderen</h3>
+<h3 id='serverkant_haak'>Server-kant haak</h3>
 
-<p>De laatste commit veranderen is waarschijnlijk de meest voorkomende geschiedenis wijziging die je wilt doen. Vaak wil je twee basale dingen aan je laatste commit wijzigen: het commit bericht, of het snapshot dat je zojuist opgeslagen hebt wijzigen door het toevoegen, wijzigen of weghalen van bestanden.</p>
+<p>Al het werk aan de server kant zal in het update bestand in je haken map gaan. Het update bestand zal eens per gepushte branch uitgevoerd worden en aanvaardt de referentie waarnaar gepushed wordt, de oude revisie waar die branch was, en de nieuwe gepushte revisie. Je hebt ook toegang tot de gebruiker die de push doet, als de push via SSH gedaan wordt. Als je iedereen hebt toegestaan om connectie te maken als één gebruiker (zoals &#8220;git&#8221;) via publieke sleutel authenticatie, dan moet je misschien die gebruiker een shell wrapper geven die bepaalt welke gebruiker er connectie maakt op basis van de publieke sleutel, en een omgevingsvariabele instelt met daarin die gebruiker. Hier ga ik er vanuit dat de gebruiker in de <code>$USER</code> omgevingsvariabele staat, dus begint je update script met het verzamelen van alle gegevens die het nodig heeft:</p>
 
-<p>Als je alleen je laatste commit bericht wilt wijzigen, dan is dat heel eenvoudig:</p>
+<pre><code>#!/usr/bin/env ruby
 
-<pre><code>$ git commit --amend</code></pre>
+$refname = ARGV[0]
+$oldrev  = ARGV[1]
+$newrev  = ARGV[2]
+$user    = ENV[&#39;USER&#39;]
 
-<p>Dat plaatst je in je teksteditor, met je laatste commit bericht erin, klaar voor jou om je bericht te wijzigen. Als je de editor opslaat en sluit, dan schrijft de editor een nieuwe commit met dat bericht en maakt dat je laatste commit.</p>
+puts &quot;Enforcing Policies... \n(#{$refname}) (#{$oldrev[0,6]}) (#{$newrev[0,6]})&quot;</code></pre>
 
-<p>Als je hebt gecommit en je wilt het snapshot dat je gecommit hebt wijzigen, door het toevoegen of wijzigen van bestanden, misschien omdat je vergeten was een nieuw bestand toe te voegen toen je committe, werkt het proces ongeveer op dezelfde manier. Je staged de wijzigingen die je wilt door een bestand te wijzigen en <code>git add</code> er op uit te voeren, of <code>git rm</code> op een gevolgd bestand, en de daaropvolgende <code>git commit --amend</code> pakt je huidige staging area en maakt dat het snapshot voor de nieuwe commit.</p>
+<p>Ja, ik gebruik een globale variabele. Veroordeel me niet – het is makkelijker om het op deze manier te laten zien.</p>
 
-<p>Je moet oppassen met deze techniek, omdat het amenden de SHA-1 van de commit wijzigt. Het is vergelijkbaar met een kleine rebase – niet je laatste commit wijzigen als je die al gepushed hebt.</p>
+<h4 id='een_specifiek_commitbericht_formaat_afdwingen'>Een specifiek commit-bericht formaat afdwingen</h4>
 
-<h3 id='meerdere_commit_berichten_wijzigen'>Meerdere Commit Berichten Wijzigen</h3>
+<p>Je eerste uitdaging is afdwingen dat ieder commit bericht moet voldoen aan een specifiek formaat. Om maar een doel te hebben, gaan we er vanuit dat ieder bericht een stuk tekst bevat dat eruit ziet asl &#8220;ref: 1234&#8221;, omdat je wil dat iedere commit gekoppeld is aan een werkonderdeel in je ticket systeem. Je moet kijken naar iedere commit die gepushed wordt, zien dat die tekst in de commit boodschap zit, en als de tekst niet in één van de commits zit, met niet nul eindigen zodat de push geweigerd wordt.</p>
 
-<p>Om een commit te wijzigen die verder terug in je geschiedenis zit, moet je naar complexere tools gaan. Git heeft geen geschiedenis-wijzig tool, maar je kunt het rebase tool gebruiken om een serie commits op de HEAD waarvan ze origineel gebaseerd waren te rebasen, in plaats van ze naar een andere te verhuizen. Met het interactieve rebase tool, kun je dan na iedere commit die je wilt wijzigen stoppen en het bericht wijzigen, bestanden toevoegen, of doen wat je ook maar wilt. Je kunt rebase interactief uitvoeren door de <code>-i</code> optie aan <code>git rebase</code> toe te voegen. Je moet aangeven hoe ver terug je commits wilt herschrijven door het commando te vertellen op welke commit het moet rebasen.</p>
+<p>Je kunt de lijst met alle SHA-1 waarden van alle commits die gepushed worden verkrijgen door de <code>$newrev</code> en <code>$oldrev</code> waarden te pakken en ze aan een Git sanitaire voorzieningen commando genaamd <code>git rev-list</code> te geven. Dit is eigenlijk het <code>git log</code> commando, maar standaard voert het alleen de SHA-1 waarden uit en geen andere informatie. Dus, om een lijst te krijgen van alle commit SHA&#8217;s die worden geïntroduceerd tussen één commit SHA en een andere, kun je zoiets als dit uitvoeren:</p>
 
-<p>Bijvoorbeeld, als je de laatste drie commit berichten wilt veranderen, of een van de commit berichten in die groep, dan geef je de ouder van de laatste commit die je wilt wijzigen mee als argument aan <code>git rebase -i</code>, wat <code>HEAD~2^</code> of <code>HEAD~3</code> is. Het kan makkelijker zijn om de <code>~3</code> te onthouden, omdat je de laatste drie commits probeert te wijzigen; maar houd in gedachten dat je eigenlijk vier commits terug aangeeft; de ouder van de laatste commit die je wilt veranderen:</p>
+<pre><code>$ git rev-list 538c33..d14fc7
+d14fc7c847ab946ec39590d87783c69b031bdfb7
+9f585da4401b0a3999e84113824d15245c13f0be
+234071a1be950e2a8d078e6141f5cd20c1e61ad3
+dfa04c9ef3d5197182f13fb5b9b1fb7717d2222a
+17716ec0f1ff5c77eff40b7fe912f9f6cfd0e475</code></pre>
 
-<pre><code>$ git rebase -i HEAD~3</code></pre>
+<p>Je kunt die uitvoer pakken, door ieder van die commit SHA&#8217;s heen lopen, de boodschap daarvan pakken, en die boodschap testen tegen een reguliere expressie die op een bepaald patroon zoekt.</p>
 
-<p>Onthoud ook dat dit een rebase commando is – iedere commit in de serie <code>HEAD~3..HEAD</code> zal worden herschreven, of je het bericht wijzigt of niet. Voeg geen commit toe die je al naar een centrale server gepushed hebt – als je dit doet breng je andere gebruikers in de war door ze een alternatieve versie van dezelfde wijziging te geven.</p>
+<p>Je moet uit zien te vinden hoe je de commit boodschap kunt krijgen van alle te testen commits. Om de rauwe commit gegevens te krijgen, kun je een andere sanitaire voorzieningen commando genaamd <code>git cat-file</code> gebruiken. Ik zal al deze sanitaire voorzieningen commando&#8217;s behandelen in detail in Hoofdstuk 9; maar voor nu is dit wat het commando je geeft:</p>
 
-<p>Dit commando uitvoeren geeft je een lijst met commits in je tekst editor die er ongeveer zo uit ziet:</p>
+<pre><code>$ git cat-file commit ca82a6
+tree cfda3bf379e4f8dba8717dee55aab78aef7f4daf
+parent 085bb3bcb608e1e8451d4b2432f8ecbe6306e7e7
+author Scott Chacon &lt;schacon@gmail.com&gt; 1205815931 -0700
+committer Scott Chacon &lt;schacon@gmail.com&gt; 1240030591 -0700
 
-<pre><code>pick f7f3f6d changed my name a bit
-pick 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file
+changed the version number</code></pre>
 
-# Rebase 710f0f8..a5f4a0d onto 710f0f8
-#
-# Commands:
-#  p, pick = use commit
-#  e, edit = use commit, but stop for amending
-#  s, squash = use commit, but meld into previous commit
-#
-# If you remove a line here THAT COMMIT WILL BE LOST.
-# However, if you remove everything, the rebase will be aborted.
-#</code></pre>
+<p>Een simpele manier om de commit boodschap te krijgen van een commit waarvan je de SHA-1 waarde hebt, is naar de eerste lege regel gaan en alles wat daarna komt pakken. Je kunt dat doen met het <code>sed</code> commando op Unix systemen:</p>
 
-<p>Het is belangrijk om te zien dat deze commits in de omgekeerde volgorde getoond worden dan wanneer je ze normaliter ziet als je het <code>log</code> commando gebruikt. Als je een <code>log</code> uitvoert, zie je zoiets als dit:</p>
+<pre><code>$ git cat-file commit ca82a6 | sed &#39;1,/^$/d&#39;
+changed the version number</code></pre>
 
-<pre><code>$ git log --pretty=format:&quot;%h %s&quot; HEAD~3..HEAD
-a5f4a0d added cat-file
-310154e updated README formatting and added blame
-f7f3f6d changed my name a bit</code></pre>
+<p>Je kunt die spreuk gebruiken om de commit boodschap te pakken van iedere commit die probeert te worden gepushed en eindigen als je ziet dat er iets is wat niet past. Om het script te eindigen en de push te weigeren, eindig je met niet nul. De hele methode ziet er zo uit:</p>
 
-<p>Zie de omgekeerde volgorde. De interactieve rebase geeft je een script dat het gaat uitvoeren. Het zal beginnen met de commit die je specificeerd op de commando regel (<code>HEAD~3</code>), en de wijzigingen in ieder van deze commits opnieuw afspelen van bove naar beneden. Het toont de oudste aan de bovenkant, in plaats van de nieuwste, omdat dat de eerste is die het zal afspelen.</p>
+<pre><code>$regex = /\[ref: (\d+)\]/
 
-<p>Je moet het script wijzigen zodat het stopt bij de commit die je wilt wijzigen. Om dat te doen moet je het woord pick veranderen in het woord edit voor ieder van de commits waarbij je het script wilt laten stoppen. Bijvoorbeeld, om alleen het derde commit bericht te wijzigen, verander je het bestand zodat het er zo uitziet:</p>
+# afgedwongen eigen commit bericht formaat
+def check_message_format
+  missed_revs = `git rev-list #{$oldrev}..#{$newrev}`.split(&quot;\n&quot;)
+  missed_revs.each do |rev|
+    message = `git cat-file commit #{rev} | sed &#39;1,/^$/d&#39;`
+    if !$regex.match(message)
+      puts &quot;[POLICY] Your message is not formatted correctly&quot;
+      exit 1
+    end
+  end
+end
+check_message_format</code></pre>
 
-<pre><code>edit f7f3f6d changed my name a bit
-pick 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file</code></pre>
+<p>Door dat in je <code>update</code> script te stoppen, zal het updates weigeren die commits bevatten die berichten hebben die niet aan je regel voldoen.</p>
 
-<p>Als je de editor opslaat en sluit, plaatst Git je terug in de laatste commit van die lijst en zet je op de commando regel met de volgende boodschap:</p>
+<h4 id='een_gebruikergebaseerd_acl_systeem_afdwingen'>Een gebruiker-gebaseerd ACL systeem afdwingen</h4>
 
-<pre><code>$ git rebase -i HEAD~3
-Stopped at 7482e0d... updated the gemspec to hopefully work better
-You can amend the commit now, with
+<p>Stel dat je een mechanisme wil toevoegen dat gebruik maakt van een toegangscontrole lijst (ACL) die specificeert welke gebruikers zijn toegestaan om wijzigingen te pushen naar welke delen van je project. Sommige mensen hebben volledige toegang, en andere hebben alleen toegang om wijzigingen te pushen naar bepaalde submappen of specifieke bestanden. Om dit af te dwingen zul je die regels schrijven in een bestand genaamd <code>acl</code> dat in je bare Git repository op de server leeft. Je zult de <code>update</code> haak naar die regels laten kijken, zien welke bestanden worden geïntroduceerd voor alle commits die gepushed worden, en bepalen of de gebruiker die de push doet toegang heeft om al die bestanden te wijzigen.</p>
 
-       git commit --amend
+<p>Het eerste dat je zult doen is je ACL schrijven. Hier zul je een formaat gebruiken dat erg lijkt op het CVS ACL mechanisme: het gebruikt een serie regels, waarbij het eerste veld <code>avail</code> of <code>unavail</code> is, het volgende veld een komma gescheiden lijst van de gebruikers is waarvoor de regel geldt, en het laatste veld het pad is waarvoor de regel geldt (leeg betekent open toegang). Alle velden worden gescheiden door een pipe (<code>|</code>) karakter.</p>
 
-Once you’re satisfied with your changes, run
+<p>In dit geval heb je een aantal administrators, een aantal documentatie schrijvers met toegang tot de <code>doc</code> map, en één ontwikkelaar die alleen toegang heeft tot de <code>lib</code> en <code>test</code> mappen, en je ACL bestand ziet er zo uit:</p>
 
-       git rebase --continue</code></pre>
+<pre><code>avail|nickh,pjhyett,defunkt,tpw
+avail|usinclair,cdickens,ebronte|doc
+avail|schacon|lib
+avail|schacon|tests</code></pre>
 
-<p>Deze instructies vertellen je precies wat je moet doen. Type</p>
+<p>Je begint met het lezen van deze gegevens in een structuur die je kunt gebruiken. In dit geval, om het voorbeeld eenvoudig te houden, zul je alleen de <code>avail</code> richtlijnen handhaven. Hier is een methode die je een associatieve array geeft, waarbij de sleutel de gebruikersnaam is en de waarde een array van paden waar die gebruiker toegang tot heeft:</p>
 
-<pre><code>$ git commit --amend</code></pre>
+<pre><code>def get_acl_access_data(acl_file)
+  # lees ACL gegevens
+  acl_file = File.read(acl_file).split(&quot;\n&quot;).reject { |line| line == &#39;&#39; }
+  access = {}
+  acl_file.each do |line|
+    avail, users, path = line.split(&#39;|&#39;)
+    next unless avail == &#39;avail&#39;
+    users.split(&#39;,&#39;).each do |user|
+      access[user] ||= []
+      access[user] &lt;&lt; path
+    end
+  end
+  access
+end</code></pre>
 
-<p>Wijzig het commit bericht, en verlaat de editor. Voer daarna dit uit</p>
+<p>Op het ACL bestand dat je eerder bekeken hebt, zal deze <code>get_acl_access_data</code> methode een gegevens structuur teruggeven die er zo uit ziet:</p>
+
+<pre><code>{&quot;defunkt&quot;=&gt;[nil],
+ &quot;tpw&quot;=&gt;[nil],
+ &quot;nickh&quot;=&gt;[nil],
+ &quot;pjhyett&quot;=&gt;[nil],
+ &quot;schacon&quot;=&gt;[&quot;lib&quot;, &quot;tests&quot;],
+ &quot;cdickens&quot;=&gt;[&quot;doc&quot;],
+ &quot;usinclair&quot;=&gt;[&quot;doc&quot;],
+ &quot;ebronte&quot;=&gt;[&quot;doc&quot;]}</code></pre>
+
+<p>Nu dat je de rechten bepaald hebt, moet je bepalen welke paden de commits die gepushed worden hebben aangepast, zodat je er zeker van kunt zijn dat de gebruiker die de push doet daar ook toegang tot heeft.</p>
 
-<pre><code>$ git rebase --continue</code></pre>
+<p>Je kunt eenvoudig zien welke bestanden gewijzigd zijn in een enkele commit met de <code>--name-only</code> optie op het <code>git log</code> commando (dat kort genoemd wordt in Hoofdstuk 2):</p>
 
-<p>Dit commando zal de andere twee commits automatisch toepassen, en dan ben je klaar. Als je pick in edit veranderd op meerdere regels, dan kun je deze stappen herhalen voor iedere commit die je in edit veranderd hebt. Iedere keer zal Git stoppen, je de commit laten amenden, en verder gaan waar je gewijzigd bent.</p>
+<pre><code>$ git log -1 --name-only --pretty=format:&#39;&#39; 9f585d
 
-<h3 id='commits_rangschikken'>Commits Rangschikken</h3>
+README
+lib/test.rb</code></pre>
 
-<p>Je kunt een interactieve rebase ook gebruiken om commits te rangschikken of volledig te verwijderen. Als je de &#8220;added cat-file&#8221; commit wilt verwijderen en de volgorde waarin de andere twee commits zijn geintroduceerd wilt veranderen, dan kun je het rebase script van dit</p>
+<p>Als je gebruik maakt van de ACL structuur die wordt teruggegeven door de <code>get_acl_access_data</code> methode en dat controleert met de bestanden in elk van de commits, dan kun je bepalen of de gebruiker toegang heeft om al hun commits te pushen:</p>
 
-<pre><code>pick f7f3f6d changed my name a bit
-pick 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file</code></pre>
+<pre><code># staat alleen bepaalde gebruikers toe om bepaalde submappen in een project te wijzigen
+def check_directory_perms
+  access = get_acl_access_data(&#39;acl&#39;)
 
-<p>veranderen in dit:</p>
+  # zie of iemand iets probeert te pushen dat ze niet mogen
+  new_commits = `git rev-list #{$oldrev}..#{$newrev}`.split(&quot;\n&quot;)
+  new_commits.each do |rev|
+    files_modified = `git log -1 --name-only --pretty=format:&#39;&#39; #{rev}`.split(&quot;\n&quot;)
+    files_modified.each do |path|
+      next if path.size == 0
+      has_file_access = false
+      access[$user].each do |access_path|
+        if !access_path || # gebruiker heeft overal toegang tot
+          (path.index(access_path) == 0) # toegang tot dit pad
+          has_file_access = true
+        end
+      end
+      if !has_file_access
+        puts &quot;[POLICY] You do not have access to push to #{path}&quot;
+        exit 1
+      end
+    end
+  end
+end
 
-<pre><code>pick 310154e updated README formatting and added blame
-pick f7f3f6d changed my name a bit</code></pre>
+check_directory_perms</code></pre>
 
-<p>Als je de editor opslaat en sluit, zal Git je branch terugzetten naar de ouder van deze commits, eerst <code>310154e</code> en dan <code>f7f3f6d</code> toepassen, en dan stoppen. Effectief verander je de volgorde van die commits en verwijder je de &#8220;added cat-file&#8221; commit in zijn geheel.</p>
+<p>Het meeste daarvan zou makkelijk te volgen moeten zijn. Je krijgt een lijst met commits die gepushed worden naar je server met <code>git rev-list</code>. Daarna vind je, voor iedere commit, de bestanden die aangepast worden en stelt vast of de gebruiker die pushed toegang heeft tot alle paden die worden aangepast. Een Ruby-isme dat wellicht niet duidelijk is is <code>path.index(access_path) == 0</code>, wat waar is als het pad begint met <code>access_path</code> – dit zorgt ervoor dat <code>access_path</code> niet slechts in één van de toegestane paden zit, maar dat een toegestaan pad begint met ieder aangeraakt pad.</p>
 
-<h3 id='een_commit_squashen'>Een Commit Squashen</h3>
+<p>Nu kunnen je gebruikers geen commits pushen met slechte berichten of met aangepaste bestanden buiten hun toegewezen paden.</p>
 
-<p>Het is ook mogelijk een serie commits te pakken en ze in één enkele commit te squashen met het interactieve rebase tool. Het script stopt behulpzame instructies in het rebase bericht:</p>
+<h4 id='fastforwardonly_pushes_afdwingen'>Fast-forward-only pushes afdwingen</h4>
 
-<pre><code>#
-# Commands:
-#  p, pick = use commit
-#  e, edit = use commit, but stop for amending
-#  s, squash = use commit, but meld into previous commit
-#
-# If you remove a line here THAT COMMIT WILL BE LOST.
-# However, if you remove everything, the rebase will be aborted.
-#</code></pre>
+<p>Het enige overgebleven ding om af te dwingen is fast-forward-only pushes. In Git versie 1.6 of nieuwer, kun je de <code>receive.denyDeletes</code> en <code>receive.denyNonFastForwards</code> instellingen aanpassen. Maar dit afdwingen met behulp van een haak werkt ook in oudere versies van Git, en je kunt het aanpassen zodat het alleen gebeurd bij bepaalde gebruikers of wat je later ook verzint.</p>
 
-<p>Als je, in plaats van &#8220;pick&#8221; of &#8220;edit&#8221;, &#8220;squash&#8221; specificeert zal Git zowel die verandering als de verandering die er direct aan vooraf gaat toepassen, en je dwingen om de merge berichten samen te voegen. Dus als je een enkele commit van deze drie commits wil maken, laat je het script er zo uit zien:</p>
+<p>De logica om dit te controleren is zien of iedere commit die bereikbaar is vanuit de oudere revisie, niet bereikbaar is vanuit de nieuwere. Als er geen zijn, dan was het een fast-forward push; anders weiger je het:</p>
 
-<pre><code>pick f7f3f6d changed my name a bit
-squash 310154e updated README formatting and added blame
-squash a5f4a0d added cat-file</code></pre>
+<pre><code># dwingt fast-forward only pushes af
+def check_fast_forward
+  missed_refs = `git rev-list #{$newrev}..#{$oldrev}`
+  missed_ref_count = missed_refs.split(&quot;\n&quot;).size
+  if missed_ref_count &gt; 0
+    puts &quot;[POLICY] Cannot push a non fast-forward reference&quot;
+    exit 1
+  end
+end
 
-<p>Als je de editor opslaat en sluit, zal Git alledrie de veranderingen toepassen en je terug in de editor brengen om de drie commit berichten samen te voegen:</p>
+check_fast_forward</code></pre>
 
-<pre><code># This is a combination of 3 commits.
-# The first commit&#39;s message is:
-changed my name a bit
+<p>Alles is ingesteld. Als je <code>chmod u+x .git/hooks/update</code> uitvoert, wat het bestand is waarin je al deze code gestopt hebt, en dan probeert te pushen naar een non-fast-forwarded referentie, krijg je zoiets als dit:</p>
 
-# This is the 2nd commit message:
+<pre><code>$ git push -f origin master
+Counting objects: 5, done.
+Compressing objects: 100% (3/3), done.
+Writing objects: 100% (3/3), 323 bytes, done.
+Total 3 (delta 1), reused 0 (delta 0)
+Unpacking objects: 100% (3/3), done.
+Enforcing Policies...
+(refs/heads/master) (8338c5) (c5b616)
+[POLICY] Cannot push a non-fast-forward reference
+error: hooks/update exited with error code 1
+error: hook declined to update refs/heads/master
+To git@gitserver:project.git
+ ! [remote rejected] master -&gt; master (hook declined)
+error: failed to push some refs to &#39;git@gitserver:project.git&#39;</code></pre>
 
-updated README formatting and added blame
+<p>Er zijn hier een aantal interessante dingen. Ten eerste, zie je dit als de haak start met uitvoeren.</p>
 
-# This is the 3rd commit message:
+<pre><code>Enforcing Policies...
+(refs/heads/master) (fb8c72) (c56860)</code></pre>
 
-added cat-file</code></pre>
+<p>Zie dat je dat afgedrukt hebt naar stdout aan het begin van je update script. Het is belangrijk om te zien dat alles dat je script naar stdout uitvoert, naar de client overgebracht wordt.</p>
 
-<p>Als je dat opslaat, heb je een enkele commit die de veranderingen van alledrie de vorige commits introduceerd.</p>
+<p>Het volgende dat je op zal vallen is de foutmelding.</p>
 
-<h3 id='een_commit_splitsen'>Een Commit Splitsen</h3>
+<pre><code>[POLICY] Cannot push a non fast-forward reference
+error: hooks/update exited with error code 1
+error: hook declined to update refs/heads/master</code></pre>
 
-<p>Een commit opsplitsen zal een commit ongedaan maken, en dan zo vaak als het aantal commits waar je mee wilt eindigen gedeeltelijk stagen en committen. Bijvoorbeld, stel dat je de middelste van je drie commits wilt splitsen. In plaats van &#8220;updated README formatting and added blame&#8221;, wil je het splitsen in twee commits: &#8220;updated README formatting&#8221; als eerste, en &#8220;added blame&#8221; als tweede. Je kunt dat doen in het <code>rebase -i</code> script door de instructie van de commit die je wilt splitsen te veranderen in &#8220;edit&#8221;:</p>
+<p>De eerste regel was door jou afgedrukt, de andere twee waren Git die je vertelde dat het update script met niet nul eindigde en dat dat hetgeen is dat je push weigerde. Als laatste heb je dit:</p>
 
-<pre><code>pick f7f3f6d changed my name a bit
-edit 310154e updated README formatting and added blame
-pick a5f4a0d added cat-file</code></pre>
+<pre><code>To git@gitserver:project.git
+ ! [remote rejected] master -&gt; master (hook declined)
+error: failed to push some refs to &#39;git@gitserver:project.git&#39;</code></pre>
 
-<p>Als het script je dan op de commando regel zet, reset je die commit, neemt de wijzigingen die zijn gereset, en maakt daar meerdere commits van.Als je de editor opslaat en sluit, zal Git teruggaan naar de ouder van de eerste commit in je lijst, de eerste commit toepassen (<code>f7f3f6d</code>), de tweede commit toepassen (<code>310154e</code>), en je op de console plaatsen. Dan kun je een gemengde reset van die commit doen met <code>git reset HEAD^</code>, wat effectief die commit ongedaan maakt en de gewijzigde bestanden unstaged laat. Nu kun je bestanden stagen en committen totdat je meerdere commits hebt, en <code>git rebase --continue</code> uitvoeren zodra je klaar bent:</p>
+<p>Je zult een remote weiger bericht zien voor iedere referentie die je haak weigerde, en het verteld je dat het specifiek was geweigerd omdat het een haak fout was.</p>
 
-<pre><code>$ git reset HEAD^
-$ git add README
-$ git commit -m &#39;updated README formatting&#39;
-$ git add lib/simplegit.rb
-$ git commit -m &#39;added blame&#39;
-$ git rebase --continue</code></pre>
+<p>Daarnaast zul je een foutmelding zien dat je uitvoert als de ref marker niet in één van je commits zit.</p>
 
-<p>Git zal de laatste commit (<code>a5f4a0d</code>) in het script toepassen, en je geschiedenis zal er zo uitzien:</p>
+<pre><code>[POLICY] Your message is not formatted correctly</code></pre>
 
-<pre><code>$ git log -4 --pretty=format:&quot;%h %s&quot;
-1c002dd added cat-file
-9b29157 added blame
-35cfb2b updated README formatting
-f3cc40e changed my name a bit</code></pre>
+<p>Of als iemand een bestand probeert aan te passen waar ze geen toegang tot hebben en een commit probeert te pushen waar het in zit, dan zullen ze iets vergelijkbaars zien. Bijvoorbeeld, als een documentatie schrijver een commit probeert te pushen dat iets wijzigt dat in de <code>lib</code> map zit, dan zien ze</p>
 
-<p>Nogmaals, dit veranderd alle SHA&#8217;s van alle commits in je lijst, dus zorg er voor dat er geen commit in die lijst zit die je al naar een gedeeld repository gepushed hebt.</p>
+<pre><code>[POLICY] You do not have access to push to lib/test.rb</code></pre>
 
-<h3 id='de_nucleaire_optie_filterbranch'>De Nucleaire Optie: filter-branch</h3>
+<p>Dat is alles. Vanaf nu, zolang als het <code>update</code> script aanwezig en uitvoerbaar is, zal je repository nooit teruggedraaid worden en zal nooit een commit bericht zonder je patroon erin bevatten, en je gebruikers zullen ingeperkt zijn.</p>
 
-<p>Er is nog een geschiedenis-herschrijvende optie, die je kunt gebruiken als je een groter aantal commits moet herschrijven in een scriptbare manier – bijvoorbeeld, het globaal veranderen van je e-mail adres of een bestand uit iedere commit verwijderen. Het commando heet <code>filter-branch</code>, en het kan grote gedeelten van je geschiedenis herschrijven, dus je moet het niet gebruiken tenzij je project nog niet publiekelijk is gemaakt en andere mensen nog geen werk hebben gebaseerd op jouw commits, die je op het punt staat te herschrijven. Maar het kan heel handig zijn. Je zult een paar gebruikelijke toepassingen leren zodat je een idee kunt krijgen van de mogelijkheden.</p>
+<h3 id='clientkant_haken'>Client-kant haken</h3>
 
-<h4 id='een_bestand_uit_iedere_commit_verwijderen'>Een Bestand Uit Iedere Commit Verwijderen</h4>
+<p>Het nadeel hiervan is het zeuren dat geheid zal gebeuren zodra de commits van je gebruikers geweigerd worden. Het feit dat hun zorgzaam vervaardigde werk geweigerd wordt op het laatste moment kan enorm frustrerend en verwarrend zijn: daarnaast, zullen ze hun geschiedenis moeten aanpassen om het te corrigeren, wat niet altijd voor de mensen met een zwak hart is.</p>
 
-<p>Dit gebeurd vrij vaak. Iemand voegt per ongeluk een enorm binair bestand toe met een gedachteloze <code>git add .</code>, en je wilt het overal weghalen. Misschien heb je per ongeluk een bestand toegevoegd dat een wachtwoord bevat, en wil je je project open source maken. <code>filter-branch</code> is het tool dat je waarschijnlijk wil gebruiken om je hele geschiedenis schoon te vegen. Om een bestand genaamd passwords.txt uit je hele geschiedenis weg te halen, kun je de <code>--tree-filter</code> optie toevoegen aan <code>filter-branch</code>:</p>
+<p>Het antwoord op dit dilemma is een aantal client-kant haken te leveren, die gebruikers kunnen toepassen om hen te waarschuwen dat ze iets doen dat de server waarschijnlijk gaat weigeren. Op die manier kunnen ze alle problemen corrigeren voordat ze gaan committen en voordat die problemen moeilijk te herstellen zijn. Omdat haken niet overgebracht worden bij een clone van een project, moet je deze scripts op een andere manier distribueren en je gebruikers ze dan in hun <code>.git/hooks</code> map laten zetten en ze uitvoerbaar maken. Je kunt deze haken in je project of in een apart project distribueren, maar er is geen manier om ze automatisch in te laten stellen.</p>
 
-<pre><code>$ git filter-branch --tree-filter &#39;rm -f passwords.txt&#39; HEAD
-Rewrite 6b9b3cf04e7c5686a9cb838c3f36a8cb6a0fc2bd (21/21)
-Ref &#39;refs/heads/master&#39; was rewritten</code></pre>
+<p>Om te beginnen zou je je commit boodschap moeten controleren, vlak voordat iedere commit opgeslagen wordt, zodat je weet dat de server je wijzigingen niet gaat weigeren omdat de commit boodschap een verkeerd formaat heeft. Om dit te doen, kun je de <code>commit-msg</code> haak toevoegen. Als je dat de commit boodschap laat lezen uit het bestand dat als eerste argument opgegeven wordt, en dat vergelijkt met het patroon, dan kun je Git forceren om de commit af te breken als er geen overeenkomst is:</p>
 
-<p>De <code>--tree-filter</code> optie voert het gegeven commando uit na iedere checkout van het project, en commit de resultaten weer. In dit geval, verwijder je een bestand gnaamd passwords.txt van iedere snapshot, of het bestaat of niet. Als je alle per ongeluk toegevoegde editor backup bestanden wilt verwijderen, kun je zoiets als dit uitvoeren <code>git filter-branch --tree-filter &#39;rm -f *~&#39; HEAD</code>.</p>
+<pre><code>#!/usr/bin/env ruby
+message_file = ARGV[0]
+message = File.read(message_file)
 
-<p>Je kunt Git bomen en commits zien herschrijven en de branch wijzer aan het einde zien verplaatsen. Het is over het algemeen een goed idee om dit in een test branch te doen, en dan je master branch te hard-resetten nadat je gecontroleerd hebt dat de uitkomst echt zo is als je wil. Om <code>filter-branch</code> op al je branches uit te voeren, kun je <code>--all</code> aan het commando meegeven.</p>
+$regex = /\[ref: (\d+)\]/
 
-<h4 id='een_subdirectory_het_nieuwe_beginpunt_maken'>Een Subdirectory Het Nieuwe Beginpunt Maken</h4>
+if !$regex.match(message)
+  puts &quot;[POLICY] Your message is not formatted correctly&quot;
+  exit 1
+end</code></pre>
 
-<p>Stel dat je een import vanuit een ander versiebeheersysteem hebt gedaan, en subdirectories hebt die geen zin maken (trunk, tags enzovoort). Als je de <code>trunk</code> subdirectory het nieuwe beginpunt van het project wilt maken voor iedere commit, dan kan <code>filter-branch</code> je daar ook mee helpen:</p>
+<p>Als dat script op z&#8217;n plaats staat (in <code>.git/hooks/commit-msg</code>) en uitvoerbaar is, en je commit met een verkeerd formaat bericht, dan zie je dit:</p>
 
-<pre><code>$ git filter-branch --subdirectory-filter trunk HEAD
-Rewrite 856f0bf61e41a27326cdae8f09fe708d679f596f (12/12)
-Ref &#39;refs/heads/master&#39; was rewritten</code></pre>
+<pre><code>$ git commit -am &#39;test&#39;
+[POLICY] Your message is not formatted correctly</code></pre>
 
-<p>Nu is je nieuwe project wat het was in de <code>trunk</code> subdirectory. Git zal ook automatisch commits verwijderen, die geen effect hadden op de subdirectory.</p>
+<p>In dat geval was er geen commit afgerond. Maar, als je bericht het juiste patroon bevat, dan staat Git je toe te committen:</p>
 
-<h4 id='email_adressen_globaal_veranderen'>E-Mail Adressen Globaal Veranderen</h4>
+<pre><code>$ git commit -am &#39;test [ref: 132]&#39;
+[master e05c914] test [ref: 132]
+ 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
 
-<p>Een ander veel voorkomend geval is dat je vergeten bent om <code>git config</code> uit te voeren om je naam en e-mail adres in te stellen voordat je bent begonnen met werken, of misschien wil je een project op het werk open source maken en al je werk e-mail adressen veranderen naar je privé adres. In ieder geval kun je e-mail adressen in meerdere commits ook ineens veranderen met <code>filter-branch</code>. Je moet wel oppassen om alleen de e-mail adressen aan te passen, die van jou zijn, dus gebruik je <code>--commit-filter</code>:</p>
+<p>Vervolgens wil je er zeker van zijn dat je geen bestanden buiten je ACL scope aanpast. Als de <code>.git</code> map van je project een kopie van het ACL bestand bevat dat je eerder gebruikte, dan zal het volgende <code>pre-commit</code> script die beperkingen op je toepassen:</p>
 
-<pre><code>$ git filter-branch --commit-filter &#39;
-        if [ &quot;$GIT_AUTHOR_EMAIL&quot; = &quot;schacon@localhost&quot; ];
-        then
-                GIT_AUTHOR_NAME=&quot;Scott Chacon&quot;;
-                GIT_AUTHOR_EMAIL=&quot;schacon@example.com&quot;;
-                git commit-tree &quot;$@&quot;;
-        else
-                git commit-tree &quot;$@&quot;;
-        fi&#39; HEAD</code></pre>
+<pre><code>#!/usr/bin/env ruby
 
-<p>Dit gaat door en herschrijft iedere commit zodat het jouw nieuwe adres bevat. Om dat commits de SHA-1 waarde van hun ouders bevatten, zal dit commando iedere commit SHA in jouw geschiedenis veranderen, niet alleen degenen die het passende e-mail adress bevatten.</p>
+$user    = ENV[&#39;USER&#39;]
+
+# [ insert acl_access_data method from above ]
+
+# staat alleen bepaalde gebruikers toe bepaalde mappen aan te passen
+def check_directory_perms
+  access = get_acl_access_data(&#39;.git/acl&#39;)
+
+  files_modified = `git diff-index --cached --name-only HEAD`.split(&quot;\n&quot;)
+  files_modified.each do |path|
+    next if path.size == 0
+    has_file_access = false
+    access[$user].each do |access_path|
+    if !access_path || (path.index(access_path) == 0)
+      has_file_access = true
+    end
+    if !has_file_access
+      puts &quot;[POLICY] You do not have access to push to #{path}&quot;
+      exit 1
+    end
+  end
+end
+
+check_directory_perms</code></pre>
+
+<p>Dit is ongeveer hetzelfde script als aan de server kant, maar met twee belangrijke verschillen. Als eerste staat het ACL bestand op een andere plek, omdat dit script vanuit je werkmap draait, niet vanuit je Git map. Je moet het pad naar het ACL bestand wijzigen van dit</p>
+
+<pre><code>access = get_acl_access_data(&#39;acl&#39;)</code></pre>
+
+<p>in dit:</p>
+
+<pre><code>access = get_acl_access_data(&#39;.git/acl&#39;)</code></pre>
+
+<p>Het andere belangrijke verschil is de manier waarop je een lijst krijgt met bestanden die je gewijzigd hebt. Omdat de server kant methode naar de log van commits kijkt, en op dit punt je commit nog niet opgeslagen is, moet je je bestandslijst in plaats daarvan uit het stage gebied halen. In plaats van</p>
+
+<pre><code>files_modified = `git log -1 --name-only --pretty=format:&#39;&#39; #{ref}`</code></pre>
+
+<p>moet je dit gebruiken</p>
+
+<pre><code>files_modified = `git diff-index --cached --name-only HEAD`</code></pre>
+
+<p>Maar dat zijn de enige twee verschillen – voor de rest werkt het script op dezelfde manier. Een instinker is dat het van je verwacht dat je lokaal werkt als dezelfde gebruiker die pushed naar de remote machine. Als dat verschillend is, moet je de <code>$user</code> variabele handmatig instellen.</p>
+
+<p>Het laatste ding dat je moet doen is controleren dat je niet non-fast-forward referenties probeert te pushen, maar dat komt minder voor. Om een referentie te krijgen dat geen fast-forward is, moet je voorbij een commit rebasen die je al gepushed hebt, of een andere lokale branch naar dezelfde remote branch proberen te pushen.</p>
+
+<p>Omdat de server je zal vertellen dat je geen non-fast-forward push kunt doen, en de haak de push tegenhoudt, is het enige ongelukkige ding dat je kunt proberen te vangen het rebasen van commits die je al gepushed hebt.</p>
+
+<p>Hier is een voorbeeld pre-rebase script dat daarop controleert. Het haalt een lijst met alle commits die je op het punt staat te herschrijven, en controleert of ze al op een bepaalde manier bestaan in één van je remote referenties. Als het er een ziet die bereikbaar is vanuit een van je remote referenties, dan stopt het de rebase:</p>
+
+<pre><code>#!/usr/bin/env ruby
+
+base_branch = ARGV[0]
+if ARGV[1]
+  topic_branch = ARGV[1]
+else
+  topic_branch = &quot;HEAD&quot;
+end
+
+target_shas = `git rev-list #{base_branch}..#{topic_branch}`.split(&quot;\n&quot;)
+remote_refs = `git branch -r`.split(&quot;\n&quot;).map { |r| r.strip }
+
+target_shas.each do |sha|
+  remote_refs.each do |remote_ref|
+    shas_pushed = `git rev-list ^#{sha}^@ refs/remotes/#{remote_ref}`
+    if shas_pushed.split(“\n”).include?(sha)
+      puts &quot;[POLICY] Commit #{sha} has already been pushed to #{remote_ref}&quot;
+      exit 1
+    end
+  end
+end</code></pre>
+
+<p>Dit script gebruikt een syntax dat niet behandeld is in de Revisie Selectie sectie van Hoofdstuk 6. Je krijgt een lijst van commits die al gepushed zijn door dit uit te voeren:</p>
+
+<pre><code>git rev-list ^#{sha}^@ refs/remotes/#{remote_ref}</code></pre>
+
+<p>De <code>SHA^@</code> syntax wordt vervangen door alle ouders van die commit. Je bent aan het kijken naar iedere commit die bereikbaar is vanuit de laatste commit op de remote en die niet bereikbaar is vanuit elke ouder van de SHA&#8217;s die je probeert te pushen – wat betekend dat het een fast-forward is.</p>
+
+<p>Het grote nadeel van deze aanpak is dat het erg traag kan zijn en vaak onnodig is – als je de push niet probeert te forceren met de <code>-f</code> optie, dan zal de server je proberen te waarschuwen en de push niet accepteren. Maar, het is een aardige oefening en kan je in theorie helpen om een rebase te omzeilen die je later zult moeten herstellen.</p>
 
 <div id='nav'>
 <a href='ch6-3.html'>prev</a> | <a href='ch6-5.html'>next</a>

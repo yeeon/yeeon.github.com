@@ -1,69 +1,42 @@
 ---
 layout: translation
-title: Pro Git 1.4 Memulai Git Menginstall Git
+title: Pro Git 1.4 Branching Pada Git Alur Kerja Branching
 ---
-<h2 id='menginstall_git'>Menginstall Git</h2>
+<h2 id='alur_kerja_branching'>Alur Kerja Branching</h2>
 
-<p>Mari memulai menggunakan Git. Pertama, tentu saja anda harus menginstallnya terlebih dahulu. Anda dapat melakukan melalui berbagai cara; dua cara paling poluler adalah menginstallnya dari kode sumbernya atau menginstalkan paket yang telah disediakan untuk platform anda.</p>
+<p>Sekarang dimana anda telah memiliki dasar-dasar branching dan merging, apa yang bisa atau harus anda lakukan dengannya? Pada bagian ini, kita akan membahas beberapa alur kerja umum yang menjadi mungkin dengan adanya proses branching yang ringan ini, sehingga anda dapat memutuskan apakah anda ingin memasukkannya ke dalam siklus pengembangan (development) anda.</p>
 
-<h3 id='menginstall_dari_kode_sumber'>Menginstall Dari Kode Sumber</h3>
+<h3 id='branch_berjangka_lama_longrunning_branches'>Branch Berjangka Lama (Long-Running Branches)</h3>
 
-<p>Jika anda dapat melakukannya, akan sangat berguna untuk dapat menginstallnya dari kode sumber, karena anda akan mendapatkan versi terbaru dari Git. Setiap versi dari Git cenderung akan menampilkan kemajuan pada sisi antarmuka pengguna, jadi menggunakan versi terbaru seringkali menjadi jalan terbaik jika anda terbiasa melakukan kompilasi perangkat lunak dari kode sumbernya. Dan juga menjadi masalah bahwa banyak distribusi Linux yang menyertakan versi Git yang sangat lama; kecuali anda mempergunakan distribusi Linux paling up-to-date atau menggunakan backport, menginstall dari kode sumbernya mungkin menjadi solusi terbaik.</p>
+<p>Karena Git menggunakan three-way merge yang sederhana, menggabungkan dari satu branch ke yang lainnya berkali-kali dalam jangka yang panjang umumnya mudah untuk dilakukan. Ini berarti anda dapat memiliki beberapa branch yang selalu terbuka dan yang anda gunakan untuk tahap yang berbeda dari siklus development anda; anda dapat melakukan merge secara regular atas beberapa dari mereka ke yang lainnya.</p>
 
-<p>Untuk menginstall Git, anda membutuhkan beberapa library yang dibutuhkan oleh Git: curl, zlib, openssl, expat, dan libiconv. Sebagai contoh, jika anda berada pada sistem yang menggunakan yum (seperti Fedora) atau apt-get (seperti sistem berbasis Debian), anda dapat menggunakan salah satu dari perintah berikut untuk menginstall semua library yang dibutuhkan oleh Git:</p>
+<p>Banyak pengembang Git memiliki alur kerja yang mencakup pendekatan ini, seperti hanya memiliki kode yang sepenuhnya stabil dalam branch <code>master</code> mereka - mungkin hanya kode yang telah atau akan dirilis. Mereka memiliki branch paralel lain yang bernama <code>develop</code> atau <code>next</code> dimana mereka mengerjakan darinya atau menggunakannya untuk menguji stabilitas - belum tentu selalu stabil, namun setiap kali sampai ke keadaan stabil, branch dapat digabungkan ke <code>master</code>. Ini digunakan untuk melakukan pull dari topic branch (branch berumur pendek, seperti branch <code>iss53</code> anda sebelumnya) ketika mereka telah siap, untuk memastikan mereka lolos semua pengujian dan tidak memiliki bug (kesalahan).</p>
 
-<pre><code>$ yum install curl-devel expat-devel gettext-devel \
-  openssl-devel zlib-devel
+<p>Pada kenyataannya, kita sedang berbicara mengenai pointer yang bergerak menaiki garis commit yang anda buat. Branch yang stabil berada jauh di bawah garis histori dari commit anda, dan branch yang bersifat bleeding-edge berada di histori terdepan (lihat Gambar 3-18).</p>
 
-$ apt-get install libcurl4-gnutls-dev libexpat1-dev gettext \
-  libz-dev</code></pre>
+<p><center><img src="/figures/ch1/18333fig0318-tn.png"></center><br/> Gambar 3-18. Branch yang lebih stabil umumnya berada jauh di bawah histori commit.</p>
 
-<p>Setelah anda memperoleh semua library yang dibutuhkan, anda kemudian dapat melanjutkan dengan mengunduh Git dari situsnya:</p>
+<p>Secara umum adalah lebih mudah untuk memikirkan mereka sebagaimana silo(?) bekerja, di mana sekumpulan commit naik ke tingkatan silo yang lebih stabil ketika mereka telah sepenuhnya diuji (lihat Gambar 3-19).</p>
 
-<pre><code>http://git-scm.com/download</code></pre>
+<p><center><img src="/figures/ch1/18333fig0319-tn.png"></center><br/> Gambar 3-19. Mungkin akan membantu untuk berpikir branch anda sebagai silo.</p>
 
-<p>Kemudian, kompilasi dan install:</p>
+<p>Anda dapat terus melakukan hal ini untuk beberapa tingkat stabilitas. Beberapa proyek yang lebih besar juga memiliki branch <code>proposed</code> atau <code>pu</code> (proposed updates) yang memiliki branch terintegrasi yang mungkin belum siap untuk masuk ke dalam branch <code>next</code> atau <code>master</code>. Idenya adalah bahwa branch anda berada pada berbagai tingkat stabilitas; ketika mereka mencapai tingkatan yang lebih stabil, mereka digabungkan ke dalam branch di atas mereka. Sekali lagi, memiliki long-running branch tidaklah diperlukan, tetapi seringkali membantu, terutama ketika anda sedang berhadapan dengan proyek-proyek yang sangat besar atau kompleks.</p>
 
-<pre><code>$ tar -zxf git-1.6.0.5.tar.gz
-$ cd git-1.6.0.5
-$ make prefix=/usr/local all
-$ sudo make prefix=/usr/local install</code></pre>
+<h3 id='branch_berjangka_pendek_topic_branches'>Branch Berjangka Pendek (Topic Branches)</h3>
 
-<p>Setelah semua ini selesai, anda juga dapat memperoleh Git terbaru melalui Git sendiri:</p>
+<p>Topic branch, bagaimanapun, berguna pada proyek-proyek untuk berbagai ukuran. Sebuah topic branch adalah branch berumur singkat yang anda buat dan gunakan untuk suatu fitur tertentu atau pekerjaan yang terkait. Ini adalah sesuatu yang mungkin tidak pernah anda lakukan dengan VCS sebelumnya karena biasanya terlalu memakan banyak untuk membuat dan menggabungkan branch. Tapi di Git adalah merupakan hal yang biasa untuk membuat, mengerjakan, menggabungkan, dan menghapus branch beberapa kali sehari.</p>
 
-<pre><code>$ git clone git://git.kernel.org/pub/scm/git/git.git</code></pre>
+<p>Anda melihat ini dalam bagian terakhir pada branch <code>iss53</code> dan <code>hotfix</code> yang anda buat. Anda melakukan beberapa commit pada mereka dan langsung menghapus mereka setelah menggabungkan mereka ke dalam branch utama anda. Teknik ini memungkinkan Anda untuk beralih konteks dengan cepat dan seutuhnya — karena pekerjaan anda dipisahkan ke dalam silo-silo(?) dimana semua perubahan pada branch tersebut terkait dengan topik itu, menjadi lebih mudah untuk melihat apa yang telah terjadi selama review kode dan semacamnya. Anda dapat menyimpan perubahan di sana selama beberapa menit, hari, atau bulan, dan menggabungkan mereka di saat mereka sudah siap, terlepas dari urutan pembuatan atau pengerjaannya.</p>
 
-<h3 id='menginstall_git_di_linux'>Menginstall Git di Linux</h3>
+<p>Kita ambil contoh berupa melakukan beberapa pekerjaan (pada <code>master</code>), branching untuk sebuah masalah (<code>iss91</code>), bekerja di atasnya untuk sesaat, melakukan branching kedua kalinya untuk mencoba cara lain dalam menangani hal yang sama (<code>iss91v2</code>), kembali ke branch master dan bekerja di sana untuk sementara, dan kemudian melakukan branching disana untuk melakukan beberapa pekerjaan yang anda belum yakin apakah ide itu baik (branch <code>dumbidea</code>). Histori dari commit anda akan terlihat seperti Gambar 3-20.</p>
 
-<p>Jika anda ingin menginstall Git di Linux menggunakan installer biner, anda bisa melakukannya melalui perkakas manajemen paket yang anda pada distribusi Linux yang anda gunakan. Jika anda menggunakan Fedora, anda dapat menggunakan yum:</p>
+<p><center><img src="/figures/ch1/18333fig0320-tn.png"></center><br/> Gambar 3-20. Histori dari commit anda dengan beberapa topic branch.</p>
 
-<pre><code>$ yum install git-core</code></pre>
+<p>Sekarang, katakanlah anda memutuskan anda suka solusi kedua atas masalah anda dibanding yang lain (<code>iss91v2</code>); dan anda menunjukkan branch <code>dumbidea</code> ke rekan kerja anda, dan tampak menjadi sesuatu yang jenius. Anda dapat membuang branch <code>iss91</code> yang asli (kehilangan commit C5 dan C6) dan menggabungkan dua lainnya. Histori anda kemudian tampak seperti Gambar 3-21.</p>
 
-<p>Atau jika anda menggunakan distro berbasis Debian seperti Ubuntu, coba gunakan apt-get:</p>
+<p><center><img src="/figures/ch1/18333fig0321-tn.png"></center><br/> Gambar 3-21. Histori anda setelah penggabungan dumbidea dan iss91v2.</p>
 
-<pre><code>$ apt-get install git-core</code></pre>
-
-<h3 id='menginstall_git_pada_mac'>Menginstall Git pada Mac</h3>
-
-<p>Terdapat dua cara mudah untuk menginstal Git pada sebuah komputer Mac. Cara termudah adalah menggunakan installer Git berbasis GUI, yang dapat anda peroleh dari halaman Google Code (lihat Gambar 1-7):</p>
-
-<pre><code>http://code.google.com/p/git-osx-installer</code></pre>
-
-<p><center><img src="/figures/ch1/18333fig0107-tn.png"></center><br/> Gambar 1-7. Git OS X installer.</p>
-
-<p>Cara lainnya adalah dengan menggunakan MacPorts (<code>http://www.macports.org</code>). Jika anda telah menginstall MacPorts, maka anda dapat menginstall Git melalui cara berikut</p>
-
-<pre><code>$ sudo port install git-core +svn +doc +bash_completion +gitweb</code></pre>
-
-<p>Anda tidak harus menambahkan extras-nya, tetapi anda mungkin membutuhkan +svn jika anda harus menggunakan Git pada repositori Subversion (lihat Bab 8).</p>
-
-<h3 id='menginstall_pada_sistem_operasi_windows'>Menginstall pada Sistem Operasi Windows</h3>
-
-<p>Menginstall Git pada Windows sangatlah mudah. Cara termudah dapat anda peroleh dengan menggunakan msysGit. Cukup download file installernya dari halaman Google Code, lalu eksekusi.</p>
-
-<pre><code>http://code.google.com/p/msysgit</code></pre>
-
-<p>Setelah terinstall, anda akan memperoleh versi command-line (bersama dengan klien SSH yang praktis) dan versi GUI-nya.</p>
+<p>Sangat penting untuk diingat ketika anda melakukan semua ini bahwa kesemua branch tersebut berada di lokal. Ketika anda melakukan branching dan merging, semuanya dilakukan hanya dalam repositori Git anda - tidak ada komunikasi yang terjadi dengan server.</p>
 
 <div id='nav'>
 <a href='ch1-3.html'>prev</a> | <a href='ch1-5.html'>next</a>

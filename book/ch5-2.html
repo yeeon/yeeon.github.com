@@ -1,501 +1,380 @@
 ---
 layout: master
-title: Pro Git 5.2 Distributed Git Contributing to a Project
+title: Pro Git 5.2 Git Basics Recording Changes to the Repository
 ---
-<h2 id='contributing_to_a_project'>Contributing to a Project</h2>
+<h2 id='recording_changes_to_the_repository'>Recording Changes to the Repository</h2>
 
-<p>You know what the different workflows are, and you should have a pretty good grasp of fundamental Git usage. In this section, you’ll learn about a few common patterns for contributing to a project.</p>
+<p>You have a bona fide Git repository and a checkout or working copy of the files for that project. You need to make some changes and commit snapshots of those changes into your repository each time the project reaches a state you want to record.</p>
 
-<p>The main difficulty with describing this process is that there are a huge number of variations on how it’s done. Because Git is very flexible, people can and do work together many ways, and it’s problematic to describe how you should contribute to a project — every project is a bit different. Some of the variables involved are active contributor size, chosen workflow, your commit access, and possibly the external contribution method.</p>
+<p>Remember that each file in your working directory can be in one of two states: <em>tracked</em> or <em>untracked</em>. <em>Tracked</em> files are files that were in the last snapshot; they can be <em>unmodified</em>, <em>modified</em>, or <em>staged</em>. <em>Untracked</em> files are everything else — any files in your working directory that were not in your last snapshot and are not in your staging area. When you first clone a repository, all of your files will be tracked and unmodified because you just checked them out and haven’t edited anything.</p>
+
+<p>As you edit files, Git sees them as modified, because you’ve changed them since your last commit. You <em>stage</em> these modified files and then commit all your staged changes, and the cycle repeats. This lifecycle is illustrated in Figure 2-1.</p>
+
+<p><center><img src="/figures/ch5/18333fig0201-tn.png"></center><br/> Figure 2-1. The lifecycle of the status of your files.</p>
+
+<h3 id='checking_the_status_of_your_files'>Checking the Status of Your Files</h3>
 
-<p>The first variable is active contributor size. How many users are actively contributing code to this project, and how often? In many instances, you’ll have two or three developers with a few commits a day, or possibly less for somewhat dormant projects. For really large companies or projects, the number of developers could be in the thousands, with dozens or even hundreds of patches coming in each day. This is important because with more and more developers, you run into more issues with making sure your code applies cleanly or can be easily merged. Changes you submit may be rendered obsolete or severely broken by work that is merged in while you were working or while your changes were waiting to be approved or applied. How can you keep your code consistently up to date and your patches valid?</p>
+<p>The main tool you use to determine which files are in which state is the <code>git status</code> command. If you run this command directly after a clone, you should see something like this:</p>
 
-<p>The next variable is the workflow in use for the project. Is it centralized, with each developer having equal write access to the main codeline? Does the project have a maintainer or integration manager who checks all the patches? Are all the patches peer-reviewed and approved? Are you involved in that process? Is a lieutenant system in place, and do you have to submit your work to them first?</p>
+<pre><code>$ git status
+# On branch master
+nothing to commit (working directory clean)</code></pre>
 
-<p>The next issue is your commit access. The workflow required in order to contribute to a project is much different if you have write access to the project than if you don’t. If you don’t have write access, how does the project prefer to accept contributed work? Does it even have a policy? How much work are you contributing at a time? How often do you contribute?</p>
+<p>This means you have a clean working directory — in other words, no tracked files are modified. Git also doesn’t see any untracked files, or they would be listed here. Finally, the command tells you which branch you’re on. For now, that is always <code>master</code>, which is the default; you won’t worry about it here. The next chapter will go over branches and references in detail.</p>
 
-<p>All these questions can affect how you contribute effectively to a project and what workflows are preferred or available to you. I’ll cover aspects of each of these in a series of use cases, moving from simple to more complex; you should be able to construct the specific workflows you need in practice from these examples.</p>
+<p>Let’s say you add a new file to your project, a simple <code>README</code> file. If the file didn’t exist before, and you run <code>git status</code>, you see your untracked file like so:</p>
 
-<h3 id='commit_guidelines'>Commit Guidelines</h3>
+<pre><code>$ vim README
+$ git status
+# On branch master
+# Untracked files:
+#   (use &quot;git add &lt;file&gt;...&quot; to include in what will be committed)
+#
+#	README
+nothing added to commit but untracked files present (use &quot;git add&quot; to track)</code></pre>
 
-<p>Before you start looking at the specific use cases, here’s a quick note about commit messages. Having a good guideline for creating commits and sticking to it makes working with Git and collaborating with others a lot easier. The Git project provides a document that lays out a number of good tips for creating commits from which to submit patches — you can read it in the Git source code in the <code>Documentation/SubmittingPatches</code> file.</p>
+<p>You can see that your new <code>README</code> file is untracked, because it’s under the “Untracked files” heading in your status output. Untracked basically means that Git sees a file you didn’t have in the previous snapshot (commit); Git won’t start including it in your commit snapshots until you explicitly tell it to do so. It does this so you don’t accidentally begin including generated binary files or other files that you did not mean to include. You do want to start including README, so let’s start tracking the file.</p>
 
-<p>First, you don’t want to submit any whitespace errors. Git provides an easy way to check for this — before you commit, run <code>git diff --check</code>, which identifies possible whitespace errors and lists them for you. Here is an example, where I’ve replaced a red terminal color with <code>X</code>s:</p>
+<h3 id='tracking_new_files'>Tracking New Files</h3>
 
-<pre><code>$ git diff --check
-lib/simplegit.rb:5: trailing whitespace.
-+    @git_dir = File.expand_path(git_dir)XX
-lib/simplegit.rb:7: trailing whitespace.
-+ XXXXXXXXXXX
-lib/simplegit.rb:26: trailing whitespace.
-+    def command(git_cmd)XXXX</code></pre>
+<p>In order to begin tracking a new file, you use the command <code>git add</code>. To begin tracking the <code>README</code> file, you can run this:</p>
 
-<p>If you run that command before committing, you can tell if you’re about to commit whitespace issues that may annoy other developers.</p>
+<pre><code>$ git add README</code></pre>
 
-<p>Next, try to make each commit a logically separate changeset. If you can, try to make your changes digestible — don’t code for a whole weekend on five different issues and then submit them all as one massive commit on Monday. Even if you don’t commit during the weekend, use the staging area on Monday to split your work into at least one commit per issue, with a useful message per commit. If some of the changes modify the same file, try to use <code>git add --patch</code> to partially stage files (covered in detail in Chapter 6). The project snapshot at the tip of the branch is identical whether you do one commit or five, as long as all the changes are added at some point, so try to make things easier on your fellow developers when they have to review your changes. This approach also makes it easier to pull out or revert one of the changesets if you need to later. Chapter 6 describes a number of useful Git tricks for rewriting history and interactively staging files — use these tools to help craft a clean and understandable history.</p>
+<p>If you run your status command again, you can see that your <code>README</code> file is now tracked and staged:</p>
 
-<p>The last thing to keep in mind is the commit message. Getting in the habit of creating quality commit messages makes using and collaborating with Git a lot easier. As a general rule, your messages should start with a single line that’s no more than about 50 characters and that describes the changeset concisely, followed by a blank line, followed by a more detailed explanation. The Git project requires that the more detailed explanation include your motivation for the change and contrast its implementation with previous behavior — this is a good guideline to follow. It’s also a good idea to use the imperative present tense in these messages. In other words, use commands. Instead of &#8220;I added tests for&#8221; or &#8220;Adding tests for,&#8221; use &#8220;Add tests for.&#8221; Here is a template originally written by Tim Pope at tpope.net:</p>
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#</code></pre>
 
-<pre><code>Short (50 chars or less) summary of changes
+<p>You can tell that it’s staged because it’s under the “Changes to be committed” heading. If you commit at this point, the version of the file at the time you ran <code>git add</code> is what will be in the historical snapshot. You may recall that when you ran <code>git init</code> earlier, you then ran <code>git add (files)</code> — that was to begin tracking files in your directory. The <code>git add</code> command takes a path name for either a file or a directory; if it’s a directory, the command adds all the files in that directory recursively.</p>
 
-More detailed explanatory text, if necessary.  Wrap it to about 72
-characters or so.  In some contexts, the first line is treated as the
-subject of an email and the rest of the text as the body.  The blank
-line separating the summary from the body is critical (unless you omit
-the body entirely); tools like rebase can get confused if you run the
-two together.
+<h3 id='staging_modified_files'>Staging Modified Files</h3>
 
-Further paragraphs come after blank lines.
+<p>Let’s change a file that was already tracked. If you change a previously tracked file called <code>benchmarks.rb</code> and then run your <code>status</code> command again, you get something that looks like this:</p>
 
- - Bullet points are okay, too
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#	modified:   benchmarks.rb
+#</code></pre>
 
- - Typically a hyphen or asterisk is used for the bullet, preceded by a
-   single space, with blank lines in between, but conventions vary here</code></pre>
+<p>The <code>benchmarks.rb</code> file appears under a section named “Changes not staged for commit” — which means that a file that is tracked has been modified in the working directory but not yet staged. To stage it, you run the <code>git add</code> command (it’s a multipurpose command — you use it to begin tracking new files, to stage files, and to do other things like marking merge-conflicted files as resolved). Let’s run <code>git add</code> now to stage the <code>benchmarks.rb</code> file, and then run <code>git status</code> again:</p>
 
-<p>If all your commit messages look like this, things will be a lot easier for you and the developers you work with. The Git project has well-formatted commit messages — I encourage you to run <code>git log --no-merges</code> there to see what a nicely formatted project-commit history looks like.</p>
+<pre><code>$ git add benchmarks.rb
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#	modified:   benchmarks.rb
+#</code></pre>
 
-<p>In the following examples, and throughout most of this book, for the sake of brevity I don’t format messages nicely like this; instead, I use the <code>-m</code> option to <code>git commit</code>. Do as I say, not as I do.</p>
+<p>Both files are staged and will go into your next commit. At this point, suppose you remember one little change that you want to make in <code>benchmarks.rb</code> before you commit it. You open it again and make that change, and you’re ready to commit. However, let’s run <code>git status</code> one more time:</p>
 
-<h3 id='private_small_team'>Private Small Team</h3>
-
-<p>The simplest setup you’re likely to encounter is a private project with one or two other developers. By private, I mean closed source — not read-accessible to the outside world. You and the other developers all have push access to the repository.</p>
-
-<p>In this environment, you can follow a workflow similar to what you might do when using Subversion or another centralized system. You still get the advantages of things like offline committing and vastly simpler branching and merging, but the workflow can be very similar; the main difference is that merges happen client-side rather than on the server at commit time. Let’s see what it might look like when two developers start to work together with a shared repository. The first developer, John, clones the repository, makes a change, and commits locally. (I’m replacing the protocol messages with <code>...</code> in these examples to shorten them somewhat.)</p>
-
-<pre><code># John&#39;s Machine
-$ git clone john@githost:simplegit.git
-Initialized empty Git repository in /home/john/simplegit/.git/
-...
-$ cd simplegit/
-$ vim lib/simplegit.rb 
-$ git commit -am &#39;removed invalid default value&#39;
-[master 738ee87] removed invalid default value
- 1 files changed, 1 insertions(+), 1 deletions(-)</code></pre>
-
-<p>The second developer, Jessica, does the same thing — clones the repository and commits a change:</p>
-
-<pre><code># Jessica&#39;s Machine
-$ git clone jessica@githost:simplegit.git
-Initialized empty Git repository in /home/jessica/simplegit/.git/
-...
-$ cd simplegit/
-$ vim TODO 
-$ git commit -am &#39;add reset task&#39;
-[master fbff5bc] add reset task
- 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
-
-<p>Now, Jessica pushes her work up to the server:</p>
-
-<pre><code># Jessica&#39;s Machine
-$ git push origin master
-...
-To jessica@githost:simplegit.git
-   1edee6b..fbff5bc  master -&gt; master</code></pre>
-
-<p>John tries to push his change up, too:</p>
-
-<pre><code># John&#39;s Machine
-$ git push origin master
-To john@githost:simplegit.git
- ! [rejected]        master -&gt; master (non-fast forward)
-error: failed to push some refs to &#39;john@githost:simplegit.git&#39;</code></pre>
-
-<p>John isn’t allowed to push because Jessica has pushed in the meantime. This is especially important to understand if you’re used to Subversion, because you’ll notice that the two developers didn’t edit the same file. Although Subversion automatically does such a merge on the server if different files are edited, in Git you must merge the commits locally. John has to fetch Jessica’s changes and merge them in before he will be allowed to push:</p>
-
-<pre><code>$ git fetch origin
-...
-From john@githost:simplegit
- + 049d078...fbff5bc master     -&gt; origin/master</code></pre>
-
-<p>At this point, John’s local repository looks something like Figure 5-4.</p>
-
-<p><center><img src="/figures/ch5/18333fig0504-tn.png"></center><br/> Figure 5-4. John’s initial repository.</p>
-
-<p>John has a reference to the changes Jessica pushed up, but he has to merge them into his own work before he is allowed to push:</p>
-
-<pre><code>$ git merge origin/master
-Merge made by recursive.
- TODO |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
-
-<p>The merge goes smoothly — John’s commit history now looks like Figure 5-5.</p>
-
-<p><center><img src="/figures/ch5/18333fig0505-tn.png"></center><br/> Figure 5-5. John’s repository after merging origin/master.</p>
-
-<p>Now, John can test his code to make sure it still works properly, and then he can push his new merged work up to the server:</p>
-
-<pre><code>$ git push origin master
-...
-To john@githost:simplegit.git
-   fbff5bc..72bbc59  master -&gt; master</code></pre>
-
-<p>Finally, John’s commit history looks like Figure 5-6.</p>
-
-<p><center><img src="/figures/ch5/18333fig0506-tn.png"></center><br/> Figure 5-6. John’s history after pushing to the origin server.</p>
-
-<p>In the meantime, Jessica has been working on a topic branch. She’s created a topic branch called <code>issue54</code> and done three commits on that branch. She hasn’t fetched John’s changes yet, so her commit history looks like Figure 5-7.</p>
-
-<p><center><img src="/figures/ch5/18333fig0507-tn.png"></center><br/> Figure 5-7. Jessica’s initial commit history.</p>
-
-<p>Jessica wants to sync up with John, so she fetches:</p>
-
-<pre><code># Jessica&#39;s Machine
-$ git fetch origin
-...
-From jessica@githost:simplegit
-   fbff5bc..72bbc59  master     -&gt; origin/master</code></pre>
-
-<p>That pulls down the work John has pushed up in the meantime. Jessica’s history now looks like Figure 5-8.</p>
-
-<p><center><img src="/figures/ch5/18333fig0508-tn.png"></center><br/> Figure 5-8. Jessica’s history after fetching John’s changes.</p>
-
-<p>Jessica thinks her topic branch is ready, but she wants to know what she has to merge her work into so that she can push. She runs <code>git log</code> to find out:</p>
-
-<pre><code>$ git log --no-merges origin/master ^issue54
-commit 738ee872852dfaa9d6634e0dea7a324040193016
-Author: John Smith &lt;jsmith@example.com&gt;
-Date:   Fri May 29 16:01:27 2009 -0700
-
-    removed invalid default value</code></pre>
-
-<p>Now, Jessica can merge her topic work into her master branch, merge John’s work (<code>origin/master</code>) into her <code>master</code> branch, and then push back to the server again. First, she switches back to her master branch to integrate all this work:</p>
-
-<pre><code>$ git checkout master
-Switched to branch &quot;master&quot;
-Your branch is behind &#39;origin/master&#39; by 2 commits, and can be fast-forwarded.</code></pre>
-
-<p>She can merge either <code>origin/master</code> or <code>issue54</code> first — they’re both upstream, so the order doesn’t matter. The end snapshot should be identical no matter which order she chooses; only the history will be slightly different. She chooses to merge in <code>issue54</code> first:</p>
-
-<pre><code>$ git merge issue54
-Updating fbff5bc..4af4298
-Fast forward
- README           |    1 +
- lib/simplegit.rb |    6 +++++-
- 2 files changed, 6 insertions(+), 1 deletions(-)</code></pre>
-
-<p>No problems occur; as you can see it, was a simple fast-forward. Now Jessica merges in John’s work (<code>origin/master</code>):</p>
-
-<pre><code>$ git merge origin/master
-Auto-merging lib/simplegit.rb
-Merge made by recursive.
- lib/simplegit.rb |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)</code></pre>
-
-<p>Everything merges cleanly, and Jessica’s history looks like Figure 5-9.</p>
-
-<p><center><img src="/figures/ch5/18333fig0509-tn.png"></center><br/> Figure 5-9. Jessica’s history after merging John’s changes.</p>
-
-<p>Now <code>origin/master</code> is reachable from Jessica’s <code>master</code> branch, so she should be able to successfully push (assuming John hasn’t pushed again in the meantime):</p>
-
-<pre><code>$ git push origin master
-...
-To jessica@githost:simplegit.git
-   72bbc59..8059c15  master -&gt; master</code></pre>
-
-<p>Each developer has committed a few times and merged each other’s work successfully; see Figure 5-10.</p>
-
-<p><center><img src="/figures/ch5/18333fig0510-tn.png"></center><br/> Figure 5-10. Jessica’s history after pushing all changes back to the server.</p>
-
-<p>That is one of the simplest workflows. You work for a while, generally in a topic branch, and merge into your master branch when it’s ready to be integrated. When you want to share that work, you merge it into your own master branch, then fetch and merge <code>origin/master</code> if it has changed, and finally push to the <code>master</code> branch on the server. The general sequence is something like that shown in Figure 5-11.</p>
-
-<p><center><img src="/figures/ch5/18333fig0511-tn.png"></center><br/> Figure 5-11. General sequence of events for a simple multiple-developer Git workflow.</p>
-
-<h3 id='private_managed_team'>Private Managed Team</h3>
-
-<p>In this next scenario, you’ll look at contributor roles in a larger private group. You’ll learn how to work in an environment where small groups collaborate on features and then those team-based contributions are integrated by another party.</p>
-
-<p>Let’s say that John and Jessica are working together on one feature, while Jessica and Josie are working on a second. In this case, the company is using a type of integration-manager workflow where the work of the individual groups is integrated only by certain engineers, and the <code>master</code> branch of the main repo can be updated only by those engineers. In this scenario, all work is done in team-based branches and pulled together by the integrators later.</p>
-
-<p>Let’s follow Jessica’s workflow as she works on her two features, collaborating in parallel with two different developers in this environment. Assuming she already has her repository cloned, she decides to work on <code>featureA</code> first. She creates a new branch for the feature and does some work on it there:</p>
-
-<pre><code># Jessica&#39;s Machine
-$ git checkout -b featureA
-Switched to a new branch &quot;featureA&quot;
-$ vim lib/simplegit.rb
-$ git commit -am &#39;add limit to log function&#39;
-[featureA 3300904] add limit to log function
- 1 files changed, 1 insertions(+), 1 deletions(-)</code></pre>
-
-<p>At this point, she needs to share her work with John, so she pushes her <code>featureA</code> branch commits up to the server. Jessica doesn’t have push access to the <code>master</code> branch — only the integrators do — so she has to push to another branch in order to collaborate with John:</p>
-
-<pre><code>$ git push origin featureA
-...
-To jessica@githost:simplegit.git
- * [new branch]      featureA -&gt; featureA</code></pre>
-
-<p>Jessica e-mails John to tell him that she’s pushed some work into a branch named <code>featureA</code> and he can look at it now. While she waits for feedback from John, Jessica decides to start working on <code>featureB</code> with Josie. To begin, she starts a new feature branch, basing it off the server’s <code>master</code> branch:</p>
-
-<pre><code># Jessica&#39;s Machine
-$ git fetch origin
-$ git checkout -b featureB origin/master
-Switched to a new branch &quot;featureB&quot;</code></pre>
-
-<p>Now, Jessica makes a couple of commits on the <code>featureB</code> branch:</p>
-
-<pre><code>$ vim lib/simplegit.rb
-$ git commit -am &#39;made the ls-tree function recursive&#39;
-[featureB e5b0fdc] made the ls-tree function recursive
- 1 files changed, 1 insertions(+), 1 deletions(-)
-$ vim lib/simplegit.rb
-$ git commit -am &#39;add ls-files&#39;
-[featureB 8512791] add ls-files
+<pre><code>$ vim benchmarks.rb
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#	modified:   benchmarks.rb
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#	modified:   benchmarks.rb
+#</code></pre>
+
+<p>What the heck? Now <code>benchmarks.rb</code> is listed as both staged and unstaged. How is that possible? It turns out that Git stages a file exactly as it is when you run the <code>git add</code> command. If you commit now, the version of <code>benchmarks.rb</code> as it was when you last ran the <code>git add</code> command is how it will go into the commit, not the version of the file as it looks in your working directory when you run <code>git commit</code>. If you modify a file after you run <code>git add</code>, you have to run <code>git add</code> again to stage the latest version of the file:</p>
+
+<pre><code>$ git add benchmarks.rb
+$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#	modified:   benchmarks.rb
+#</code></pre>
+
+<h3 id='ignoring_files'>Ignoring Files</h3>
+
+<p>Often, you’ll have a class of files that you don’t want Git to automatically add or even show you as being untracked. These are generally automatically generated files such as log files or files produced by your build system. In such cases, you can create a file listing patterns to match them named <code>.gitignore</code>. Here is an example <code>.gitignore</code> file:</p>
+
+<pre><code>$ cat .gitignore
+*.[oa]
+*~</code></pre>
+
+<p>The first line tells Git to ignore any files ending in <code>.o</code> or <code>.a</code> — <em>object</em> and <em>archive</em> files that may be the product of building your code. The second line tells Git to ignore all files that end with a tilde (<code>~</code>), which is used by many text editors such as Emacs to mark temporary files. You may also include a <code>log</code>, <code>tmp</code>, or <code>pid</code> directory; automatically generated documentation; and so on. Setting up a <code>.gitignore</code> file before you get going is generally a good idea so you don’t accidentally commit files that you really don’t want in your Git repository.</p>
+
+<p>The rules for the patterns you can put in the <code>.gitignore</code> file are as follows:</p>
+
+<ul>
+<li>Blank lines or lines starting with <code>#</code> are ignored.</li>
+
+<li>Standard glob patterns work.</li>
+
+<li>You can end patterns with a forward slash (<code>/</code>) to specify a directory.</li>
+
+<li>You can negate a pattern by starting it with an exclamation point (<code>!</code>).</li>
+</ul>
+
+<p>Glob patterns are like simplified regular expressions that shells use. An asterisk (<code>*</code>) matches zero or more characters; <code>[abc]</code> matches any character inside the brackets (in this case <code>a</code>, <code>b</code>, or <code>c</code>); a question mark (<code>?</code>) matches a single character; and brackets enclosing characters separated by a hyphen(<code>[0-9]</code>) matches any character in the range (in this case 0 through 9) .</p>
+
+<p>Here is another example <code>.gitignore</code> file:</p>
+
+<pre><code># a comment - this is ignored
+*.a       # no .a files
+!lib.a    # but do track lib.a, even though you&#39;re ignoring .a files above
+/TODO     # only ignore the root TODO file, not subdir/TODO
+build/    # ignore all files in the build/ directory
+doc/*.txt # ignore doc/notes.txt, but not doc/server/arch.txt</code></pre>
+
+<h3 id='viewing_your_staged_and_unstaged_changes'>Viewing Your Staged and Unstaged Changes</h3>
+
+<p>If the <code>git status</code> command is too vague for you — you want to know exactly what you changed, not just which files were changed — you can use the <code>git diff</code> command. We’ll cover <code>git diff</code> in more detail later; but you’ll probably use it most often to answer these two questions: What have you changed but not yet staged? And what have you staged that you are about to commit? Although <code>git status</code> answers those questions very generally, <code>git diff</code> shows you the exact lines added and removed — the patch, as it were.</p>
+
+<p>Let’s say you edit and stage the <code>README</code> file again and then edit the <code>benchmarks.rb</code> file without staging it. If you run your <code>status</code> command, you once again see something like this:</p>
+
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	new file:   README
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#	modified:   benchmarks.rb
+#</code></pre>
+
+<p>To see what you’ve changed but not yet staged, type <code>git diff</code> with no other arguments:</p>
+
+<pre><code>$ git diff
+diff --git a/benchmarks.rb b/benchmarks.rb
+index 3cb747f..da65585 100644
+--- a/benchmarks.rb
++++ b/benchmarks.rb
+@@ -36,6 +36,10 @@ def main
+           @commit.parents[0].parents[0].parents[0]
+         end
+
++        run_code(x, &#39;commits 1&#39;) do
++          git.commits.size
++        end
++
+         run_code(x, &#39;commits 2&#39;) do
+           log = git.commits(&#39;master&#39;, 15)
+           log.size</code></pre>
+
+<p>That command compares what is in your working directory with what is in your staging area. The result tells you the changes you’ve made that you haven’t yet staged.</p>
+
+<p>If you want to see what you’ve staged that will go into your next commit, you can use <code>git diff --cached</code>. (In Git versions 1.6.1 and later, you can also use <code>git diff --staged</code>, which may be easier to remember.) This command compares your staged changes to your last commit:</p>
+
+<pre><code>$ git diff --cached
+diff --git a/README b/README
+new file mode 100644
+index 0000000..03902a1
+--- /dev/null
++++ b/README2
+@@ -0,0 +1,5 @@
++grit
++ by Tom Preston-Werner, Chris Wanstrath
++ http://github.com/mojombo/grit
++
++Grit is a Ruby library for extracting information from a Git repository</code></pre>
+
+<p>It’s important to note that <code>git diff</code> by itself doesn’t show all changes made since your last commit — only changes that are still unstaged. This can be confusing, because if you’ve staged all of your changes, <code>git diff</code> will give you no output.</p>
+
+<p>For another example, if you stage the <code>benchmarks.rb</code> file and then edit it, you can use <code>git diff</code> to see the changes in the file that are staged and the changes that are unstaged:</p>
+
+<pre><code>$ git add benchmarks.rb
+$ echo &#39;# test line&#39; &gt;&gt; benchmarks.rb
+$ git status
+# On branch master
+#
+# Changes to be committed:
+#
+#	modified:   benchmarks.rb
+#
+# Changes not staged for commit:
+#
+#	modified:   benchmarks.rb
+#</code></pre>
+
+<p>Now you can use <code>git diff</code> to see what is still unstaged</p>
+
+<pre><code>$ git diff
+diff --git a/benchmarks.rb b/benchmarks.rb
+index e445e28..86b2f7c 100644
+--- a/benchmarks.rb
++++ b/benchmarks.rb
+@@ -127,3 +127,4 @@ end
+ main()
+
+ ##pp Grit::GitRuby.cache_client.stats
++# test line</code></pre>
+
+<p>and <code>git diff --cached</code> to see what you’ve staged so far:</p>
+
+<pre><code>$ git diff --cached
+diff --git a/benchmarks.rb b/benchmarks.rb
+index 3cb747f..e445e28 100644
+--- a/benchmarks.rb
++++ b/benchmarks.rb
+@@ -36,6 +36,10 @@ def main
+          @commit.parents[0].parents[0].parents[0]
+        end
+
++        run_code(x, &#39;commits 1&#39;) do
++          git.commits.size
++        end
++
+        run_code(x, &#39;commits 2&#39;) do
+          log = git.commits(&#39;master&#39;, 15)
+          log.size</code></pre>
+
+<h3 id='committing_your_changes'>Committing Your Changes</h3>
+
+<p>Now that your staging area is set up the way you want it, you can commit your changes. Remember that anything that is still unstaged — any files you have created or modified that you haven’t run <code>git add</code> on since you edited them — won’t go into this commit. They will stay as modified files on your disk. In this case, the last time you ran <code>git status</code>, you saw that everything was staged, so you’re ready to commit your changes. The simplest way to commit is to type <code>git commit</code>:</p>
+
+<pre><code>$ git commit</code></pre>
+
+<p>Doing so launches your editor of choice. (This is set by your shell’s <code>$EDITOR</code> environment variable — usually vim or emacs, although you can configure it with whatever you want using the <code>git config --global core.editor</code> command as you saw in <em>Chapter 1</em>).</p>
+
+<p>The editor displays the following text (this example is a Vim screen):</p>
+
+<pre><code># Please enter the commit message for your changes. Lines starting
+# with &#39;#&#39; will be ignored, and an empty message aborts the commit.
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#       new file:   README
+#       modified:   benchmarks.rb
+~
+~
+~
+&quot;.git/COMMIT_EDITMSG&quot; 10L, 283C</code></pre>
+
+<p>You can see that the default commit message contains the latest output of the <code>git status</code> command commented out and one empty line on top. You can remove these comments and type your commit message, or you can leave them there to help you remember what you’re committing. (For an even more explicit reminder of what you’ve modified, you can pass the <code>-v</code> option to <code>git commit</code>. Doing so also puts the diff of your change in the editor so you can see exactly what you did.) When you exit the editor, Git creates your commit with that commit message (with the comments and diff stripped out).</p>
+
+<p>Alternatively, you can type your commit message inline with the <code>commit</code> command by specifying it after a <code>-m</code> flag, like this:</p>
+
+<pre><code>$ git commit -m &quot;Story 182: Fix benchmarks for speed&quot;
+[master]: created 463dc4f: &quot;Fix benchmarks for speed&quot;
+ 2 files changed, 3 insertions(+), 0 deletions(-)
+ create mode 100644 README</code></pre>
+
+<p>Now you’ve created your first commit! You can see that the commit has given you some output about itself: which branch you committed to (<code>master</code>), what SHA-1 checksum the commit has (<code>463dc4f</code>), how many files were changed, and statistics about lines added and removed in the commit.</p>
+
+<p>Remember that the commit records the snapshot you set up in your staging area. Anything you didn’t stage is still sitting there modified; you can do another commit to add it to your history. Every time you perform a commit, you’re recording a snapshot of your project that you can revert to or compare to later.</p>
+
+<h3 id='skipping_the_staging_area'>Skipping the Staging Area</h3>
+
+<p>Although it can be amazingly useful for crafting commits exactly how you want them, the staging area is sometimes a bit more complex than you need in your workflow. If you want to skip the staging area, Git provides a simple shortcut. Providing the <code>-a</code> option to the <code>git commit</code> command makes Git automatically stage every file that is already tracked before doing the commit, letting you skip the <code>git add</code> part:</p>
+
+<pre><code>$ git status
+# On branch master
+#
+# Changes not staged for commit:
+#
+#	modified:   benchmarks.rb
+#
+$ git commit -a -m &#39;added new benchmarks&#39;
+[master 83e38c7] added new benchmarks
  1 files changed, 5 insertions(+), 0 deletions(-)</code></pre>
 
-<p>Jessica’s repository looks like Figure 5-12.</p>
+<p>Notice how you don’t have to run <code>git add</code> on the <code>benchmarks.rb</code> file in this case before you commit.</p>
 
-<p><center><img src="/figures/ch5/18333fig0512-tn.png"></center><br/> Figure 5-12. Jessica’s initial commit history.</p>
+<h3 id='removing_files'>Removing Files</h3>
 
-<p>She’s ready to push up her work, but gets an e-mail from Josie that a branch with some initial work on it was already pushed to the server as <code>featureBee</code>. Jessica first needs to merge those changes in with her own before she can push to the server. She can then fetch Josie’s changes down with <code>git fetch</code>:</p>
+<p>To remove a file from Git, you have to remove it from your tracked files (more accurately, remove it from your staging area) and then commit. The <code>git rm</code> command does that and also removes the file from your working directory so you don’t see it as an untracked file next time around.</p>
 
-<pre><code>$ git fetch origin
-...
-From jessica@githost:simplegit
- * [new branch]      featureBee -&gt; origin/featureBee</code></pre>
+<p>If you simply remove the file from your working directory, it shows up under the “Changes not staged for commit” (that is, <em>unstaged</em>) area of your <code>git status</code> output:</p>
 
-<p>Jessica can now merge this into the work she did with <code>git merge</code>:</p>
+<pre><code>$ rm grit.gemspec
+$ git status
+# On branch master
+#
+# Changes not staged for commit:
+#   (use &quot;git add/rm &lt;file&gt;...&quot; to update what will be committed)
+#
+#       deleted:    grit.gemspec
+#</code></pre>
 
-<pre><code>$ git merge origin/featureBee
-Auto-merging lib/simplegit.rb
-Merge made by recursive.
- lib/simplegit.rb |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)</code></pre>
+<p>Then, if you run <code>git rm</code>, it stages the file’s removal:</p>
 
-<p>There is a bit of a problem — she needs to push the merged work in her <code>featureB</code> branch to the <code>featureBee</code> branch on the server. She can do so by specifying the local branch followed by a colon (:) followed by the remote branch to the <code>git push</code> command:</p>
+<pre><code>$ git rm grit.gemspec
+rm &#39;grit.gemspec&#39;
+$ git status
+# On branch master
+#
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#       deleted:    grit.gemspec
+#</code></pre>
 
-<pre><code>$ git push origin featureB:featureBee
-...
-To jessica@githost:simplegit.git
-   fba9af8..cd685d1  featureB -&gt; featureBee</code></pre>
+<p>The next time you commit, the file will be gone and no longer tracked. If you modified the file and added it to the index already, you must force the removal with the <code>-f</code> option. This is a safety feature to prevent accidental removal of data that hasn’t yet been recorded in a snapshot and that can’t be recovered from Git.</p>
 
-<p>This is called a <em>refspec</em>. See Chapter 9 for a more detailed discussion of Git refspecs and different things you can do with them.</p>
+<p>Another useful thing you may want to do is to keep the file in your working tree but remove it from your staging area. In other words, you may want to keep the file on your hard drive but not have Git track it anymore. This is particularly useful if you forgot to add something to your <code>.gitignore</code> file and accidentally staged it, like a large log file or a bunch of <code>.a</code> compiled files. To do this, use the <code>--cached</code> option:</p>
 
-<p>Next, John e-mails Jessica to say he’s pushed some changes to the <code>featureA</code> branch and ask her to verify them. She runs a <code>git fetch</code> to pull down those changes:</p>
+<pre><code>$ git rm --cached readme.txt</code></pre>
 
-<pre><code>$ git fetch origin
-...
-From jessica@githost:simplegit
-   3300904..aad881d  featureA   -&gt; origin/featureA</code></pre>
+<p>You can pass files, directories, and file-glob patterns to the <code>git rm</code> command. That means you can do things such as</p>
 
-<p>Then, she can see what has been changed with <code>git log</code>:</p>
+<pre><code>$ git rm log/\*.log</code></pre>
 
-<pre><code>$ git log origin/featureA ^featureA
-commit aad881d154acdaeb2b6b18ea0e827ed8a6d671e6
-Author: John Smith &lt;jsmith@example.com&gt;
-Date:   Fri May 29 19:57:33 2009 -0700
+<p>Note the backslash (<code>\</code>) in front of the <code>*</code>. This is necessary because Git does its own filename expansion in addition to your shell’s filename expansion. On Windows with the system console, the backslash must be omitted. This command removes all files that have the <code>.log</code> extension in the <code>log/</code> directory. Or, you can do something like this:</p>
 
-    changed log output to 30 from 25</code></pre>
+<pre><code>$ git rm \*~</code></pre>
 
-<p>Finally, she merges John’s work into her own <code>featureA</code> branch:</p>
+<p>This command removes all files that end with <code>~</code>.</p>
 
-<pre><code>$ git checkout featureA
-Switched to branch &quot;featureA&quot;
-$ git merge origin/featureA
-Updating 3300904..aad881d
-Fast forward
- lib/simplegit.rb |   10 +++++++++-
-1 files changed, 9 insertions(+), 1 deletions(-)</code></pre>
+<h3 id='moving_files'>Moving Files</h3>
 
-<p>Jessica wants to tweak something, so she commits again and then pushes this back up to the server:</p>
+<p>Unlike many other VCS systems, Git doesn’t explicitly track file movement. If you rename a file in Git, no metadata is stored in Git that tells it you renamed the file. However, Git is pretty smart about figuring that out after the fact — we’ll deal with detecting file movement a bit later.</p>
 
-<pre><code>$ git commit -am &#39;small tweak&#39;
-[featureA ed774b3] small tweak
- 1 files changed, 1 insertions(+), 1 deletions(-)
-$ git push origin featureA
-...
-To jessica@githost:simplegit.git
-   3300904..ed774b3  featureA -&gt; featureA</code></pre>
+<p>Thus it’s a bit confusing that Git has a <code>mv</code> command. If you want to rename a file in Git, you can run something like</p>
 
-<p>Jessica’s commit history now looks something like Figure 5-13.</p>
+<pre><code>$ git mv file_from file_to</code></pre>
 
-<p><center><img src="/figures/ch5/18333fig0513-tn.png"></center><br/> Figure 5-13. Jessica’s history after committing on a feature branch.</p>
+<p>and it works fine. In fact, if you run something like this and look at the status, you’ll see that Git considers it a renamed file:</p>
 
-<p>Jessica, Josie, and John inform the integrators that the <code>featureA</code> and <code>featureBee</code> branches on the server are ready for integration into the mainline. After they integrate these branches into the mainline, a fetch will bring down the new merge commits, making the commit history look like Figure 5-14.</p>
+<pre><code>$ git mv README.txt README
+$ git status
+# On branch master
+# Your branch is ahead of &#39;origin/master&#39; by 1 commit.
+#
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#       renamed:    README.txt -&gt; README
+#</code></pre>
 
-<p><center><img src="/figures/ch5/18333fig0514-tn.png"></center><br/> Figure 5-14. Jessica’s history after merging both her topic branches.</p>
+<p>However, this is equivalent to running something like this:</p>
 
-<p>Many groups switch to Git because of this ability to have multiple teams working in parallel, merging the different lines of work late in the process. The ability of smaller subgroups of a team to collaborate via remote branches without necessarily having to involve or impede the entire team is a huge benefit of Git. The sequence for the workflow you saw here is something like Figure 5-15.</p>
+<pre><code>$ mv README.txt README
+$ git rm README.txt
+$ git add README</code></pre>
 
-<p><center><img src="/figures/ch5/18333fig0515-tn.png"></center><br/> Figure 5-15. Basic sequence of this managed-team workflow.</p>
-
-<h3 id='public_small_project'>Public Small Project</h3>
-
-<p>Contributing to public projects is a bit different. Because you don’t have the permissions to directly update branches on the project, you have to get the work to the maintainers some other way. This first example describes contributing via forking on Git hosts that support easy forking. The repo.or.cz and GitHub hosting sites both support this, and many project maintainers expect this style of contribution. The next section deals with projects that prefer to accept contributed patches via e-mail.</p>
-
-<p>First, you’ll probably want to clone the main repository, create a topic branch for the patch or patch series you’re planning to contribute, and do your work there. The sequence looks basically like this:</p>
-
-<pre><code>$ git clone (url)
-$ cd project
-$ git checkout -b featureA
-$ (work)
-$ git commit
-$ (work)
-$ git commit</code></pre>
-
-<p>You may want to use <code>rebase -i</code> to squash your work down to a single commit, or rearrange the work in the commits to make the patch easier for the maintainer to review — see Chapter 6 for more information about interactive rebasing.</p>
-
-<p>When your branch work is finished and you’re ready to contribute it back to the maintainers, go to the original project page and click the &#8220;Fork&#8221; button, creating your own writable fork of the project. You then need to add in this new repository URL as a second remote, in this case named <code>myfork</code>:</p>
-
-<pre><code>$ git remote add myfork (url)</code></pre>
-
-<p>You need to push your work up to it. It’s easiest to push the remote branch you’re working on up to your repository, rather than merging into your master branch and pushing that up. The reason is that if the work isn’t accepted or is cherry picked, you don’t have to rewind your master branch. If the maintainers merge, rebase, or cherry-pick your work, you’ll eventually get it back via pulling from their repository anyhow:</p>
-
-<pre><code>$ git push myfork featureA</code></pre>
-
-<p>When your work has been pushed up to your fork, you need to notify the maintainer. This is often called a pull request, and you can either generate it via the website — GitHub has a &#8220;pull request&#8221; button that automatically messages the maintainer — or run the <code>git request-pull</code> command and e-mail the output to the project maintainer manually.</p>
-
-<p>The <code>request-pull</code> command takes the base branch into which you want your topic branch pulled and the Git repository URL you want them to pull from, and outputs a summary of all the changes you’re asking to be pulled in. For instance, if Jessica wants to send John a pull request, and she’s done two commits on the topic branch she just pushed up, she can run this:</p>
-
-<pre><code>$ git request-pull origin/master myfork
-The following changes since commit 1edee6b1d61823a2de3b09c160d7080b8d1b3a40:
-  John Smith (1):
-        added a new function
-
-are available in the git repository at:
-
-  git://githost/simplegit.git featureA
-
-Jessica Smith (2):
-      add limit to log function
-      change log output to 30 from 25
-
- lib/simplegit.rb |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)</code></pre>
-
-<p>The output can be sent to the maintainer—it tells them where the work was branched from, summarizes the commits, and tells where to pull this work from.</p>
-
-<p>On a project for which you’re not the maintainer, it’s generally easier to have a branch like <code>master</code> always track <code>origin/master</code> and to do your work in topic branches that you can easily discard if they’re rejected. Having work themes isolated into topic branches also makes it easier for you to rebase your work if the tip of the main repository has moved in the meantime and your commits no longer apply cleanly. For example, if you want to submit a second topic of work to the project, don’t continue working on the topic branch you just pushed up — start over from the main repository’s <code>master</code> branch:</p>
-
-<pre><code>$ git checkout -b featureB origin/master
-$ (work)
-$ git commit
-$ git push myfork featureB
-$ (email maintainer)
-$ git fetch origin</code></pre>
-
-<p>Now, each of your topics is contained within a silo — similar to a patch queue — that you can rewrite, rebase, and modify without the topics interfering or interdepending on each other as in Figure 5-16.</p>
-
-<p><center><img src="/figures/ch5/18333fig0516-tn.png"></center><br/> Figure 5-16. Initial commit history with featureB work.</p>
-
-<p>Let’s say the project maintainer has pulled in a bunch of other patches and tried your first branch, but it no longer cleanly merges. In this case, you can try to rebase that branch on top of <code>origin/master</code>, resolve the conflicts for the maintainer, and then resubmit your changes:</p>
-
-<pre><code>$ git checkout featureA
-$ git rebase origin/master
-$ git push -f myfork featureA</code></pre>
-
-<p>This rewrites your history to now look like Figure 5-17.</p>
-
-<p><center><img src="/figures/ch5/18333fig0517-tn.png"></center><br/> Figure 5-17. Commit history after featureA work.</p>
-
-<p>Because you rebased the branch, you have to specify the <code>-f</code> to your push command in order to be able to replace the <code>featureA</code> branch on the server with a commit that isn’t a descendant of it. An alternative would be to push this new work to a different branch on the server (perhaps called <code>featureAv2</code>).</p>
-
-<p>Let’s look at one more possible scenario: the maintainer has looked at work in your second branch and likes the concept but would like you to change an implementation detail. You’ll also take this opportunity to move the work to be based off the project’s current <code>master</code> branch. You start a new branch based off the current <code>origin/master</code> branch, squash the <code>featureB</code> changes there, resolve any conflicts, make the implementation change, and then push that up as a new branch:</p>
-
-<pre><code>$ git checkout -b featureBv2 origin/master
-$ git merge --no-commit --squash featureB
-$ (change implementation)
-$ git commit
-$ git push myfork featureBv2</code></pre>
-
-<p>The <code>--squash</code> option takes all the work on the merged branch and squashes it into one non-merge commit on top of the branch you’re on. The <code>--no-commit</code> option tells Git not to automatically record a commit. This allows you to introduce all the changes from another branch and then make more changes before recording the new commit.</p>
-
-<p>Now you can send the maintainer a message that you’ve made the requested changes and they can find those changes in your <code>featureBv2</code> branch (see Figure 5-18).</p>
-
-<p><center><img src="/figures/ch5/18333fig0518-tn.png"></center><br/> Figure 5-18. Commit history after featureBv2 work.</p>
-
-<h3 id='public_large_project'>Public Large Project</h3>
-
-<p>Many larger projects have established procedures for accepting patches — you’ll need to check the specific rules for each project, because they will differ. However, many larger public projects accept patches via a developer mailing list, so I’ll go over an example of that now.</p>
-
-<p>The workflow is similar to the previous use case — you create topic branches for each patch series you work on. The difference is how you submit them to the project. Instead of forking the project and pushing to your own writable version, you generate e-mail versions of each commit series and e-mail them to the developer mailing list:</p>
-
-<pre><code>$ git checkout -b topicA
-$ (work)
-$ git commit
-$ (work)
-$ git commit</code></pre>
-
-<p>Now you have two commits that you want to send to the mailing list. You use <code>git format-patch</code> to generate the mbox-formatted files that you can e-mail to the list — it turns each commit into an e-mail message with the first line of the commit message as the subject and the rest of the message plus the patch that the commit introduces as the body. The nice thing about this is that applying a patch from an e-mail generated with <code>format-patch</code> preserves all the commit information properly, as you’ll see more of in the next section when you apply these commits:</p>
-
-<pre><code>$ git format-patch -M origin/master
-0001-add-limit-to-log-function.patch
-0002-changed-log-output-to-30-from-25.patch</code></pre>
-
-<p>The <code>format-patch</code> command prints out the names of the patch files it creates. The <code>-M</code> switch tells Git to look for renames. The files end up looking like this:</p>
-
-<pre><code>$ cat 0001-add-limit-to-log-function.patch 
-From 330090432754092d704da8e76ca5c05c198e71a8 Mon Sep 17 00:00:00 2001
-From: Jessica Smith &lt;jessica@example.com&gt;
-Date: Sun, 6 Apr 2008 10:17:23 -0700
-Subject: [PATCH 1/2] add limit to log function
-
-Limit log functionality to the first 20
-
----
- lib/simplegit.rb |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/lib/simplegit.rb b/lib/simplegit.rb
-index 76f47bc..f9815f1 100644
---- a/lib/simplegit.rb
-+++ b/lib/simplegit.rb
-@@ -14,7 +14,7 @@ class SimpleGit
-   end
-
-   def log(treeish = &#39;master&#39;)
--    command(&quot;git log #{treeish}&quot;)
-+    command(&quot;git log -n 20 #{treeish}&quot;)
-   end
-
-   def ls_tree(treeish = &#39;master&#39;)
--- 
-1.6.2.rc1.20.g8c5b.dirty</code></pre>
-
-<p>You can also edit these patch files to add more information for the e-mail list that you don’t want to show up in the commit message. If you add text between the <code>--</code> line and the beginning of the patch (the <code>lib/simplegit.rb</code> line), then developers can read it; but applying the patch excludes it.</p>
-
-<p>To e-mail this to a mailing list, you can either paste the file into your e-mail program or send it via a command-line program. Pasting the text often causes formatting issues, especially with &#8220;smarter&#8221; clients that don’t preserve newlines and other whitespace appropriately. Luckily, Git provides a tool to help you send properly formatted patches via IMAP, which may be easier for you. I’ll demonstrate how to send a patch via Gmail, which happens to be the e-mail agent I use; you can read detailed instructions for a number of mail programs at the end of the aforementioned <code>Documentation/SubmittingPatches</code> file in the Git source code.</p>
-
-<p>First, you need to set up the imap section in your <code>~/.gitconfig</code> file. You can set each value separately with a series of <code>git config</code> commands, or you can add them manually; but in the end, your config file should look something like this:</p>
-
-<pre><code>[imap]
-  folder = &quot;[Gmail]/Drafts&quot;
-  host = imaps://imap.gmail.com
-  user = user@gmail.com
-  pass = p4ssw0rd
-  port = 993
-  sslverify = false</code></pre>
-
-<p>If your IMAP server doesn’t use SSL, the last two lines probably aren’t necessary, and the host value will be <code>imap://</code> instead of <code>imaps://</code>. When that is set up, you can use <code>git send-email</code> to place the patch series in the Drafts folder of the specified IMAP server:</p>
-
-<pre><code>$ git send-email *.patch
-0001-added-limit-to-log-function.patch
-0002-changed-log-output-to-30-from-25.patch
-Who should the emails appear to be from? [Jessica Smith &lt;jessica@example.com&gt;] 
-Emails will be sent from: Jessica Smith &lt;jessica@example.com&gt;
-Who should the emails be sent to? jessica@example.com
-Message-ID to be used as In-Reply-To for the first email? y</code></pre>
-
-<p>Then, Git spits out a bunch of log information looking something like this for each patch you’re sending:</p>
-
-<pre><code>(mbox) Adding cc: Jessica Smith &lt;jessica@example.com&gt; from 
-  \line &#39;From: Jessica Smith &lt;jessica@example.com&gt;&#39;
-OK. Log says:
-Sendmail: /usr/sbin/sendmail -i jessica@example.com
-From: Jessica Smith &lt;jessica@example.com&gt;
-To: jessica@example.com
-Subject: [PATCH 1/2] added limit to log function
-Date: Sat, 30 May 2009 13:29:15 -0700
-Message-Id: &lt;1243715356-61726-1-git-send-email-jessica@example.com&gt;
-X-Mailer: git-send-email 1.6.2.rc1.20.g8c5b.dirty
-In-Reply-To: &lt;y&gt;
-References: &lt;y&gt;
-
-Result: OK</code></pre>
-
-<p>At this point, you should be able to go to your Drafts folder, change the To field to the mailing list you’re sending the patch to, possibly CC the maintainer or person responsible for that section, and send it off.</p>
-
-<h3 id='summary'>Summary</h3>
-
-<p>This section has covered a number of common workflows for dealing with several very different types of Git projects you’re likely to encounter and introduced a couple of new tools to help you manage this process. Next, you’ll see how to work the other side of the coin: maintaining a Git project. You’ll learn how to be a benevolent dictator or integration manager.</p>
+<p>Git figures out that it’s a rename implicitly, so it doesn’t matter if you rename a file that way or with the <code>mv</code> command. The only real difference is that <code>mv</code> is one command instead of three — it’s a convenience function. More important, you can use any tool you like to rename a file, and address the add/rm later, before you commit.</p>
 
 <div id='nav'>
 <a href='ch5-1.html'>prev</a> | <a href='ch5-3.html'>next</a>

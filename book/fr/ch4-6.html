@@ -1,47 +1,114 @@
 ---
 layout: translation
-title: Pro Git 4.6 Git sur le serveur GitWeb
+title: Pro Git 4.6 Les branches avec Git Rebaser
 ---
-<h2 id='gitweb'>GitWeb</h2>
+<h2 id='rebaser'>Rebaser</h2>
 
-<p>Après avoir réglé les accès de base en lecture/écriture et en lecture seule pour vos projets, vous souhaiterez peut-être mettre en place une interface web simple de visualisation. Git fournit un script CGI appelé GitWeb qui est souvent utilisé à cette fin. Vous pouvez voir GitWeb en action sur des sites tels que <code>http://git.kernel.org</code> (voir figure 4-1).</p>
+<p>Dans Git, il y a deux façons d&#8217;intégrer les modifications d&#8217;une branche dans une autre : en fusionnant <code>merge</code> et en rebasant <code>rebase</code>. Dans ce chapitre, vous apprendrez la signification de rebaser, comment le faire, pourquoi c&#8217;est un outil plutôt ébouriffant et dans quels cas il est déconseillé de l&#8217;utiliser.</p>
 
-<p><center><img src="/figures/ch4/18333fig0401-tn.png"></center><br/> Figure 4-1. L&#8217;interface web de visualisation GitWeb</p>
+<h3 id='les_bases'>Les bases</h3>
 
-<p>Si vous souhaitez vérifier à quoi GitWeb ressemblerait pour votre projet, Git fournit une commande pour démarrer une instance temporaire de serveur si vous avez un serveur léger tel que <code>lighttpd</code> ou <code>webrick</code> sur votre système. Sur les machines Linux, <code>lighttpd</code> est souvent pré-installé et vous devriez pouvoir le démarrer en tapant <code>git instaweb</code> dans votre répertoire de travail. Si vous utilisez un Mac, Ruby est installé de base avec Léopard, donc <code>webrick</code> est une meilleure option. Pour démarrer <code>instaweb</code> avec un gestionnaire autre que lighttpd, vous pouvez le lancer avec l&#8217;option <code>--httpd</code>.</p>
+<p>Si vous revenez à un exemple précédent du chapitre sur la fusion (voir la figure 3-27), vous remarquerez que votre travail a divergé et que vous avez ajouté des <em>commits</em> sur deux branches différentes.</p>
 
-<pre><code>$ git instaweb --httpd=webrick
-[2009-02-21 10:02:21] INFO  WEBrick 1.3.1
-[2009-02-21 10:02:21] INFO  ruby 1.8.6 (2008-03-03) [universal-darwin9.0]</code></pre>
+<p><center><img src="/figures/ch4/18333fig0327-tn.png"></center><br/> Figure 3-27. Votre historique divergent initial.</p>
 
-<p>Cette commande démarre un serveur HTTP sur le port 1234 et lance automatique un navigateur internet qui ouvre la page d&#8217;accueil. C&#8217;est vraiment très simple. Pour arrêter le serveur, il suffit de lancer la même commande, mais avec l&#8217;option <code>--stop</code> :</p>
+<p>Comme nous l&#8217;avons déjà expliqué, le moyen le plus simple pour intégrer ensemble ces branches est la fusion via la commande <code>merge</code>. Cette commande réalise une fusion à trois branches entre les deux derniers instantanés de chaque branche (C3 et C4) et l&#8217;ancêtre commun le plus récent (C2), créant un nouvel instantané (et un <em>commit</em>), comme montré par la figure 3-28.</p>
 
-<pre><code>$ git instaweb --httpd=webrick --stop</code></pre>
+<p><center><img src="/figures/ch4/18333fig0328-tn.png"></center><br/> Figure 3-28. Fusion d&#8217;une branche pour intégrer les historiques divergents.</p>
 
-<p>Si vous souhaitez fournir l&#8217;interface web en permanence sur le serveur pour votre équipe ou pour un projet opensource que vous hébergez, il sera nécessaire d&#8217;installer le script CGI pour qu&#8217;il soit appelé par votre serveur web. Quelques distributions Linux ont un package <code>gitweb</code> qu&#8217;il suffira d&#8217;installer via <code>apt</code> ou <code>yum</code>, ce qui est une possibilité. Nous détaillerons tout de même rapidement l&#8217;installation manuelle de GitWeb. Premièrement, le code source de Git qui fournit GitWeb est nécessaire pour pouvoir générer un script CGI personnalisé :</p>
+<p>Cependant, il existe un autre moyen : vous pouvez prendre le patch de la modification introduite en C3 et le réappliquer sur C4. Dans Git, cette action est appelée <em>rebaser</em>. Avec la commande <code>rebase</code>, vous prenez toutes les modifications qui ont été validées sur une branche et vous les rejouez sur une autre.</p>
 
-<pre><code>$ git clone git://git.kernel.org/pub/scm/git/git.git
-$ cd git/
-$ make GITWEB_PROJECTROOT=&quot;/opt/git&quot; \
-        prefix=/usr gitweb/gitweb.cgi
-$ sudo cp -Rf gitweb /var/www/</code></pre>
+<p>Dans cet exemple, vous lanceriez les commandes suivantes :</p>
 
-<p>Notez que vous devez indiquer où trouver les dépôts Git au moyen de la variable <code>GITWEB_PROJECTROOT</code>. Maintenant, il faut paramétrer dans Apache l&#8217;utilisation de CGI pour ce script, en spécifiant un nouveau VirtualHost :</p>
+<pre><code>$ git checkout experience
+$ git rebase master
+First, rewinding head to replay your work on top of it...
+Applying: added staged command</code></pre>
 
-<pre><code>&lt;VirtualHost *:80&gt;
-    ServerName gitserveur
-    DocumentRoot /var/www/gitweb
-    &lt;Directory /var/www/gitweb&gt;
-        Options ExecCGI +FollowSymLinks +SymLinksIfOwnerMatch
-        AllowOverride All
-        order allow,deny
-        Allow from all
-        AddHandler cgi-script cgi
-        DirectoryIndex gitweb.cgi
-    &lt;/Directory&gt;
-&lt;/VirtualHost&gt;</code></pre>
+<p>Cela fonctionne en cherchant l&#8217;ancêtre commun le plus récent des deux branches (celle sur laquelle vous vous trouvez et celle sur laquelle vous rebasez), en récupérant toutes les différences introduites entre chaque validation de la branche sur laquelle vous êtes, en les sauvant dans des fichiers temporaires, en basculant sur la branche destination et en réappliquant chaque modification dans le même ordre. La figure 3-29 illustre ce processus.</p>
 
-<p>Une fois de plus, GitWeb peut être géré par tout serveur Web capable de prendre en charge CGI. La mise en place ne devrait pas être plus difficile avec un autre serveur. Après redémarrage du serveur, vous devriez être capable de visiter <code>http://gitserveur/</code> pour visualiser vos dépôts en ligne et de cloner et tirer depuis ces dépôts par HTTP sur <code>http://git.gitserveur</code>.</p>
+<p><center><img src="/figures/ch4/18333fig0329-tn.png"></center><br/> Figure 3-29. Rebaser les modifications introduites par C3 sur C4.</p>
+
+<p>À ce moment, vous pouvez retourner sur la branche <code>master</code> et réaliser une fusion en avance rapide (voir figure 3-30).</p>
+
+<p><center><img src="/figures/ch4/18333fig0330-tn.png"></center><br/> Figure 3-30. Avance rapide sur la branche <code>master</code>.</p>
+
+<p>À présent, l&#8217;instantané pointé par C3&#8217; est exactement le même que celui pointé par C5 dans l&#8217;exemple de fusion. Il n&#8217;y a pas de différence entre les résultats des deux types d&#8217;intégration, mais rebaser rend l&#8217;historique plus clair. Si vous examinez le journal de la branche rebasée, elle est devenue linéaire : toutes les modifications apparaissent en série même si elles ont eu lieu en parallèle.</p>
+
+<p>Vous aurez souvent à rebaser pour vous assurer que les patchs que vous envoyez s&#8217;appliquent correctement sur une branche distante — par exemple, sur un projet où vous souhaitez contribuer mais que vous ne maintenez pas. Dans ce cas, vous réaliseriez votre travail dans une branche puis vous rebaseriez votre travail sur <code>origin/master</code> quand vous êtes prêt à soumettre vos patchs au projet principal. De cette manière, le mainteneur n&#8217;a pas à réaliser de travail d&#8217;intégration — juste une avance rapide ou simplement une application propre.</p>
+
+<p>Il faut noter que l&#8217;instantané pointé par le <em>commit</em> final, qu&#8217;il soit le dernier des <em>commits</em> d&#8217;une opération de rebase ou le <em>commit</em> final issu d&#8217;une fusion, sont en fait le même instantané — c&#8217;est juste que l&#8217;historique est différent. Rebaser rejoue les modifications d&#8217;une ligne de <em>commits</em> sur une autre dans l&#8217;ordre d&#8217;apparition, alors que la fusion joint et fusionne les deux têtes.</p>
+
+<h3 id='rebasages_plus_intressants'>Rebasages plus intéressants</h3>
+
+<p>Vous pouvez aussi faire rejouer votre rebasage sur autre chose qu&#8217;une branche. Prenez l&#8217;historique de la figure 3-31 par exemple. Vous avez créé une branche pour un sujet spécifique (<code>serveur</code>) pour ajouter des fonctionnalités côté serveur à votre projet et avez réalisé un <em>commit</em>. Ensuite, vous avez créé une branche pour ajouter des modifications côté client (<code>client</code>) et avez validé plusieurs fois. Finalement, vous avez rebasculé sur la branche <code>serveur</code> et avez réalisé quelques <em>commits</em> supplémentaires.</p>
+
+<p><center><img src="/figures/ch4/18333fig0331-tn.png"></center><br/> Figure 3-31. Un historique avec une branche qui sort d&#8217;une autre branche thématique.</p>
+
+<p>Supposons que vous décidez que vous souhaitez fusionner vos modifications pour le côté client dans votre ligne principale pour une publication mais vous souhaitez retenir les modifications pour la partie serveur jusqu&#8217;à ce qu&#8217;elles soient un peu plus testées. Vous pouvez récupérer les modifications pour le côté client qui ne sont pas sur le serveur (C8 et C9) et les rejouer sur la branche <code>master</code> en utilisant l&#8217;option <code>--onto</code> de <code>git rebase</code> :</p>
+
+<pre><code>$ git rebase --onto master serveur client</code></pre>
+
+<p>Cela signifie en essence « Extrait la branche client, détermine les patchs depuis l&#8217;ancêtre commun des branches <code>client</code> et <code>serveur</code> puis rejoue les sur <code>master</code> ». C&#8217;est assez complexe, mais le résultat visible sur la figure 3-32 est assez impressionnant.</p>
+
+<p><center><img src="/figures/ch4/18333fig0332-tn.png"></center><br/> Figure 3-32. Rebaser une branche thématique sur une autre branche.</p>
+
+<p>Maintenant, vous pouvez faire une avance rapide sur votre branche <code>master</code> (voir figure 3-33) :</p>
+
+<pre><code>$ git checkout master
+$ git merge client</code></pre>
+
+<p><center><img src="/figures/ch4/18333fig0333-tn.png"></center><br/> Figure 3-33. Avance rapide sur votre branche <code>master</code> pour inclure les modifications de la branche client.</p>
+
+<p>Supposons que vous décidiez de tirer votre branche <code>serveur</code> aussi. Vous pouvez rebaser la branche <code>serveur</code> sur la branche <code>master</code> sans avoir à l&#8217;extraire avant en utilisant <code>git rebase [branchedebase] [branchedesujet]</code> — qui extrait la branche thématique (dans notre cas, <code>serveur</code>) pour vous et la rejoue sur la branche de base (<code>master</code>) :</p>
+
+<pre><code>$ git rebase master serveur</code></pre>
+
+<p>Cette commande rejoue les modifications de <code>serveur</code> sur le sommet de la branche <code>master</code>, comme indiqué dans la figure 3-34.</p>
+
+<p><center><img src="/figures/ch4/18333fig0334-tn.png"></center><br/> Figure 3-34. Rebaser la branche serveur sur le sommet de la branche <code>master</code>.</p>
+
+<p>Ensuite, vous pouvez faire une avance rapide sur la branche de base (<code>master</code>) :</p>
+
+<pre><code>$ git checkout master
+$ git merge serveur</code></pre>
+
+<p>Vous pouvez effacer les branches <code>client</code> et <code>serveur</code> une fois que tout le travail est intégré et que vous n&#8217;en avez plus besoin, éliminant tout l&#8217;historique de ce processus, comme visible sur la figure 3-35 :</p>
+
+<pre><code>$ git branch -d client
+$ git branch -d serveur</code></pre>
+
+<p><center><img src="/figures/ch4/18333fig0335-tn.png"></center><br/> Figure 3-35. L&#8217;historique final des <em>commits</em>.</p>
+
+<h3 id='les_dangers_de_rebaser'>Les dangers de rebaser</h3>
+
+<p>Ah&#8230; mais les joies de rebaser ne viennent pas sans leurs contreparties, qui peuvent être résumées en une ligne :</p>
+
+<p><strong>Ne rebasez jamais des <em>commits</em> qui ont déjà été poussés sur un dépôt public.</strong></p>
+
+<p>Si vous suivez ce conseil, tout ira bien. Sinon, de nombreuses personnes vont vous haïr et vous serez méprisé par vos amis et votre famille.</p>
+
+<p>Quand vous rebasez des données, vous abandonnez les <em>commits</em> existants et vous en créez de nouveaux qui sont similaires mais différents. Si vous poussez des <em>commits</em> quelque part, que d&#8217;autres les tirent et se basent dessus pour travailler, et qu&#8217;après coup, vous réécrivez ces <em>commits</em> à l&#8217;aide de <code>git rebase</code> et les poussez à nouveau, vos collaborateurs devront re-fusionner leur travail et les choses peuvent rapidement devenir très désordonnées quand vous essaierez de tirer leur travail dans votre dépôt.</p>
+
+<p>Examinons un exemple expliquant comment rebaser un travail déjà publié sur un dépôt public peut générer des gros problèmes. Supposons que vous clonez un dépôt depuis un serveur central et réalisez quelques travaux dessus. Votre historique de <em>commits</em> ressemble à la figure 3-36.</p>
+
+<p><center><img src="/figures/ch4/18333fig0336-tn.png"></center><br/> Figure 3-36. Cloner un dépôt et baser du travail dessus.</p>
+
+<p>À présent, une autre personne travaille et inclut une fusion, puis elle pousse ce travail sur le serveur central. Vous le récupérez et vous fusionnez la nouvelle branche distante dans votre copie, ce qui donne l&#8217;historique de la figure 3-37.</p>
+
+<p><center><img src="/figures/ch4/18333fig0337-tn.png"></center><br/> Figure 3-37. Récupération de <em>commits</em> et fusion dans votre copie.</p>
+
+<p>Ensuite, la personne qui a poussé le travail que vous venez de fusionner décide de faire marche arrière et de rebaser son travail. Elle lance un <code>git push --force</code> pour forcer l&#8217;écrasement de l&#8217;historique sur le serveur. Vous récupérez alors les données du serveur, qui vous amènent les nouveaux <em>commits</em>.</p>
+
+<p><center><img src="/figures/ch4/18333fig0338-tn.png"></center><br/> Figure 3-38. Quelqu&#8217;un pousse des <em>commits</em> rebasés, en abandonnant les <em>commits</em> sur lesquels vous avez fondé votre travail.</p>
+
+<p>À ce moment, vous devez fusionner son travail une nouvelle fois, même si vous l&#8217;avez déjà fait. Rebaser change les empreintes SHA-1 de ces <em>commits</em>, ce qui les rend nouveaux aux yeux de Git, alors qu&#8217;en fait, vous avez déjà le travail de C4 dans votre historique (voir figure 3-39).</p>
+
+<p><center><img src="/figures/ch4/18333fig0339-tn.png"></center><br/> Figure 3-39. Vous fusionnez le même travail une nouvelle fois dans un nouveau <em>commit</em> de fusion.</p>
+
+<p>Vous devez fusionner ce travail pour pouvoir continuer à suivre ce développeur dans le futur. Après fusion, votre historique contient à la fois les <em>commits</em> C4 et C4&#8217;, qui ont des empreintes SHA-1 différentes mais introduisent les même modifications et ont les mêmes messages de validation. Si vous lancez <code>git log</code> lorsque votre historique ressemble à ceci, vous verrez deux <em>commits</em> qui ont la même date d&#8217;auteur et les mêmes messages, ce qui est déroutant. De plus, si vous poussez cet historique sur le serveur, vous réintroduirez tous ces <em>commits</em> rebasés sur le serveur central, ce qui va encore plus dérouter les autres développeurs.</p>
+
+<p>Si vous considérez le fait de rebaser comme un moyen de nettoyer et réarranger des <em>commits</em> avant de les pousser et si vous vous en tenez à ne rebaser que des <em>commits</em> qui n&#8217;ont jamais été publiés, tout ira bien. Si vous tentez de rebaser des <em>commits</em> déjà publiés sur lesquels les gens ont déjà basé leur travail, vous allez au devant de gros problèmes énervants.</p>
 
 <div id='nav'>
 <a href='ch4-5.html'>prev</a> | <a href='ch4-7.html'>next</a>

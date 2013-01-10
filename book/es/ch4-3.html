@@ -1,41 +1,45 @@
 ---
 layout: translation
-title: Pro Git 4.3 Git en un servidor Generando tu clave pública SSH
+title: Pro Git 4.3 Ramificaciones en Git Gestión de ramificaciones
 ---
-<h2 id='generando_tu_clave_pblica_ssh'>Generando tu clave pública SSH</h2>
+<h2 id='gestin_de_ramificaciones'>Gestión de ramificaciones</h2>
 
-<p>Tal y como se ha comentado, muchos servidores Git utilizan la autentificación a través de claves públicas SSH. Y, para ello, cada usuario del sistema ha de generarse una, si es que no la tiene ya. El proceso para hacerlo es similar en casi cualquier sistema operativo. Ante todo, asegurarte que no tengas ya una clave. Por defecto, las claves de cualquier usuario SSH se guardan en la carpeta <code>~/.ssh</code> de dicho usuario. Puedes verificar si tienes ya unas claves, simplemente situandote sobre dicha carpeta y viendo su contenido:</p>
+<p>Ahora que ya has creado, fusionado y borrado algunas ramas, vamos a dar un vistazo a algunas herramientas de gestión muy útiles cuando comienzas a utilizar ramas profusamente.</p>
 
-<pre><code>$ cd ~/.ssh
-$ ls
-authorized_keys2  id_dsa       known_hosts
-config            id_dsa.pub</code></pre>
+<p>El comando &#8216;git branch&#8217; tiene más funciones que las de crear y borrar ramas. Si lo lanzas sin argumentos, obtienes una lista de las ramas presentes en tu proyecto:</p>
 
-<p>Has de buscar un par de archivos con nombres tales como &#8216;algo&#8217; y &#8216;algo.pub&#8217;; siendo ese &#8220;algo&#8221; normalmente &#8216;id_dsa&#8217; o &#8216;id_rsa&#8217;. El archivo terminado en &#8216;.pub&#8217; es tu clave pública, y el otro archivo es tu clave privada. Si no tienes esos archivos (o no tienes ni siquiera la carpeta &#8216;.ssh&#8217;), has de crearlos; utilizando un programa llamado &#8216;ssh-keygen&#8217;, que viene incluido en el paquete SSH de los sistemas Linux/Mac o en el paquete MSysGit en los sistemas Windows:</p>
+<pre><code>$ git branch
+  iss53
+* master
+  testing</code></pre>
 
-<pre><code>$ ssh-keygen 
-Generating public/private rsa key pair.
-Enter file in which to save the key (/Users/schacon/.ssh/id_rsa): 
-Enter passphrase (empty for no passphrase): 
-Enter same passphrase again: 
-Your identification has been saved in /Users/schacon/.ssh/id_rsa.
-Your public key has been saved in /Users/schacon/.ssh/id_rsa.pub.
-The key fingerprint is:
-43:c5:5b:5f:b1:f1:50:43:ad:20:a6:92:6a:1f:9a:3a schacon@agadorlaptop.local</code></pre>
+<p>Fijate en el carácter <code>*</code> delante de la rama &#8216;master&#8217;: nos indica la rama activa en este momento. Si hacemos una confirmación de cambios (commit), esa será la rama que avance. Para ver la última confirmación de cambios en cada rama, puedes usar el comando &#8216;git branch -v&#8217;:</p>
 
-<p>Como se vé, este comando primero solicita confirmación de dónde van a a guardarse las claves (&#8216;.ssh/id_rsa&#8217;), y luego solicita, dos veces, una contraseña (passphrase), contraseña que puedes dejar en blanco si no deseas tener que teclearla cada vez que uses la clave.</p>
+<pre><code>$ git branch -v
+  iss53   93b412c fix javascript issue
+* master  7a98805 Merge branch &#39;iss53&#39;
+  testing 782fd34 add scott to the author list in the readmes</code></pre>
 
-<p>Tras generarla, cada usuario ha de encargarse de enviar su clave pública a quienquiera que administre el servidor Git (en el caso de que este esté configurado con SSH y así lo requiera). Esto se puede realizar simplemente copiando los contenidos del archivo terminado en &#8216;.pub&#8217; y enviandoselos por correo electrónico. La clave pública será una serie de números, letras y signos, algo así como esto:</p>
+<p>Otra opción útil para averiguar el estado de las ramas, es filtrarlas y mostrar solo aquellas que han sido fusionadas (o que no lo han sido) con la rama actualmente activa. Para ello, Git dispone, desde la versión 1.5.6, las opciones &#8217;&#8211;merged&#8217; y &#8217;&#8211;no-merged&#8217;. Si deseas ver las ramas que han sido fusionadas en la rama activa, puedes lanzar el comando &#8216;git branch &#8211;merged&#8217;:</p>
 
-<pre><code>$ cat ~/.ssh/id_rsa.pub 
-ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAklOUpkDHrfHY17SbrmTIpNLTGK9Tjom/BWDSU
-GPl+nafzlHDTYW7hdI4yZ5ew18JH4JW9jbhUFrviQzM7xlELEVf4h9lFX5QVkbPppSwg0cda3
-Pbv7kOdJ/MTyBlWXFCR+HAo3FXRitBqxiX1nKhXpHAZsMciLq8V6RjsNAQwdsdMFvSlVK/7XA
-t3FaoJoAsncM1Q9x5+3V0Ww68/eIFmb1zuUFljQJKprrX88XypNDvjYNby6vw/Pb0rwert/En
-mZ+AW4OZPnTPI89ZPmVMLuayrD2cE86Z/il8b+gw3r3+1nKatmIkjn2so1d01QraTlMqVSsbx
-NrRFi9wrf+M7Q== schacon@agadorlaptop.local</code></pre>
+<pre><code>$ git branch --merged
+  iss53
+* master</code></pre>
 
-<p>Para más detalles sobre cómo crear unas claves SSH en variados sistemas operativos, consultar la correspondiente guia en GitHub: <code>http://github.com/guides/providing-your-ssh-key</code>.</p>
+<p>Aparece la rama &#8216;iss53&#8217; porque ya ha sido fusionada. Y no lleva por delante el caracter <code>*</code> porque todo su contenido ya ha sido incorporado a otras ramas. Podemos borrarla tranquilamente con &#8216;git branch -d&#8217;, sin miedo a perder nada.</p>
+
+<p>Para mostrar todas las ramas que contienen trabajos sin fusionar aún, puedes utilizar el comando &#8216;git branch &#8211;no-merged&#8217;:</p>
+
+<pre><code>$ git branch --no-merged
+  testing</code></pre>
+
+<p>Esto nos muestra la otra rama en el proyecto. Debido a que contiene trabajos sin fusionar aún, al intentarla borrar con &#8216;git branch -d&#8217;, el comando nos dará un error:</p>
+
+<pre><code>$ git branch -d testing
+error: The branch &#39;testing&#39; is not an ancestor of your current HEAD.
+If you are sure you want to delete it, run &#39;git branch -D testing&#39;.</code></pre>
+
+<p>Si realmente deseas borrar la rama, y perder el trabajo contenido en ella, puedes forzar el borrado con la opción &#8216;-D&#8217;; tal y como lo indica el mensaje de ayuda.</p>
 
 <div id='nav'>
 <a href='ch4-2.html'>prev</a> | <a href='ch4-4.html'>next</a>

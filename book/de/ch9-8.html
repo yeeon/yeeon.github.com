@@ -1,148 +1,97 @@
 ---
 layout: translation
-title: Pro Git 9.8 Git Internals xxx
+title: Pro Git 9.8 Git on the Server Einrichten des Servers
 ---
-<h2 id='xxx'>xxx</h2>
+<h2 id='einrichten_des_servers'>Einrichten des Servers</h2>
 
-<p>Let’s go back to the objects database for your test Git repository. At this point, you have 11 objects — 4 blobs, 3 trees, 3 commits, and 1 tag:</p>
+<p>Let’s walk through setting up SSH access on the server side. In this example, you’ll use the <code>authorized_keys</code> method for authenticating your users. We also assume you’re running a standard Linux distribution like Ubuntu. First, you create a &#8216;git&#8217; user and a <code>.ssh</code> directory for that user.</p>
 
-<p>Kommen wir noch einmal auf die Objekt Datenbank zurück, die du für dein Test Git Repository angelegt hast. Im Moment müßtest du 11 Objekte haben: 4 Blobs, 3 Trees, 3 Commits und 1 Tag:</p>
+<p>Nun kommen wir zur Einrichtung des SSH-Zugangs auf der Server-Seite. In diesem Beispiel verwendest du die <code>authorized_keys</code>-Methode zur Authentifizierung der Benutzer. Wir nehmen auch an, dass du eine gebräuchliche Linux-Distribution wie Ubuntu verwendest. Zuerst erstellst du den Benutzer &#8216;git&#8217; und ein <code>.ssh</code>-Verzeichnis für diesen Benutzer.</p>
 
-<pre><code>$ find .git/objects -type f
-.git/objects/01/55eb4229851634a0f03eb265b69f5a2d56f341 # tree 2
-.git/objects/1a/410efbd13591db07496601ebc7a059dd55cfe9 # commit 3
-.git/objects/1f/7a7a472abf3dd9643fd615f6da379c4acb3e3a # test.txt v2
-.git/objects/3c/4e9cd789d88d8d89c1073707c3585e41b0e614 # tree 3
-.git/objects/83/baae61804e65cc73a7201a7252750c76066a30 # test.txt v1
-.git/objects/95/85191f37f7b0fb9444f35a9bf50de191beadc2 # tag
-.git/objects/ca/c0cab538b970a37ea1e769cbbde608743bc96d # commit 2
-.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4 # &#39;test content&#39;
-.git/objects/d8/329fc1cc938780ffdd9f94e0d364e0ea74f579 # tree 1
-.git/objects/fa/49b077972391ad58037050f2a75f74e3671e92 # new.txt
-.git/objects/fd/f4fc3344e67ab068f836878b6c4951e3b15f3d # commit 1</code></pre>
+<pre><code>$ sudo adduser git
+$ su git
+$ cd
+$ mkdir .ssh</code></pre>
 
-<p>Git compresses the contents of these files with zlib, and you’re not storing much, so all these files collectively take up only 925 bytes. You’ll add some larger content to the repository to demonstrate an interesting feature of Git. Add the repo.rb file from the Grit library you worked with earlier — this is about a 12K source code file:</p>
+<p>Next, you need to add some developer SSH public keys to the <code>authorized_keys</code> file for that user. Let’s assume you’ve received a few keys by e-mail and saved them to temporary files. Again, the public keys look something like this:</p>
 
-<p>Git komprimiert die Inhalte dieser Dateien mit zlib und du hast nicht sonderlich viele davon, so daß die Gesamtgröße der Dateien gerade mal 925 Bytes beträgt. Wir wollen ein anderes interessantes Feature von Git demonstrieren, und dazu müssen wir eine größere Datei hinzufügen, z.B. die <code>repo.rb</code> Datei aus dem Grit Repository, das du schon verwendet hast. Diese Datei ist eine etwa 12K große Quellcode Datei:</p>
+<p>Als nächstes ist es nötig, einige öffentliche SSH-Schlüssel der Entwickler zu der <code>authorized_keys</code>-Datei des Benutzers hinzuzufügen. Nehmen wir an, dass du ein paar Schlüssel per E-Mail empfangen hast und diese in temporären Dateien gespeichert hast. Die öffentlichen Schlüssel sehen wieder etwa wie folgt aus:</p>
 
-<pre><code>$ curl http://github.com/mojombo/grit/raw/master/lib/grit/repo.rb &gt; repo.rb
-$ git add repo.rb 
-$ git commit -m &#39;added repo.rb&#39;
-[master 484a592] added repo.rb
- 3 files changed, 459 insertions(+), 2 deletions(-)
- delete mode 100644 bak/test.txt
- create mode 100644 repo.rb
- rewrite test.txt (100%)</code></pre>
+<pre><code>$ cat /tmp/id_rsa.john.pub
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCB007n/ww+ouN4gSLKssMxXnBOvf9LGt4L
+ojG6rs6hPB09j9R/T17/x4lhJA0F3FR1rP6kYBRsWj2aThGw6HXLm9/5zytK6Ztg3RPKK+4k
+Yjh6541NYsnEAZuXz0jTTyAUfrtU3Z5E003C4oxOj6H0rfIF1kKI9MAQLMdpGW1GYEIgS9Ez
+Sdfd8AcCIicTDWbqLAcU4UpkaX8KyGlLwsNuuGztobF8m72ALC/nLF6JLtPofwFBlgc+myiv
+O7TCUSBdLQlgMVOFq1I2uPWQOkOWQAHukEOmfjy2jctxSDBQ220ymjaNsHT4kgtZg2AYYgPq
+dAv8JggJICUvax2T9va5 gsg-keypair</code></pre>
 
-<p>If you look at the resulting tree, you can see the SHA-1 value your repo.rb file got for the blob object:</p>
+<p>You just append them to your <code>authorized_keys</code> file:</p>
 
-<p>Wenn du dir den resultierenden Tree anschaust, findest du den SHA-1 Hash, den die Datei <code>repo.rb</code> für das Blob Objekt erhalten hat:</p>
+<p>Du hängst sie einfach an deine <code>authorized_keys</code>-Datei an:</p>
 
-<pre><code>$ git cat-file -p master^{tree}
-100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
-100644 blob 9bc1dc421dcd51b4ac296e3e5b6e2a99cf44391e      repo.rb
-100644 blob e3f094f522629ae358806b17daf78246c27c007b      test.txt</code></pre>
+<pre><code>$ cat /tmp/id_rsa.john.pub &gt;&gt; ~/.ssh/authorized_keys
+$ cat /tmp/id_rsa.josie.pub &gt;&gt; ~/.ssh/authorized_keys
+$ cat /tmp/id_rsa.jessica.pub &gt;&gt; ~/.ssh/authorized_keys</code></pre>
 
-<p>You can then use <code>git cat-file</code> to see how big that object is:</p>
+<p>Now, you can set up an empty repository for them by running <code>git init</code> with the <code>--bare</code> option, which initializes the repository without a working directory:</p>
 
-<p>Jetzt kannst du mit <code>git cat-file</code> sehen, wie groß das Objekt ist:</p>
+<p>Jetzt kannst du einen leeren Ordner für sie anlegen, indem du den Befehl <code>git init</code> mit der Option <code>--bare</code> ausführst. Damit wird ein Repository ohne ein Arbeitsverzeichnis erzeugt.</p>
 
-<pre><code>$ git cat-file -s 9bc1dc421dcd51b4ac296e3e5b6e2a99cf44391e
-12898</code></pre>
+<pre><code>$ cd /opt/git
+$ mkdir project.git
+$ cd project.git
+$ git --bare init</code></pre>
 
-<p>Now, modify that file a little, and see what happens:</p>
+<p>Then, John, Josie, or Jessica can push the first version of their project into that repository by adding it as a remote and pushing up a branch. Note that someone must shell onto the machine and create a bare repository every time you want to add a project. Let’s use <code>gitserver</code> as the hostname of the server on which you’ve set up your &#8216;git&#8217; user and repository. If you’re running it internally, and you set up DNS for <code>gitserver</code> to point to that server, then you can use the commands pretty much as is:</p>
 
-<p>Als nächste ändern wir die Datei ein bißchen, um zu sehen, was passiert:</p>
+<p>Dann können John, Josie oder Jessica die erste Version ihres Projektes in das Repository hochladen, indem sie es als externes Repository hinzufügen und einen Branch hochladen. Beachte, dass sich bei jeder Projekterstellung jemand mit der Maschine auf eine Shell verbinden muss, um ein einfaches Repository zu erzeugen. Lass uns <code>gitserver</code> als Hostnamen des Servers verwenden, auf dem du den Benutzer &#8216;git&#8217; und das Repository eingerichtet hast. Wenn du den Server intern betreibst und das DNS so eingerichtet hast, dass <code>gitserver</code> auf den Server zeigt, dann kannst du die Befehle ziemlich wie hier benutzen:</p>
 
-<pre><code>$ echo &#39;# testing&#39; &gt;&gt; repo.rb 
-$ git commit -am &#39;modified repo a bit&#39;
-[master ab1afef] modified repo a bit
- 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
+<pre><code># on Johns computer
+$ cd myproject
+$ git init
+$ git add .
+$ git commit -m &#39;initial commit&#39;
+$ git remote add origin git@gitserver:/opt/git/project.git
+$ git push origin master</code></pre>
 
-<p>Check the tree created by that commit, and you see something interesting:</p>
+<p>At this point, the others can clone it down and push changes back up just as easily:</p>
 
-<p>Wenn du jetzt den Tree anschaust, der durch den Commit angelegt wurde, findest du etwas Interessantes:</p>
+<p>An diesem Punkt können die anderen das Repository klonen und Änderungen ebenso leicht hochladen:</p>
 
-<pre><code>$ git cat-file -p master^{tree}
-100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
-100644 blob 05408d195263d853f09dca71d55116663690c27c      repo.rb
-100644 blob e3f094f522629ae358806b17daf78246c27c007b      test.txt</code></pre>
+<pre><code>$ git clone git@gitserver:/opt/git/project.git
+$ vim README
+$ git commit -am &#39;fix for the README file&#39;
+$ git push origin master</code></pre>
 
-<p>The blob is now a different blob, which means that although you added only a single line to the end of a 400-line file, Git stored that new content as a completely new object:</p>
+<p>With this method, you can quickly get a read/write Git server up and running for a handful of developers.</p>
 
-<p>Das Blob ist ein anderes, d.h. obwohl du lediglich eine einzige Zeile an das Ende einer 400 Zeilen langen Datei angehängt hast, speichert Git den Inhalt jetzt als ein ganz neues Objekt:</p>
+<p>Mit dieser Methode kannst du schnell für eine Handvoll Entwickler einen Lese/Schreib Git-Server zum Laufen bekommen.</p>
 
-<pre><code>$ git cat-file -s 05408d195263d853f09dca71d55116663690c27c
-12908</code></pre>
+<p>As an extra precaution, you can easily restrict the &#8216;git&#8217; user to only doing Git activities with a limited shell tool called <code>git-shell</code> that comes with Git. If you set this as your &#8216;git&#8217; user’s login shell, then the &#8216;git&#8217; user can’t have normal shell access to your server. To use this, specify <code>git-shell</code> instead of bash or csh for your user’s login shell. To do so, you’ll likely have to edit your <code>/etc/passwd</code> file:</p>
 
-<p>You have two nearly identical 12K objects on your disk. Wouldn’t it be nice if Git could store one of them in full but then the second object only as the delta between it and the first?</p>
+<p>Als zusätzliche Vorsichtsmaßnahme kannst du den Benutzer &#8216;git&#8217; so beschränken, dass er nur Git-Aktivitäten mit einem limitierten Shell-Tool namens <code>git-shell</code> ausführen kann, dass mit Git kommt. Wenn du das als Login-Shell des &#8216;git&#8217;-Benutzers einrichtest, dann hat der Benutzer &#8216;git&#8217; keinen normalen Shell-Zugriff auf den Server. Zur Benutzung bestimme <code>git-shell</code> anstatt von bash oder csh als Login-Shell deines Benutzers. Um das zu tun wirst du wahrscheinlich deine <code>/etc/passwd</code> editieren:</p>
 
-<p>Du hast jetzt zwei fast identische 12K große Objekte auf deiner Festplatte. Wäre es nicht besser, wenn Git nur das erste vollständig und das zweite lediglich als ein Delta zwischen dem ersten und dem zweiten speichern würde?</p>
+<pre><code>$ sudo vim /etc/passwd</code></pre>
 
-<p>It turns out that it can. The initial format in which Git saves objects on disk is called a loose object format. However, occasionally Git packs up several of these objects into a single binary file called a packfile in order to save space and be more efficient. Git does this if you have too many loose objects around, if you run the <code>git gc</code> command manually, or if you push to a remote server. To see what happens, you can manually ask Git to pack up the objects by calling the <code>git gc</code> command:</p>
+<p>At the bottom, you should find a line that looks something like this:</p>
 
-<p>Tatsächlich kann Git das. Das ursprüngliche Format, in dem Git Objekte in der Datenbank speichert wird als &#8220;freies Objekt Format&#8221; (&#8220;loose object format&#8221;) bezeichnet. Hin und wieder packt Git allerdings eine Reihe solcher Objekte in eine einzige binäre Datei zusammen, um Platz zu sparen und effizienter zu arbeiten. Eine solche Datei wird als &#8220;packfile&#8221; bezeichnet. Git tut das immer dann, wenn zu viele freie Objekte vorhanden sind, wenn du den Befehl <code>git gc</code> manuell ausführst oder wenn du auf einen externen Server pushst. Schauen wir uns also an, was passiert, wenn wir manuell <code>git gc</code> ausführen:</p>
+<p>Am Ende solltest du eine Zeile finden, die in etwa so aussieht:</p>
 
-<pre><code>$ git gc
-Counting objects: 17, done.
-Delta compression using 2 threads.
-Compressing objects: 100% (13/13), done.
-Writing objects: 100% (17/17), done.
-Total 17 (delta 1), reused 10 (delta 0)</code></pre>
+<pre><code>git:x:1000:1000::/home/git:/bin/sh</code></pre>
 
-<p>If you look in your objects directory, you’ll find that most of your objects are gone, and a new pair of files has appeared:</p>
+<p>Change <code>/bin/sh</code> to <code>/usr/bin/git-shell</code> (or run <code>which git-shell</code> to see where it’s installed). The line should look something like this:</p>
 
-<p>Wenn du das Objekt Verzeichnis anschaust, siehst du, daß die meisten Objekte jetzt fehlen und daß stattdessen zwei neue Objekte aufgetaucht sind:</p>
+<p>Ändere <code>/bin/sh</code> zu <code>/usr/bin/git-shell</code> (oder führe <code>which git-shell</code> aus, um zu sehen, wo es installiert ist). Die Zeile sollte in etwa so aussehen:</p>
 
-<pre><code>$ find .git/objects -type f
-.git/objects/71/08f7ecb345ee9d0084193f147cdad4d2998293
-.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4
-.git/objects/info/packs
-.git/objects/pack/pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.idx
-.git/objects/pack/pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.pack</code></pre>
+<pre><code>git:x:1000:1000::/home/git:/usr/bin/git-shell</code></pre>
 
-<p>The objects that remain are the blobs that aren’t pointed to by any commit — in this case, the &#8220;what is up, doc?&#8221; example and the &#8220;test content&#8221; example blobs you created earlier. Because you never added them to any commits, they’re considered dangling and aren’t packed up in your new packfile.</p>
+<p>Now, the &#8216;git&#8217; user can only use the SSH connection to push and pull Git repositories and can’t shell onto the machine. If you try, you’ll see a login rejection like this:</p>
 
-<p>Die verbleibenden Objekte sind diejenigen Blobs, die nicht von irgendeinem Commit referenziert werden - in diesem Fall sind das die &#8220;what is up, doc?&#8221; und &#8220;test content&#8221; Beispielblobs, die wir zuvor gespeichert hatten: weil wir sie nie zu irgendeinem Commit hinzugefügt haben, werden sie als &#8220;dangling&#8221; (xxx) betrachtet und nicht im Packfile zusammengepackt.</p>
+<p>Jetzt kann der &#8216;git&#8217;-Benutzer die SSH-Verbindung nur noch verwenden, um Git-Repositories hochzuladen und herunterzuladen. Der Benutzer kann sich nicht mehr per Shell zur Maschine verbinden. Wenn du es versuchst, siehst du eine Login-Ablehnung wie diese:</p>
 
-<p>The other files are your new packfile and an index. The packfile is a single file containing the contents of all the objects that were removed from your filesystem. The index is a file that contains offsets into that packfile so you can quickly seek to a specific object. What is cool is that although the objects on disk before you ran the <code>gc</code> were collectively about 12K in size, the new packfile is only 6K. You’ve halved your disk usage by packing your objects.</p>
-
-<p>Die beiden neuen Dateien sind das Packfile und ein Index. Das Packfile ist eine einzelne Datei, die die Inhalte all der Dateien umfaßt, die jetzt aus dem Dateisystem entfernt worden sind. Der Index ist eine Datei, die auf Positionen von Objekten im Packfile zeigt, so daß Git schneller nach einem bestimmten Objekt suchen kann. Obwohl diese Objekte auf der Festplatte ingesamt 12K groß waren, bevor du <code>git gc</code> ausgeführt hast, ist das Packfile jetzt nur 6K groß. D.h., du hast den Platzverbrauch dadurch um die Hälfte reduziert. Toll, oder?</p>
-
-<p>How does Git do this? When Git packs objects, it looks for files that are named and sized similarly, and stores just the deltas from one version of the file to the next. You can look into the packfile and see what Git did to save space. The <code>git verify-pack</code> plumbing command allows you to see what was packed up:</p>
-
-<p>Wie stellt Git das genau an? Wenn Git Objekte zusammen packt, sucht es nach Dateien, die ähnlich benannt und ähnlich groß sind, und speichert dann lediglich Deltas von einer Version zur nächsten. Du kannst ein Packfile inspizieren, um zu sehen, wie Git die Objekte gepackt hat. Der Plumbing Befehl <code>git verify-pack</code> macht das möglich:</p>
-
-<pre><code>$ git verify-pack -v \
-  .git/objects/pack/pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.idx
-0155eb4229851634a0f03eb265b69f5a2d56f341 tree   71 76 5400
-05408d195263d853f09dca71d55116663690c27c blob   12908 3478 874
-09f01cea547666f58d6a8d809583841a7c6f0130 tree   106 107 5086
-1a410efbd13591db07496601ebc7a059dd55cfe9 commit 225 151 322
-1f7a7a472abf3dd9643fd615f6da379c4acb3e3a blob   10 19 5381
-3c4e9cd789d88d8d89c1073707c3585e41b0e614 tree   101 105 5211
-484a59275031909e19aadb7c92262719cfcdf19a commit 226 153 169
-83baae61804e65cc73a7201a7252750c76066a30 blob   10 19 5362
-9585191f37f7b0fb9444f35a9bf50de191beadc2 tag    136 127 5476
-9bc1dc421dcd51b4ac296e3e5b6e2a99cf44391e blob   7 18 5193 1
-05408d195263d853f09dca71d55116663690c27c \
-  ab1afef80fac8e34258ff41fc1b867c702daa24b commit 232 157 12
-cac0cab538b970a37ea1e769cbbde608743bc96d commit 226 154 473
-d8329fc1cc938780ffdd9f94e0d364e0ea74f579 tree   36 46 5316
-e3f094f522629ae358806b17daf78246c27c007b blob   1486 734 4352
-f8f51d7d8a1760462eca26eebafde32087499533 tree   106 107 749
-fa49b077972391ad58037050f2a75f74e3671e92 blob   9 18 856
-fdf4fc3344e67ab068f836878b6c4951e3b15f3d commit 177 122 627
-chain length = 1: 1 object
-pack-7a16e4488ae40c7d2bc56ea2bd43e25212a66c45.pack: ok</code></pre>
-
-<p>Here, the <code>9bc1d</code> blob, which if you remember was the first version of your repo.rb file, is referencing the <code>05408</code> blob, which was the second version of the file. The third column in the output is the size of the object in the pack, so you can see that <code>05408</code> takes up 12K of the file but that <code>9bc1d</code> only takes up 7 bytes. What is also interesting is that the second version of the file is the one that is stored intact, whereas the original version is stored as a delta — this is because you’re most likely to need faster access to the most recent version of the file.</p>
-
-<p>Du erinnerst dich, daß der <code>9bc1d</code> Blob die erste Version der <code>repo.rb</code> Datei ist. Dieser Blob referenziert jetzt den <code>05408</code> Blob, der die zweite Version der Datei ist. Die dritte Spalte der Ausgabe ist die Größe des Objektes im Packfile. Wir können also sehen, daß <code>05408</code> 12K in Anspruch nimmt, <code>9bc1d</code> aber nur 7 Bytes. Das bedeutet also, daß die zweite Version diejenige ist, die vollständig, während die ursprüngliche, erste Version als Delta gespeichert wird! Der Grund dafür ist, daß du höchstwahrscheinlich einen schnelleren Zugriff auf die jeweils neuesten Dateien brauchst.</p>
-
-<p>The really nice thing about this is that it can be repacked at any time. Git will occasionally repack your database automatically, always trying to save more space. You can also manually repack at any time by running <code>git gc</code> by hand.</p>
-
-<p>Außerdem ist toll, daß ein Repository jederzeit neu gepackt werden kann. Git macht das gelegentlich automatisch, um weniger Platz für die Datenbank zu verbrauchen. Du kannst sie aber auch jederzeit manuell mit <code>git gc</code> packen.</p>
+<pre><code>$ ssh git@gitserver
+fatal: What do you think I am? A shell?
+Connection to gitserver closed.</code></pre>
 
 <div id='nav'>
 <a href='ch9-7.html'>prev</a> | <a href='ch9-9.html'>next</a>

@@ -1,8 +1,114 @@
 ---
 layout: translation
-title: Pro Git 4.7 Git on the Server Setting Up the Server
+title: Pro Git 4.7 Git Branching Rebasing
 ---
-<h2 id='setting_up_the_server'>Setting Up the Server</h2>
+<h2 id='rebasing'>Rebasing</h2>
+
+<p>Es gibt in Git zwei Wege um Änderungen von einem Branch in einen anderen zu überführen: das <code>merge</code> und das <code>rebase</code>-Kommando. In diesem Abschnitt wirst du kennenlernen was Rebasing ist, wie du es anwendest, warum es ein verdammt abgefahrenes Werkzeug ist und wann du es lieber nicht einsetzen möchtest.</p>
+
+<h3 id='der_einfache_rebase'>Der einfache Rebase</h3>
+
+<p>Wenn du zu einem früheren Beispiel aus dem Merge-Kapitel zurückkehrst (siehe Abbildung 3-27), wirst du sehen, dass du deine Arbeit auf zwei unterschiedliche Branches aufgeteilt hast.</p>
+
+<p><center><img src="/figures/ch4/18333fig0327-tn.png"></center><br/> Abbildung 3-27. Deine initiale Commit-Historie zum Zeitpunkt der Aufteilung.</p>
+
+<p>Der einfachste Weg um Zweige zusammenzuführen ist, wie bereits behandelt, das <code>merge</code>-Kommando. Es produziert einen Drei-Wege-Merge zwischen den beiden letzten Branch-Zuständen (C3 und C4) und ihrem wahrscheinlichsten Vorgänger (C2). Es produziert seinerseits einen Schnappschuss des Projektes (und einen Commit), wie in Abbildung 3-28 dargestellt.</p>
+
+<p><center><img src="/figures/ch4/18333fig0328-tn.png"></center><br/> Abbildung 3-28. Das Zusammenführen eines Branches um die verschiedenen Arbeitsfortschritte zu integrieren.</p>
+
+<p>Wie auch immer, es gibt noch einen anderen Weg: du kannst den Patch der Änderungen - den wir in C3 eingeführt haben - über C4 anwenden. Dieses Vorgehen nennt man in Git <em>rebasing</em>. Mit dem <code>rebase</code>-Kommando kannst du alle Änderungen die auf einem Branch angewendet wurden auf einen anderen Branch erneut anwenden.</p>
+
+<p>In unserem Beispiel würdest du folgendes ausführen:</p>
+
+<pre><code>$ git checkout experiment
+$ git rebase master
+First, rewinding head to replay your work on top of it...
+Applying: added staged command </code></pre>
+
+<p>Dies funktioniert, indem Git zu dem gemeinsamen/allgemeinen Vorfahren <span>gemeinsamer Vorfahr oder der Ursprung der beiden Branches?</span> der beiden Branches (des Zweiges auf dem du arbeitest und des Zweiges auf den du <em>rebasen</em> möchtest) geht, die Differenzen jedes Commits des aktuellen Branches ermittelt und temporär in einer Datei ablegt. Danach wird der aktuelle Branch auf den Schnittpunkt der beiden Zweige zurückgesetzt und alle zwischengespeicherte Commits nacheinander auf Zielbranch angewendet. Die Abbildung 3-29 bildet diesen Prozess ab.</p>
+
+<p><center><img src="/figures/ch4/18333fig0329-tn.png"></center><br/> Abbildung 3-29. Rebasen der Änderungen durch C3 auf den Zweig C4.</p>
+
+<p>An diesem Punkt kannst du zurück zum Master-Branch wechseln und einen fast-forward Merge durchführen (siehe Abbildung 3-30).</p>
+
+<p><center><img src="/figures/ch4/18333fig0330-tn.png"></center><br/> Abbildung 3-30. Fast-forward des Master-Branches.</p>
+
+<p>Nun ist der Schnappschuss, auf den C3 zeigt, exakt der gleiche, wie der auf den C5 in dem Merge-Beispiel gezeigt hat. Bei dieser Zusammenführung entsteht kein unterschiedliches Produkt, durch Rebasing ensteht allerdings ein sauberer Verlauf. Bei genauerer Betrachtung der Historie, entpuppt sich der Rebased-Branch als linearer Verlauf - es scheint als sei die ganze Arbeit in einer Serie entstanden, auch wenn sie in Wirklichkeit parallel stattfand.</p>
+
+<p>Du wirst das häufig anwenden um sicherzustellen, dass sich deine Commits sauber in einen Remote-Branch integrieren - möglicherweise in einem Projekt bei dem du dich beteiligen möchtest, du jedoch nicht der Verantwortliche bist. In diesem Fall würdest du deine Arbeiten in einem eigenen Branch erledigen und im Anschluss deine Änderungen auf <code>origin/master</code> rebasen. Dann hätte der Verantwortliche nämliche keinen Aufwand mit der Integration - nur einen Fast-Forward oder eine saubere Integration (= Rebase?).</p>
+
+<p>Beachte, dass der Schnappschuss nach dem letzten Commit, ob es der letzte der Rebase-Commits nach einem Rebase oder der finale Merge-Commit nach einem Merge ist, exakt gleich ist. Sie unterscheiden sich nur in ihrem Verlauf. Rebasing wiederholt einfach die Änderungen einer Arbeitslinie auf einer anderen, in der Reihenfolge in der sie entstanden sind. Im Gegensatz hierzu nimmt Merging die beiden Endpunkte der Arbeitslinien und führt diese zusammen.</p>
+
+<h3 id='mehr_interessante_rebases'>Mehr interessante Rebases</h3>
+
+<p>Du kannst deinen Rebase auch auf einem anderen Branch als dem Rebase-Branch anwenden lassen. Nimm zum Beispiel den Verlauf in Abbildung 3-31. Du hattest einen Themen-Branch (<code>server</code>) eröffnet um ein paar serverseitige Funktionalitäten zu deinem Projekt hinzuzufügen und einen Commit gemacht. Dann hast du einen weiteren Branch abgezweigt um clientseitige Änderungen (<code>client</code>) vorzunehmen und dort ein paarmal committed. Zum Schluss hast du wieder zu deinem Server-Branch gewechselt und ein paar weitere Commits gebaut.</p>
+
+<p><center><img src="/figures/ch4/18333fig0331-tn.png"></center><br/> Abbildung 3-31. Ein Verlauf mit einem Themen-Branch basierend auf einem weiteren Themen-Branch.</p>
+
+<p>Stell dir vor du entscheidest dich deine clientseitigen Änderungen für einen Release in die Hauptlinie zu mergen, die serverseitigen Änderungen möchtest du aber noch zurückhalten bis sie besser getestet wurden. Du kannst einfach die Änderungen am Client, die den Server nicht betreffen, (C8 und C9) mit der <code>--onto</code>-Option von <code>git rebase</code> erneut auf den Master-Branch anwenden:</p>
+
+<pre><code>$ git rebase --onto master server client</code></pre>
+
+<p>Das bedeutet einfach “Checke den Client-Branch aus, finde die Patches heraus die auf dem gemeinsamen Vorfahr der <code>client</code>- und <code>server</code>-Branches basieren und wende sie erneut auf dem <code>master</code>-Branch an.” Das ist ein bisschen komplex aber das Ergebnis - wie in Abbildung 3-32 - ist richtig cool.</p>
+
+<p><center><img src="/figures/ch4/18333fig0332-tn.png"></center><br/> Abbildung 3-32. Rebasing eines Themen-Branches von einem anderen Themen-Branch.</p>
+
+<p>Jetzt kannst du deinen Master-Branch fast-forwarden (siehe Abbildung 3-33):</p>
+
+<pre><code>$ git checkout master
+$ git merge client</code></pre>
+
+<p><center><img src="/figures/ch4/18333fig0333-tn.png"></center><br/> Abbildung 3-33. Fast-forwarding deines Master-Branches um die Client-Branch-Änderungen zu integrieren.</p>
+
+<p>Lass uns annehmen, du entscheidest dich deinen Server-Branch ebenfalls einzupflegen. Du kannst den Server-Branch auf den Master-Branch rebasen ohne diesen vorher auschecken zu müssen, indem du das Kommando <code>git rebase [Basis-Branch] [Themen-Branch]</code> ausführst. Es macht für dich den Checkout des Themen-Branches (in diesem Fall <code>server</code>) und wiederholt ihn auf dem Basis-Branch (<code>master</code>):</p>
+
+<pre><code>$ git rebase master server</code></pre>
+
+<p>Das wiederholt deine <code>server</code>-Arbeit auf der Basis der <code>server</code>-Arbeit, wie in Abbildung 3-34 ersichtlich.</p>
+
+<p><center><img src="/figures/ch4/18333fig0334-tn.png"></center><br/> Abbildung 3-34. Rebasing deines Server-Branches auf deinen Master-Branch.</p>
+
+<p>Dann kannst du den Basis-Branch (<code>master</code>) fast-forwarden:</p>
+
+<pre><code>$ git checkout master
+$ git merge server</code></pre>
+
+<p>Du kannst den <code>client</code>- und <code>server</code>-Branch nun entfernen, da du die ganze Arbeit bereits integriert wurde und Sie nicht mehr benötigst. Du hinterlässt den Verlauf für den ganzen Prozess wie in Abbildung 3-35:</p>
+
+<pre><code>$ git branch -d client
+$ git branch -d server</code></pre>
+
+<p><center><img src="/figures/ch4/18333fig0335-tn.png"></center><br/> Abbildung 3-35: Endgültiger Commit-Verlauf.</p>
+
+<h3 id='die_gefahren_des_rebasings'>Die Gefahren des Rebasings</h3>
+
+<p>Ahh, aber der ganze Spaß mit dem Rebasing kommt nicht ohne seine Schattenseiten, welche in einer einzigen Zeile zusammengefasst werden können:</p>
+
+<p><strong>Rebase keine Commits die du in ein öffentliches Repository hochgeladen hast.</strong></p>
+
+<p>Wenn du diesem Ratschlag folgst ist alles in ordnung. Falls nicht werden die Leute dich hassen und du wirst von deinen Freunden und deiner Familie verachtet.</p>
+
+<p>Wenn du Zeug rebased, hebst du bestehende Commits auf und erstellst stattdessen welche, die zwar ähnlich aber unterschiedlich sind. Wenn du Commits irgendwohin hochlädst und andere ziehen sich diese herunter und nehmen sie als Grundlage für ihre Arbeit, dann müssen deine Mitwirkenden ihre Arbeit jedesmal re-mergen, sobald du deine Commits mit einem <code>git rebase</code> überschreibst und verteilst. Und richtig chaotisch wird&#8217;s wenn du versuchst deren Arbeit in deine Commits zu integrieren.</p>
+
+<p>Lass uns mal ein Beispiel betrachten wie das Rebasen veröfentlichter Arbeit Probleme verursachen kann. Angenommen du klonst von einem zentralen Server und werkelst ein bisschen daran rum. Dein Commit-Verlauf sieht wie in Abbildung 3-36 aus.</p>
+
+<p><center><img src="/figures/ch4/18333fig0336-tn.png"></center><br/> Abbildung 3-36. Klon ein Repository und baue etwas darauf auf.</p>
+
+<p>Ein anderer arbeitet unterdessen weiter, macht einen Merge und lädt seine Arbeit auf den zentralen Server. Du fetchst die Änderungen und mergest den neuen Remote-Branch in deine Arbeit, sodass dein Verlauf wie in Abbildung 3-37 aussieht.</p>
+
+<p><center><img src="/figures/ch4/18333fig0337-tn.png"></center><br/> Abbildung 3-37. Fetche mehrere Commits und merge sie in deine Arbeit.</p>
+
+<p>Als nächstes entscheidet sich die Person, welche den Merge hochgeladen hat diesen rückgängig zu machen und stattdessen die Commits zu rebasen. Sie macht einen <code>git push --force</code> um den Verlauf auf dem Server zu überschreiben. Du lädst dir das Ganze dann mit den neuen Commits herunter.</p>
+
+<p><center><img src="/figures/ch4/18333fig0338-tn.png"></center><br/> Abbildung 3-38. Jemand pusht rebased Commits und verwirft damit Commitd auf denen deine Arbeit basiert.</p>
+
+<p>Nun musst du seine Arbeit erneut in deine Arbeitslinie mergen, obwohl du das bereits einmal gemacht hast. Rebasing ändert die SHA-1-Hashes der Commits, weshalb sie für Git wie neue Commits aussehen. In Wirklichkeit hast du die C4-Arbeit bereits in deinem Verlauf (siehe Abbildung 3-39).</p>
+
+<p><center><img src="/figures/ch4/18333fig0339-tn.png"></center><br/> Abbildung 3-39. Du mergst die gleiche Arbeit nochmals in einen neuen Merge-Commit.</p>
+
+<p>Irgendwann musst du seine Arbeit einmergen, damit du auch zukünftig mit dem anderen Entwickler zusammenarbeiten kannst. Danach wird dein Commit-Verlauf sowohl den C4 als auch den C4&#8217;-Commit enthalten, weche zwar verschiedene SHA-1-Hashes besitzen aber die gleichen Änderungen und die gleiche Commit-Beschreibung enthalten. Wenn du so einen Verluaf mit <code>git log</code> betrachtest, wirst immer zwei Commits des gleichen Autors, zur gleichen Zeit und mit der gleichen Commit-Nachricht sehen. Was ganz schön verwirrend ist. Wenn du diesen Verlauf außerdem auf den Server hochlädst, wirst du dort alle rebasierten Commits einführen, was auch noch andere verwirren kann.</p>
+
+<p>Wenn du rebasing als Weg behandelst um aufzuräumen und mit Commits zu arbeiten, bevor du sie hochlädst und wenn du nur Commits rebased die noch nie publiziert wurden, dann fährst du goldrichtig. Wenn du Commits rebased die bereits veröffentlicht wurden und Leute vielleicht schon ihre Arbeit darauf aufgebaut haben, dann bist du vielleicht für frustrierenden Ärger verantwortlich.</p>
 
 <div id='nav'>
 <a href='ch4-6.html'>prev</a> | <a href='ch4-8.html'>next</a>

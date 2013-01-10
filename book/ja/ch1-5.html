@@ -1,65 +1,96 @@
 ---
 layout: translation
-title: Pro Git 1.5 使い始める 最初のGitの構成
+title: Pro Git 1.5 Git のさまざまなツール Git によるデバッグ
 ---
-<h2 id='git'>最初のGitの構成</h2>
+<h2 id='git_'>Git によるデバッグ</h2>
 
-<p>今や、Gitがシステムにあります。Git環境をカスタマイズするためにしたい事が少しはあることでしょう。アップグレードの度についてまわるので、たった一度でそれらを終わらすべきでしょう。またそれらは、またコマンドを実行することによっていつでも変更することができます。</p>
+<p>Git には、プロジェクトで発生した問題をデバッグするためのツールも用意されています。Git はほとんどあらゆる種類のプロジェクトで使えるように設計されているので、このツールも非常に汎用的なものです。しかし、バグを見つけたり不具合の原因を探したりするための助けとなるでしょう。</p>
 
-<p>Gitには、git configと呼ばれるツールが付属します。これで、どのようにGitが見えて機能するかの全ての面を制御できる設定変数を取得し、設定することができます。これらの変数は三つの異なる場所に格納されうります：</p>
+<h3 id='id398'>ファイルの注記</h3>
 
-<ul>
-<li><code>/etc/gitconfig</code> file: システム上の全てのユーザーと全てのリポジトリに対する設定値を保持します。もし<code>--system</code>オプションを<code>git config</code>に指定すると、明確にこのファイルに読み書きを行ないます。</li>
+<p>コードのバグを追跡しているときに「それが、いつどんな理由で追加されたのか」が知りたくなることがあるでしょう。そんな場合にもっとも便利なのが、ファイルの注記です。これは、ファイルの各行について、その行を最後に更新したのがどのコミットかを表示します。もしコードの中の特定のメソッドにバグがあることを見つけたら、そのファイルを <code>git blame</code> しましょう。そうすれば、そのメソッドの各行がいつ誰によって更新されたのかがわかります。この例では、<code>-L</code> オプションを使って 12 行目から 22 行目までに出力を限定しています。</p>
 
-<li><code>~/.gitconfig</code> file: 特定のユーザーに対する設定値を保持します. <code>--global</code>オプションを指定することで、Gitに、明確にこのファイルに読み書きを行なわせることができます。</li>
+<pre><code>$ git blame -L 12,22 simplegit.rb 
+^4832fe2 (Scott Chacon  2008-03-15 10:31:28 -0700 12)  def show(tree = &#39;master&#39;)
+^4832fe2 (Scott Chacon  2008-03-15 10:31:28 -0700 13)   command(&quot;git show #{tree}&quot;)
+^4832fe2 (Scott Chacon  2008-03-15 10:31:28 -0700 14)  end
+^4832fe2 (Scott Chacon  2008-03-15 10:31:28 -0700 15)
+9f6560e4 (Scott Chacon  2008-03-17 21:52:20 -0700 16)  def log(tree = &#39;master&#39;)
+79eaf55d (Scott Chacon  2008-04-06 10:15:08 -0700 17)   command(&quot;git log #{tree}&quot;)
+9f6560e4 (Scott Chacon  2008-03-17 21:52:20 -0700 18)  end
+9f6560e4 (Scott Chacon  2008-03-17 21:52:20 -0700 19) 
+42cf2861 (Magnus Chacon 2008-04-13 10:45:01 -0700 20)  def blame(path)
+42cf2861 (Magnus Chacon 2008-04-13 10:45:01 -0700 21)   command(&quot;git blame #{path}&quot;)
+42cf2861 (Magnus Chacon 2008-04-13 10:45:01 -0700 22)  end</code></pre>
 
-<li>現在使っている、あらゆるリポジトリのGitディレクトリの設定ファイル(<code>.git/config</code>のことです): 特定の単一リポジトリに対する設定値を保持します。それぞれのレベルの値は以前のレベルの値を上書きするため、<code>.git/config</code>の中の設定値は<code>/etc/gitconfig</code>の設定値に優先されます。</li>
-</ul>
+<p>最初の項目は、その行を最後に更新したコミットの SHA-1 の一部です。次のふたつの項目は、そのコミットから抽出した作者情報とコミット日時です。これで、いつ誰がその行を更新したのかが簡単にわかります。それに続いて、行番号とファイルの中身が表示されます。<code>^4832fe2</code> のコミットに関する行に注目しましょう。これらの行は、ファイルが最初にコミットされたときのままであることを表します。このコミットはファイルがプロジェクトに最初に追加されたときのものであり、これらの行はそれ以降変更されていません。これはちょっと戸惑うかも知れません。Git では、これまで紹介してきただけで少なくとも三種類以上の意味で <code>^</code> を使っていますからね。しかし、ここではそういう意味になるのです。</p>
 
-<p>Windows環境下では、Gitは<code>$HOME</code>ディレクトリ（ほとんどのユーザーは<code>C:\Documents and Settings\$USER</code>)（訳者注：環境変数<code>USERPROFILE</code>で指定される）の中の<code>.gitconfig</code>ファイルを検索に行きます。また、インストーラー時にWidnowsシステムにGitをインストールすると決めたところにある、MSysのルートとの相対位置であったとしても、/etc/gitconfigも見に行きます。</p>
+<p>Git のすばらしいところのひとつに、ファイルのリネームを明示的には追跡しないということがあります。スナップショットだけを記録し、もしリネームされていたのなら暗黙のうちにそれを検出します。この機能の興味深いところは、ファイルのリネームだけでなくコードの移動についても検出できるということです。<code>git blame</code> に <code>-C</code> を渡すと Git はそのファイルを解析し、別のところからコピーされたコード片がないかどうかを探します。最近私は <code>GITServerHandler.m</code> というファイルをリファクタリングで複数のファイルに分割しました。そのうちのひとつが <code>GITPackUpload.m</code> です。ここで <code>-C</code> オプションをつけて <code>GITPackUpload.m</code> を調べると、コードのどの部分をどのファイルからコピーしたのかを知ることができます。</p>
 
-<h3 id='id17'>個人の識別情報</h3>
+<pre><code>$ git blame -C -L 141,153 GITPackUpload.m 
+f344f58d GITServerHandler.m (Scott 2009-01-04 141) 
+f344f58d GITServerHandler.m (Scott 2009-01-04 142) - (void) gatherObjectShasFromC
+f344f58d GITServerHandler.m (Scott 2009-01-04 143) {
+70befddd GITServerHandler.m (Scott 2009-03-22 144)         //NSLog(@&quot;GATHER COMMI
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 145)
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 146)         NSString *parentSha;
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 147)         GITCommit *commit = [g
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 148)
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 149)         //NSLog(@&quot;GATHER COMMI
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 150)
+56ef2caf GITServerHandler.m (Scott 2009-01-05 151)         if(commit) {
+56ef2caf GITServerHandler.m (Scott 2009-01-05 152)                 [refDict setOb
+56ef2caf GITServerHandler.m (Scott 2009-01-05 153)</code></pre>
 
-<p>Gitをインストールしたときに最初にすべきことは、ユーザー名とE-mailアドレスを設定することです。全てのGitのコミットはこの情報を用いるため、これは重要で、次々とまわすコミットに永続的に焼き付けられます：</p>
+<p>これはほんとうに便利です。通常は、そのファイルがコピーされたときのコミットを知ることになります。コピー先のファイルにおいて最初にその行をさわったのが、その内容をコピーしてきたときだからです。Git は、その行が本当に書かれたコミットがどこであったのかを (たとえ別のファイルであったとしても) 教えてくれるのです。</p>
 
-<pre><code>$ git config --global user.name &quot;John Doe&quot;
-$ git config --global user.email johndoe@example.com</code></pre>
+<h3 id='id399'>二分探索</h3>
 
-<p>また、もし<code>--global</code>オプションを指定するのであれば、Gitはその後、そのシステム上で行なう（訳者注：あるユーザーの）全ての操作に対して常にこの情報を使うようになるため、この操作を行なう必要はたった一度だけです。もし、違う名前とE-mailアドレスを特定のプロジェクトで上書きしたいのであれば、そのプロジェクトの（訳者注：Gitディレクトリの）中で、<code>--global</code>オプション無しでこのコマンドを実行することができます。</p>
+<p>ファイルの注記を使えば、その問題がどの時点で始まったのかを知ることができます。何がおかしくなったのかがわからず、最後にうまく動作していたときから何十何百ものコミットが行われている場合などは、<code>git bisect</code> に頼ることになるでしょう。<code>bisect</code> コマンドはコミットの歴史に対して二分探索を行い、どのコミットで問題が混入したのかを可能な限り手早く見つけ出せるようにします。</p>
 
-<h3 id='id18'>エディター</h3>
+<p>自分のコードをリリースして運用環境にプッシュしたあとに、バグ報告を受け取ったと仮定しましょう。そのバグは開発環境では再現せず、なぜそんなことになるのか想像もつきません。コードをよく調べて問題を再現させることはできましたが、何が悪かったのかがわかりません。こんな場合に、二分探索で原因を特定することができます。まず、<code>git bisect start</code> を実行します。そして次に <code>git bisect bad</code> を使って、現在のコミットが壊れた状態であることをシステムに伝えます。次に、まだ壊れていなかったとわかっている直近のコミットを <code>git bisect good [good_commit]</code> で伝えます。</p>
 
-<p>今や、個人の識別情報が設定され、Gitがメッセージのタイプをさせる必要があるときに使う、標準のテキストエディターを設定できます。標準では、Gitはシステムのデフォルト・エディターを使います。これは大抵の場合、ViかVimです。Emacsのような違うテキスト・エディターを使いたい場合は、次のようにします：</p>
+<pre><code>$ git bisect start
+$ git bisect bad
+$ git bisect good v1.0
+Bisecting: 6 revisions left to test after this
+[ecb6e1bc347ccecc5f9350d878ce677feb13d3b2] error handling on repo</code></pre>
 
-<pre><code>$ git config --global core.editor emacs</code></pre>
+<p>Git は、まだうまく動いていたと指定されたコミット (v1.0) と現在の壊れたバージョンの間には 12 のコミットがあるということを検出しました。そして、そのちょうど真ん中にあるコミットをチェックアウトしました。ここでテストを実行すれば、このコミットで同じ問題が発生するかどうかがわかります。もし問題が発生したなら、実際に問題が混入したのはそれより前のコミットだということになります。そうでなければ、それ以降のコミットで問題が混入したのでしょう。ここでは、問題が発生しなかったものとします。<code>git bisect good</code> で Git にその旨を伝え、旅を続けましょう。</p>
 
-<h3 id='diff'>diffツール</h3>
+<pre><code>$ git bisect good
+Bisecting: 3 revisions left to test after this
+[b047b02ea83310a70fd603dc8cd7a6cd13d15c04] secure this thing</code></pre>
 
-<p>設定したいと思われる、その他の便利なオプションは、マージ（訳者注：複数のリポジトリを併合すること）時の衝突を解決するために使う、標準のdiffツールです。vimdiffを使いたいとします：</p>
+<p>また別のコミットがやってきました。先ほど調べたコミットと「壊れている」と伝えたコミットの真ん中にあるものです。ふたたびテストを実行し、今度はこのコミットで問題が再現したものとします。それを Git に伝えるには <code>git bisect bad</code> を使います。</p>
 
-<pre><code>$ git config --global merge.tool vimdiff</code></pre>
+<pre><code>$ git bisect bad
+Bisecting: 1 revisions left to test after this
+[f71ce38690acf49c1f3c9bea38e09d82a5ce6014] drop exceptions table</code></pre>
 
-<p>Gitはkdiff3、tkdiff、meld、xxdiff、emerge、vimdiff、gvimdiff、ecmerge、opendiffを確かなマージ・ツールとして扱えます。カスタム・ツールもまた設定できますが、これをする事に関しての詳細な情報は第7章を参照してください。</p>
+<p>このコミットはうまく動きました。というわけで、問題が混入したコミットを特定するための情報がこれですべて整いました。Git は問題が混入したコミットの SHA-1 を示し、そのコミット情報とどのファイルが変更されたのかを表示します。これを使って、いったい何が原因でバグが発生したのかを突き止めます。</p>
 
-<h3 id='id19'>設定の確認</h3>
+<pre><code>$ git bisect good
+b047b02ea83310a70fd603dc8cd7a6cd13d15c04 is first bad commit
+commit b047b02ea83310a70fd603dc8cd7a6cd13d15c04
+Author: PJ Hyett &lt;pjhyett@example.com&gt;
+Date:   Tue Jan 27 14:48:32 2009 -0800
 
-<p>設定を確認したい場合は、その時点でGitが見つけられる全ての設定を一覧するコマンドである<code>git config --list</code>を使う事ができます：</p>
+    secure this thing
 
-<pre><code>$ git config --list
-user.name=Scott Chacon
-user.email=schacon@gmail.com
-color.status=auto
-color.branch=auto
-color.interactive=auto
-color.diff=auto
-...</code></pre>
+:040000 040000 40ee3e7821b895e52c1695092db9bdc4c61d1730
+f24d3c6ebcfc639b1a3814550e62d60b8e68a8e4 M  config</code></pre>
 
-<p>Gitは異なったファイル(例えば<code>/etc/gitconfig</code>と<code>~/.gitconfig</code>)から同一のキーを読み込むため、同一のキーを1度以上見ることになるでしょう。この場合、Gitは見つけたそれぞれ同一のキーに対して最後の値を用います。</p>
+<p>原因がわかったら、作業を始める前に <code>git bisect reset</code> を実行して HEAD を作業前の状態に戻さなければなりません。そうしないと面倒なことになってしまいます。</p>
 
-<p>また、Gitに設定されている特定のキーの値を、<code>git config {key}</code>をタイプすることで確認することができます：</p>
+<pre><code>$ git bisect reset</code></pre>
 
-<pre><code>$ git config user.name
-Scott Chacon</code></pre>
+<p>この強力なツールを使えば、何百ものコミットの中からバグの原因となるコミットを数分で見つけだせるようになります。実際、プロジェクトが正常なときに 0 を返してどこかおかしいときに 0 以外を返すスクリプトを用意しておけば、<code>git bisect</code> を完全に自動化することもできます。まず、先ほどと同じく、壊れているコミットと正しく動作しているコミットを指定します。これは <code>bisect start</code> コマンドで行うこともできます。まず最初に壊れているコミット、そしてその後に正しく動作しているコミットを指定します。</p>
+
+<pre><code>$ git bisect start HEAD v1.0
+$ git bisect run test-error.sh</code></pre>
+
+<p>こうすると、チェックアウトされたコミットに対して自動的に <code>test-error.sh</code> を実行し、壊れる原因となるコミットを見つけ出すまで自動的に処理を続けます。<code>make</code> や <code>make tests</code>、その他自動テストを実行するためのプログラムなどをここで実行させることもできます。</p>
 
 <div id='nav'>
 <a href='ch1-4.html'>prev</a> | <a href='ch1-6.html'>next</a>

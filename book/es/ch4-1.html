@@ -1,106 +1,85 @@
 ---
 layout: translation
-title: Pro Git 4.1 Git en un servidor Los Protocolos
+title: Pro Git 4.1 Ramificaciones en Git ¿Qué es una rama?
 ---
-<h2 id='los_protocolos'>Los Protocolos</h2>
+<h2 id='qu_es_una_rama'>¿Qué es una rama?</h2>
 
-<p>Git puede usar cuatro protocolos principales para transferir datos: Local, Secure Shell (SSH), Git y HTTP. Vamos a ver en qué consisten y las circunstancias en que querrás (o no) utilizar cada uno de ellos.</p>
+<p>Para entender realmente cómo ramifica Git, previamente hemos de examinar la forma en que almacena sus datos. Recordando lo citado en el capítulo 1, Git no los almacena de forma incremental (guardando solo diferencias), sino que los almacena como una serie de instantáneas (copias puntuales de los archivos completos, tal y como se encuentran en ese momento).</p>
 
-<p>Merece destacar que, con la excepción del protocolo HTTP, todos los demás protocolos requieren que Git esté instalado y operativo en el servidor.</p>
+<p>En cada confirmación de cambios (commit), Git almacena un punto de control que conserva: un apuntador a la copia puntual de los contenidos preparados (staged), unos metadatos con el autor y el mensaje explicativo, y uno o varios apuntadores a las confirmaciones (commit) que sean padres directos de esta (un padre en los casos de confirmación normal, y múltiples padres en los casos de estar confirmando una fusión (merge) de dos o mas ramas).</p>
 
-<h3 id='protocolo_local'>Protocolo Local</h3>
+<p>Para ilustrar esto, vamos a suponer, por ejemplo, que tienes una carpeta con tres archivos, que preparas (stage) todos ellos y los confirmas (commit). Al preparar los archivos, Git realiza una suma de control de cada uno de ellos (un resumen SHA-1, tal y como se mencionaba en el capítulo 1), almacena una copia de cada uno en el repositorio (estas copias se denominan &#8220;blobs&#8221;), y guarda cada suma de control en el área de preparación (staging area):</p>
 
-<p>El más básico es el <em>Protocolo Local</em>, donde el repositorio remoto es simplemente otra carpeta en el disco. Se utiliza habitualmente cuando todos los miembros del equipo tienen acceso a un mismo sistema de archivos, como por ejemplo un punto de montaje NFS, o en los casos en que todos se conectan al mismo ordenador. Aunque este último caso no es precisamente el ideal, ya que todas las instancias del repositorio estarían en la misma máquina; aumentando las posibilidades de una pérdida catastrófica.</p>
+<pre><code>$ git add README test.rb LICENSE
+$ git commit -m &#39;initial commit of my project&#39;</code></pre>
 
-<p>Si dispones de un sistema de archivos compartido, podrás clonar (clone), enviar (push) y recibir (pull) a/desde repositorios locales basado en archivos. Para clonar un repositorio como estos, o para añadirlo como remoto a un proyecto ya existente, usa el camino (path) del repositorio como su URL. Por ejemplo, para clonar un repositorio local, puedes usar algo como:</p>
+<p>Cuando creas una confirmación con el comando &#8216;git commit&#8217;, Git realiza sumas de control de cada subcarpeta (en el ejemplo, solamente tenemos la carpeta principal del proyecto), y guarda en el repositorio Git una copia de cada uno de los archivos contenidos en ella/s. Después, Git crea un objeto de confirmación con los metadatos pertinentes y un apuntador al nodo correspondiente del árbol de proyecto. Esto permitirá poder regenerar posteriormente dicha instantánea cuando sea necesario.</p>
 
-<pre><code>$ git clone /opt/git/project.git</code></pre>
+<p>En este momento, el repositorio de Git contendrá cinco objetos: un &#8220;blob&#8221; para cada uno de los tres archivos, un árbol con la lista de contenidos de la carpeta (más sus respectivas relaciones con los &#8220;blobs&#8221;), y una confirmación de cambios (commit) apuntando a la raiz de ese árbol y conteniendo el resto de metadatos pertinentes. Conceptualmente, el contenido del repositorio Git será algo parecido a la Figura 3-1</p>
 
-<p>O como:</p>
+<p><center><img src="/figures/ch4/18333fig0301-tn.png"></center><br/> Figura 3-1. Datos en el repositorio tras una confirmación sencilla.</p>
 
-<pre><code>$ git clone file:///opt/git/project.git</code></pre>
+<p>Si haces más cambios y vuelves a confirmar, la siguiente confirmación guardará un apuntador a esta su confirmación precedente. Tras un par de confirmaciones más, el registro ha de ser algo parecido a la Figura 3-2.</p>
 
-<p>Git trabaja ligeramente distinto si indicas &#8216;file://&#8217; de forma explícita al comienzo de la URL. Si escribes simplemente el camino, Git intentará usar enlaces rígidos (hardlinks) o copiar directamente los archivos que necesita. Si escribes con el prefijo &#8216;file://&#8217;, Git lanza el proceso que usa habitualmente para transferir datos sobre una red; proceso que suele ser mucho menos eficiente. La única razón que puedes tener para indicar expresamente el prefijo &#8216;file://&#8217; puede ser el querer una copia limpia del repositorio, descartando referencias u objetos superfluos. Normalmente, tras haberlo importado desde otro sistema de control de versiones o algo similar (ver el Capítulo 9 sobre tareas de mantenimiento). Habitualmente, usaremos el camino (path) normal por ser casi siempre más rápido.</p>
+<p><center><img src="/figures/ch4/18333fig0302-tn.png"></center><br/> Figura 3-2. Datos en el repositorio tras una serie de confirmaciones.</p>
 
-<p>Para añadir un repositorio local a un proyecto Git existente, puedes usar algo como:</p>
+<p>Una rama Git es simplemente un apuntador móvil apuntando a una de esas confirmaciones. La rama por defecto de Git es la rama &#8216;master&#8217;. Con la primera confirmación de cambios que realicemos, se creará esta rama principal &#8216;master&#8217; apuntando a dicha confirmación. En cada confirmación de cambios que realicemos, la rama irá avanzando automáticamente. Y la rama &#8216;master&#8217; apuntará siempre a la última confirmación realizada.</p>
 
-<pre><code>$ git remote add local_proj /opt/git/project.git</code></pre>
+<p><center><img src="/figures/ch4/18333fig0303-tn.png"></center><br/> Figura 3-3. Apuntadores en el registro de confirmaciones de una rama.</p>
 
-<p>Con lo que podrás enviar (push) y recibir (pull) desde dicho remoto exactamente de la misma forma a como lo harías a través de una red.</p>
+<p>¿Qué sucede cuando creas una nueva rama? Bueno&#8230;.., simplemente se crea un nuevo apuntador para que lo puedas mover libremente. Por ejemplo, si quieres crear una nueva rama denominada &#8220;testing&#8221;. Usarás el comando &#8216;git branch&#8217;:</p>
 
-<h3 id='ventajas'>Ventajas</h3>
+<pre><code>$ git branch testing</code></pre>
 
-<p>Las ventajas de los repositorios basados en carpetas y archivos, son su simplicicidad y el aprovechamiento de los permisos preexistentes de acceso. Si tienes un sistema de archivo compartido que todo el equipo pueda usar, preparar un repositorio es muy sencillo. Simplemente pones el repositorio básico en algún lugar donde todos tengan acceso a él y ajustas los permisos de lectura/escritura según proceda, tal y como lo harías para preparar cualquier otra carpeta compartida. En la próxima sección, &#8220;Disponiendo Git en un servidor&#8221;, veremos cómo exportar un repositorio básico para conseguir esto.</p>
+<p>Esto creará un nuevo apuntador apuntando a la misma confirmación donde estés actualmente (ver Figura 3-4).</p>
 
-<p>Este camino es también util para recuperar rápidamente el contenido del repositorio de trabajo de alguna otra persona. Si tu y otra persona estais trabajando en el mismo proyecto y ella quiere mostrarte algo, el usar un comando tal como &#8216;git pull /home/john/project&#8217; suele ser más sencillo que el que esa persona te lo envie (push) a un servidor remoto y luego tú lo recojas (pull) desde allí.</p>
+<p><center><img src="/figures/ch4/18333fig0304-tn.png"></center><br/> Figura 3-4. Apuntadores de varias ramas en el registro de confirmaciones de cambio.</p>
 
-<h3 id='desventajas'>Desventajas</h3>
+<p>Y, ¿cómo sabe Git en qué rama estás en este momento? Pues&#8230;., mediante un apuntador especial denominado HEAD. Aunque es preciso comentar que este HEAD es totalmente distinto al concepto de HEAD en otros sistemas de control de cambios como Subversion o CVS. En Git, es simplemente el apuntador a la rama local en la que tú estés en ese momento. En este caso, en la rama &#8216;master&#8217;. Puesto que el comando git branch solamente crea una nueva rama, y no salta a dicha rama.</p>
 
-<p>La principal desventaja de los repositorios basados en carpetas y archivos es su dificultad de acceso desde distintas ubicaciones. Por ejemplo, si quieres enviar (push) desde tu portátil cuando estás en casa, primero tienes que montar el disco remoto; lo cual puede ser dificil y lento, en comparación con un acceso basado en red.</p>
+<p><center><img src="/figures/ch4/18333fig0305-tn.png"></center><br/> Figura 3-5. Apuntador HEAD a la rama donde estás actualmente.</p>
 
-<p>Cabe destacar también que una carpeta compartida no es precisamente la opción más rápida. Un repositorio local es rápido solamente en aquellas ocasiones en que tienes un acceso rápido a él. Normalmente un repositorio sobre NFS es más lento que un repositorio SSH en el mismo servidor, asumiendo que las pruebas se hacen con Git sobre discos locales en ambos casos.</p>
+<p>Para saltar de una rama a otra, tienes que utilizar el comando &#8216;git checkout&#8217;. Hagamos una prueba, saltando a la rama &#8216;testing&#8217; recién creada:</p>
 
-<h3 id='el_procotolo_ssh'>El Procotolo SSH</h3>
+<pre><code>$ git checkout testing</code></pre>
 
-<p>Probablemente, SSH sea el protocolo más habitual para Git. Debido a disponibilidad en la mayor parte de los servidores; (pero, si no lo estuviera disponible, además es sencillo habilitarlo). Por otro lado, SSH es el único protocolo de red con el que puedes facilmente tanto leer como escribir. Los otros dos protocolos de red (HTTP y Git) suelen ser normalmente protocolos de solo-lectura; de tal forma que, aunque los tengas disponibles para el público en general, sigues necesitando SSH para tu propio uso en escritura. Otra ventaja de SSH es el su mecanismo de autentificación, sencillo de habilitar y de usar.</p>
+<p>Esto mueve el apuntador HEAD a la rama &#8216;testing&#8217; (ver Figura 3-6).</p>
 
-<p>Para clonar un repositorio a través de SSH, puedes indicar una URL ssh:// tal como:</p>
+<p><center><img src="/figures/ch4/18333fig0306-tn.png"></center><br/> Figura 3-6. Apuntador HEAD apuntando a otra rama cuando saltamos de rama.</p>
 
-<pre><code>$ git clone ssh://user@server:project.git</code></pre>
+<p>¿Cuál es el significado de todo esto?. Bueno&#8230;. lo veremos tras realizar otra confirmación de cambios:</p>
 
-<p>O puedes prescindir del protocolo; Git asume SSH si no indicas nada expresamente: $ git clone user@server:project.git</p>
+<pre><code>$ vim test.rb
+$ git commit -a -m &#39;made a change&#39;</code></pre>
 
-<p>Pudiendo asimismo prescindir del usuario; en cuyo caso Git asume el usuario con el que estés conectado en ese momento.</p>
+<p>La Figura 3-7 ilustra el resultado.</p>
 
-<h3 id='ventajas'>Ventajas</h3>
+<p><center><img src="/figures/ch4/18333fig0307-tn.png"></center><br/> Figura 3-7. La rama apuntada por HEAD avanza con cada confirmación de cambios.</p>
 
-<p>El uso de SSH tiene múltiples ventajas. En primer lugar, necesitas usarlo si quieres un acceso de escritura autentificado a tu repositorio. En segundo lugar, SSH es sencillo de habilitar. Los demonios (daemons) SSH son de uso común, muchos administradores de red tienen experiencia con ellos y muchas distribuciones del SO los traen predefinidos o tienen herramientas para gestionarlos. Además, el acceso a través de SSH es seguro, estando todas las transferencias encriptadas y autentificadas. Y, por último, al igual que los procolos Git y Local, SSH es eficiente, comprimiendo los datos lo más posible antes de transferirlos.</p>
+<p>Observamos algo interesante: la rama &#8216;testing&#8217; avanza, mientras que la rama &#8216;master&#8217; permanece en la confirmación donde estaba cuando lanzaste el comando &#8216;git checkout&#8217; para saltar. Volvamos ahora a la rama &#8216;master&#8217;:</p>
 
-<h3 id='desventajas'>Desventajas</h3>
+<pre><code>$ git checkout master</code></pre>
 
-<p>El aspecto negativo de SSH es su imposibilidad para dar acceso anónimo al repositorio. Todos han de tener configurado un acceso SSH al servidor, incluso aunque sea con permisos de solo lectura; lo que no lo hace recomendable para soportar proyectos abiertos. Si lo usas únicamente dentro de tu red corporativa, posiblemente sea SSH el único procolo que tengas que emplear. Pero si quieres también habilitar accesos anónimos de solo lectura, tendrás que reservar SSH para tus envios (push) y habilitar algún otro protocolo para las recuperaciones (pull) de los demás.</p>
+<p>La Figura 3-8 muestra el resultado.</p>
 
-<h3 id='el_protocolo_git'>El Protocolo Git</h3>
+<p><center><img src="/figures/ch4/18333fig0308-tn.png"></center><br/> Figura 3-8. HEAD apunta a otra rama cuando hacemos un checkout.</p>
 
-<p>El protocolo Git es un demonio (daemon) especial, que viene incorporado con Git. Escucha por un puerto dedicado (9418), y nos da un servicio similar al del protocolo SSH; pero sin ningún tipo de autentificación. Para que un repositorio pueda exponerse a través del protocolo Git, tienes que crear en él un archivo &#8216;git-export-daemon-ok&#8217;; sin este archivo, el demonio no hará disponible el repositorio. Pero, aparte de esto, no hay ninguna otra medida de seguridad. O el repositorio está disponible para que cualquiera lo pueda clonar, o no lo está. Lo cual significa que, normalmente, no se podrá enviar (push) a través de este protocolo. Aunque realmente si que puedes habilitar el envio, si lo haces, dada la total falta de ningún mecanismo de autentificación, cualquiera que encuentre la URL a tu proyecto en Internet, podrá enviar (push) contenidos a él. Ni que decir tiene que esto solo lo necesitarás en contadas ocasiones.</p>
+<p>Este comando realiza dos acciones: Mueve el apuntador HEAD de nuevo a la rama &#8216;master&#8217;, y revierte los archivos de tu directorio de trabajo; dejandolos tal y como estaban en la última instantánea confirmada en dicha rama &#8216;master&#8217;. Esto supone que los cambios que hagas desde este momento en adelante divergerán de la antigua versión del proyecto. Básicamente, lo que se está haciendo es rebobinar el trabajo que habias hecho temporalmente en la rama &#8216;testing&#8217;; de tal forma que puedas avanzar en otra dirección diferente.</p>
 
-<h3 id='ventajas'>Ventajas</h3>
+<p>Haz algunos cambios más y confirmalos:</p>
 
-<p>El protocolo Git es el más rápido de todos los disponibles. Si has de servir mucho tráfico de un proyecto público o servir un proyecto muy grande, que no requiera autentificación para leer de él, un demonio Git es la respuesta. Utiliza los mismos mecanismos de transmisión de datos que el protocolo SSH, pero sin la sobrecarga de la encriptación ni de la autentificación.</p>
+<pre><code>$ vim test.rb
+$ git commit -a -m &#39;made other changes&#39;</code></pre>
 
-<h3 id='desventajas'>Desventajas</h3>
+<p>Ahora el registro de tu proyecto diverge (ver Figura 3-9). Has creado una rama y saltado a ella, has trabajado sobre ella; has vuelto a la rama original, y has trabajado también sobre ella. Los cambios realizados en ambas sesiones de trabajo están aislados en ramas independientes: puedes saltar libremente de una a otra según estimes oportuno. Y todo ello simplemente con dos comandos: &#8216;git branch&#8217; y &#8216;git checkout&#8217;.</p>
 
-<p>La pega del protocolo Git, es su falta de autentificación. No es recomendable tenerlo como único protocolo de acceso a tus proyectos. Habitualmente, lo combinarás con un acceso SSH para los pocos desarrolladores con acceso de escritura que envien (push) material. Usando &#8216;git://&#8217; para los accesos solo-lectura del resto de personas. Por otro lado, es también el protocolo más complicado de implementar. Necesita activar su propio demonio, (tal y como se explica en la sección &#8220;Gitosis&#8221;, más adelante, en este capítulo); y necesita configurar &#8216;xinetd&#8217; o similar, lo cual no suele estar siempre disponible en el sistema donde estés trabajando. Requiere además abrir expresamente acceso al puerto 9418 en el cortafuegos, ya que este no es uno de los puertos estandares que suelen estar habitualmente permitidos en los cortafuegos corporativos. Normalmente, este oscuro puerto suele estar bloqueado detrás de los cortafuegos corporativos.</p>
+<p><center><img src="/figures/ch4/18333fig0309-tn.png"></center><br/> Figura 3-9. Los registros de las ramas divergen.</p>
 
-<h3 id='el_protocolo_https'>El protocolo HTTP/S</h3>
+<p>Debido a que una rama Git es realmente un simple archivo que contiene los 40 caracteres de una suma de control SHA-1, (representando la confirmación de cambios a la que apunta), no cuesta nada el crear y destruir ramas en Git. Crear una nueva rama es tan rápido y simple como escribir 41 bytes en un archivo, (40 caracteres y un retorno de carro).</p>
 
-<p>Por último, tenemos el protocolo HTTP. Cuya belleza radica en la simplicidad para habilitarlo. Basta con situar el repositorio Git bajo la raiz de los documentos HTTP y preparar el enganche (hook) &#8216;post-update&#8217; adecuado. (Ver el Capítulo 7 para detalles sobre los enganches Git.) A partir de ese momento, cualquiera con acceso al servidor web podrá clonar tu repositorio. Para permitir acceso a tu repositorio a través de HTTP, puedes hacer algo como esto:</p>
+<p>Esto contrasta fuertemente con los métodos de ramificación usados por otros sistemas de control de versiones. En los que crear una nueva rama supone el copiar todos los archivos del proyecto a una nueva carpeta adiccional. Lo que puede llevar segundos o incluso minutos, dependiendo del tamaño del proyecto. Mientras que en Git el proceso es siempre instantáneo. Y, además, debido a que se almacenan tambien los nodos padre para cada confirmación, el encontrar las bases adecuadas para realizar una fusión entre ramas es un proceso automático y generalmente sencillo de realizar. Animando así a los desarrolladores a utilizar ramificaciones frecuentemente.</p>
 
-<pre><code>$ cd /var/www/htdocs/
-$ git clone --bare /path/to/git_project gitproject.git
-$ cd gitproject.git
-$ mv hooks/post-update.sample hooks/post-update
-$ chmod a+x hooks/post-update</code></pre>
-
-<p>Y eso es todo. El enganche &#8216;post-update&#8217; que viene de serie con Git se encarga de lanzar el comando adecuado (&#8216;git update-server-info&#8217;) para hacer funcionar la recuperación (fetching) y el clonado (cloning) vía HTTP. Este comando se lanza automáticamente cuando envias (push) a este repositorio vía SSh; de tal forma que otras personas puedan clonarlo usando un comando tal que:</p>
-
-<pre><code>$ git clone http://example.com/gitproject.git</code></pre>
-
-<p>En este caso particular, estamos usando el camino &#8216;/var/www/htdocs&#8217;, habitual en las configuraciones de Apache. Pero puedes utilizar cualquier servidor web estático, sin más que poner el repositorio en su camino. Los contenidos Git se sirven como archivos estáticos básicos (ver el Capitulo 9 para más detalles sobre servicios).</p>
-
-<p>Es posible hacer que Git envie (push) a través de HTTP. Pero no se suele usar demasiado, ya que requiere lidiar con los complejos requerimientos de WebDAV. Y precisamente porque se usa raramente, no lo vamos a cubrir en este libro. Si estás interesado en utilizar los protocolos HTTP-push, puedes encotrar más información en <code>http://www.kernel.org/pub/software/scm/git/docs/howto/setup-git-server-over-http.txt</code>. La utilidad de habilitar Git para enviar (push) a través de HTTP es la posibilidad de utilizar cualquier servidor WebDAV para ello, sin necesidad de requerimientos específicos para Git. De tal forma que puedes hacerlo incluso a través de tu proveedor de albergue web, si este soporta WebDAV para escribir actualizaciones en tu sitio web.</p>
-
-<h3 id='ventajas'>Ventajas</h3>
-
-<p>La mejor parte del protocolo HTTP es su sencillez de preparación. Simplemente lanzando unos cuantos comandos, dispones de un método sencillo de dar al mundo entero acceso a tu repositorio Git. En tan solo unos minutos. Además, el procolo HTTP no requiere de grandes recursos en tu servidor. Por utilizar normalmente un servidor HTTP estático, un servidor Apache estandar puede con un tráfico de miles de archivos por segundo; siendo dificil de sobrecargar incluso con el más pequeño de los servidores.</p>
-
-<p>Puedes también servir tus repositorios de solo lectura a través de HTTPS, teniendo así las transferencias encriptadas. O puedes ir más lejos aún, requiriendo el uso de certificados SSL específicos para cada cliente. Aunque, si pretendes ir tan lejos, es más sencillo utilizar claves públicas SSH; pero ahí está la posibilidad, por si en algún caso concreto sea mejor solución el uso de certificados SSL u otros medios de autentificación HTTP para el acceso de solo-lectura a través de HTTPS.</p>
-
-<p>Otro detalle muy util de emplear HTTP, es que, al ser un protocolo de uso común, la mayoría de los cortafuegos corporativos suelen tener habilitado el tráfico a traves de este puerto.</p>
-
-<h3 id='desventajas'>Desventajas</h3>
-
-<p>La pega de servir un repositorio a través de HTTP es su relativa ineficiencia para el cliente. Suele requerir mucho más tiempo el clonar o el recuperar (fetch), debido a la mayor carga de procesamiento y al mayor volumen de transferencia que se da sobre HTTP respecto de otros protocolos de red. Y precisamente por esto, porque no es tan inteligente y no transfiere solamente los datos imprescindibles, (no hay un trabajo dinámico por parte del servidor), el protocolo HTTP suele ser conocido como el protocolo <em>estúpido</em>. Para más información sobre diferencias de eficiencia entre el protocolo HTTP y los otros protocolos, ver el Capítulo 9.</p>
+<p>Y vamos a ver el por qué merece la pena hacerlo así.</p>
 
 <div id='nav'>
 <a href='ch4-0.html'>prev</a> | <a href='ch4-2.html'>next</a>

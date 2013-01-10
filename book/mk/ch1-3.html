@@ -1,72 +1,127 @@
 ---
 layout: translation
-title: Pro Git 1.3 Како да започнам Основи на Git
+title: Pro Git 1.3 Git Tools Stashing
 ---
-<h2 id='__git'>Основи на Git</h2>
+<h2 id='stashing'>Stashing</h2>
 
-<p>Во неколку збора, што е Git? Оваа секција е многу битно да ја разберете, бидејќи ако разберете што е Git и основите како работи, тогаш ефикасното користење на Git веројатно ќе биде многу едноставно за вас. Додека учите за Git, пробајте да ги изолирате работите што евентуално ги знаете за другите VCS, како што е Subversion и Perforce; на тој начин ќе ја избегнете забуната при користењето на алатката. Git ги складира и обработува информациите многу поразлично од другите системи, иако корисничкиот интерфејс е прилично сличен; доколку ги разберете тие разлики ќе ги избегнете забуните при неговото користење.</p>
+<p>Often, when you’ve been working on part of your project, things are in a messy state and you want to switch branches for a bit to work on something else. The problem is, you don’t want to do a commit of half-done work just so you can get back to this point later. The answer to this issue is the <code>git stash</code> command.</p>
 
-<h3 id='___'>Целосни слики, наместо закрпи</h3>
+<p>Stashing takes the dirty state of your working directory — that is, your modified tracked files and staged changes — and saves it on a stack of unfinished changes that you can reapply at any time.</p>
 
-<p>Најголемата разлика помеѓу Git и било кој друг VCS (Subversion и сл.) е во начинот на кој Git ги обработува податоците. Концептуално, повеќето други системи информациите ги складираат како листа од промени над поединечните датотеки. Тие системи (CVS, Subversion, Perforce, Bazaar итн) информациите ги чуваат како множества од датотеки и промените настанати над тие датотеки со текот на времето, како што е прикажано на Слика 1-4.</p>
+<h3 id='stashing_your_work'>Stashing Your Work</h3>
 
-<p><center><img src="/figures/ch1/18333fig0104-tn.png"></center><br/> Слика 1-4. Другите системи чуваат закрпи за секоја датотека.</p>
+<p>To demonstrate, you’ll go into your project and start working on a couple of files and possibly stage one of the changes. If you run <code>git status</code>, you can see your dirty state:</p>
 
-<p>Git не ги третира или чува податоците на тој начин. Наместо тоа, Git податоците ги третира како множества од целосни слики/копии од мини фајлсистем. Секогаш кога сакате да ја зачувате состојбата во која се наоѓа проектот во Git, тој едноставно прави слика од тоа како изгледаат сите датотеки во тој момент и зачувува референца до таа слика. За да биде ефикасен, доколку датотеките не се променети, Git не прави копија од датотеките туку само прави линк до претходно зачуваната идентична датотека. Git ги третира податоците како што е прикажано на сликата 1-5.</p>
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#      modified:   index.html
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   lib/simplegit.rb
+#</code></pre>
 
-<p><center><img src="/figures/ch1/18333fig0105-tn.png"></center><br/> Слика 1-5. Git ги зачувува податоците како целосни копии од проектот.</p>
+<p>Now you want to switch branches, but you don’t want to commit what you’ve been working on yet; so you’ll stash the changes. To push a new stash onto your stack, run <code>git stash</code>:</p>
 
-<p>Ова е битна разлика помеѓу Git и речиси сите други VCS. Со тоа Git ги преиспитува речиси сите аспекти од системите за контрола на верзиите, за разлика од другите системи кои што едноставно ги копирале од претходните генерации. Тоа го прави Git да личи помалку на мини фајлсистем со извонредно моќни алатки над него, отколку како едноставен VCS. Ќе ги истражиме придобивките од таквото третирање на податоците при обработка на гранањето во Git во Поглавје 3.</p>
+<pre><code>$ git stash
+Saved working directory and index state \
+  &quot;WIP on master: 049d078 added the index file&quot;
+HEAD is now at 049d078 added the index file
+(To restore them type &quot;git stash apply&quot;)</code></pre>
 
-<h3 id='____'>Речиси секоја операција е локална</h3>
+<p>Your working directory is clean:</p>
 
-<p>За повеќето операции што ги изведува Git му се потребни само локални датотеки и ресурси - генерално никакви информации од друг компјутер на мрежата не се потребни. Ако сте навикнати на користење на CVCS каде што повеќето операции имаат мрежна латенција, овој аспект на Git ќе ве натера да си помислите дека боговите на брзината го надариле Git со неискажлива моќ. Бидејќи целосниот историјат од проектот го имате локално на вашиот хард диск, повеќето операции изгледаат речиси моментални.</p>
+<pre><code>$ git status
+# On branch master
+nothing to commit (working directory clean)</code></pre>
 
-<p>На пример, за да ја прегледате историјата на проектот, Git не треба да оди до серверот за да ја земе историјата и да ви ја прикаже - туку едноставно ја чита директно од вашата локална база на податоци. Тоа значи дека историјатот на проектот го гледате речиси моментално. Доколку сакате да ги видите разликите помеѓу сегашната верзија на некоја датотека и верзијата од пред еден месец, Git може да ја види состојбата на датотеката од пред еден месец и локално да ви ги пресмета разликите, наместо да испрати барање за тоа до оддалечен сервер, или пак да побара постара верзија за датотеката од некој сервер за да ја пресмета разликата локално.</p>
+<p>At this point, you can easily switch branches and do work elsewhere; your changes are stored on your stack. To see which stashes you’ve stored, you can use <code>git stash list</code>:</p>
 
-<p>Тоа значи дека нема многу работи кои што нема да може да ги направите доколку сте офјалн или не сте на VPN. Доколку се качите на авион или воз, и сакате малку да поработите, можете да правите нови состојби од проектот (commit) се додека не добиете мрежна врска и тогаш ќе ги аплоадирате. Ако сте дома и не може да го натерате вашиот VPN клиент да проработи, сепак можете да си работите на проектот. Кај многу други системи, ваквиот начин на работа или е невозможен или многу тешко изводлив. Со Perforce, на пример, речиси ништо не можете да правите доколку немате конекција со серверот; кај Subversion и CVS, може да ги едитирате датотеките, меѓутоа не може да направите нова состојба од проектот (commit) бидејќи базата на податоци е на сервер. Можеби сето ова не изгледа како некоја голема работа, меѓутоа може да се изненадите колкава разлика може да ви направи.</p>
+<pre><code>$ git stash list
+stash@{0}: WIP on master: 049d078 added the index file
+stash@{1}: WIP on master: c264051... Revert &quot;added file_size&quot;
+stash@{2}: WIP on master: 21d80a5... added number to log</code></pre>
 
-<h3 id='git__'>Git има интегритет</h3>
+<p>In this case, two stashes were done previously, so you have access to three different stashed works. You can reapply the one you just stashed by using the command shown in the help output of the original stash command: <code>git stash apply</code>. If you want to apply one of the older stashes, you can specify it by naming it, like this: <code>git stash apply stash@{2}</code>. If you don’t specify a stash, Git assumes the most recent stash and tries to apply it:</p>
 
-<p>Пред да се зачуваат работите во Git, им се пресметува контролна сума, а подоцна истите работи се референцираат преку таа сума. Тоа значи дека е невозможно да се промени содржината на некоја датотека без Git да дознае за тоа. Тоа функционалност е вградена во Git во најниските нивоа и е интегрален дел од неговата филозофија. Не може да изгубите информација при пренос или да имате корумпирана датотека без Git да го детектира тоа.</p>
+<pre><code>$ git stash apply
+# On branch master
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   index.html
+#      modified:   lib/simplegit.rb
+#</code></pre>
 
-<p>Механизмот кој што го користи Git за пресметување на контролната сума се вика SHA-1 хеш. Тоа е стринг од 40 знаци составен од хексадекадни знаци (0-9 и a-f) и се пресметува врз основа на содржината на датотеката или папката во Git. SHA-1 хешот изгледа отприлика вака:</p>
+<p>You can see that Git re-modifies the files you uncommitted when you saved the stash. In this case, you had a clean working directory when you tried to apply the stash, and you tried to apply it on the same branch you saved it from; but having a clean working directory and applying it on the same branch aren’t necessary to successfully apply a stash. You can save a stash on one branch, switch to another branch later, and try to reapply the changes. You can also have modified and uncommitted files in your working directory when you apply a stash — Git gives you merge conflicts if anything no longer applies cleanly.</p>
 
-<pre><code>24b9da6552252987aa493b52f8696cd6d3b00373</code></pre>
+<p>The changes to your files were reapplied, but the file you staged before wasn’t restaged. To do that, you must run the <code>git stash apply</code> command with a <code>--index</code> option to tell the command to try to reapply the staged changes. If you had run that instead, you’d have gotten back to your original position:</p>
 
-<p>Насекаде ќе ги гледате ваквите хеш вредности во Git затоа што тој насекаде ги користи. Всушност, Git сите работи ги зачувува не според името на датотеката, туку во база на податоци која е адресабилна според хеш вредноста на нивната содржина.</p>
+<pre><code>$ git stash apply --index
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#      modified:   index.html
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   lib/simplegit.rb
+#</code></pre>
 
-<h3 id='__git___'>Во основа Git само додава податоци</h3>
+<p>The apply option only tries to apply the stashed work — you continue to have it on your stack. To remove it, you can run <code>git stash drop</code> with the name of the stash to remove:</p>
 
-<p>Кога изведувате операции во Git, речиси сите тие само додаваат податоци во Git базата на податоци. Речиси е невозможно да го натерате системот да направи нешто што подоцна не може да се врати на претходната состојба, или пак да го натерате да избрише некои податоци. Како и со секој VCS, може да ги загубите податоците кои што не сте ги комитувале; но откако ќе ги комитувате и кога Git ќе направи слика од тоа, тогаш навистина е тешко да загубите нешто, особено доколку редовно вашата база ја синхронизирате (push) со друго репозитори.</p>
+<pre><code>$ git stash list
+stash@{0}: WIP on master: 049d078 added the index file
+stash@{1}: WIP on master: c264051... Revert &quot;added file_size&quot;
+stash@{2}: WIP on master: 21d80a5... added number to log
+$ git stash drop stash@{0}
+Dropped stash@{0} (364e91f3f268f0900bc3ee613f9f733e82aaed43)</code></pre>
 
-<p>Тоа го прави користењето на Git вистинско задоволство бидејќи знаеме дека може да експериментираме без притоа да се плашиме дека може да ги уништиме работите. Поде-тално за тоа како Git ги складира податоците и како може да ги реставрирате податоците кои изгледаат дека се загубени погледнете во &#8220;Под хаубата&#8221; во поглавје 9.</p>
+<p>You can also run <code>git stash pop</code> to apply the stash and then immediately drop it from your stack.</p>
 
-<h3 id='_'>Трите нивоа</h3>
+<h3 id='unapplying_a_stash'>Un-applying a Stash</h3>
 
-<p>Сега внимавајте. Ова е главната работа што треба да се запомни за Git доколку сакате понатамошниот процес на учење да ви оди лесно. Git има три нивоа во кои што може да се најдат датотеките: комитувани (committed), променети (modified) и поставени (staged). Комитувани значи дека податоците безбедно се зачувани во локалната база на податоци. Променети значи дека датотеките се променети, меѓутоа сеуште не се комитувани. Поста-вени (staged) значи дека сте ги маркирале променетите датотеки во нивната тековна состојба да бидат зачувани во следниот комит.</p>
+<p>In some use case scenarios you might want to apply stashed changes, do some work, but then un-apply those changes that originally came form the stash. Git does not provide such a <code>stash unapply</code> command, but it is possible to achieve the effect by simply retrieving the patch associated with a stash and applying it in reverse:</p>
 
-<p>Тоа не води до главните три секции од еден Git проект: Git папката, работна папка, и сцена (staging area).</p>
+<pre><code>$ git stash show -p stash@{0} | git apply -R</code></pre>
 
-<p><center><img src="/figures/ch1/18333fig0106-tn.png"></center><br/> Слика 1-6. Работна папка, сцена, и git папката.</p>
+<p>Again, if you don’t specify a stash, Git assumes the most recent stash:</p>
 
-<p>Git папката е местото каде што Git ги складира мета-податоците и базата на податоци за вашиот проект. Тоа е најзначајниот дел од Git, и тоа е она што се копира кога клонирате репозитори од друг компјутер.</p>
+<pre><code>$ git stash show -p | git apply -R</code></pre>
 
-<p>Работната папка е поглед (checkout) на една верзија/состојба од проектот. Датотеките се извлечени од компресираната база на податоци од Git папката и се поставени на хард дискот за да ги користите или менувате.</p>
+<p>You may want to create an alias and effectively add a <code>stash-unapply</code> command to your git. For example:</p>
 
-<p>Сцена (staging area) е едноставна датотека, обично е сместена во Git папката, и во неа се наоѓаат информации за тоа што ќе оди во следниот комит. Понекогаш за ова се користи терминот индекс (index), но се поприфатен термин е да се нарекува сцена (staging area).</p>
+<pre><code>$ git config --global alias.stash-unapply &#39;!git stash show -p | git apply -R&#39;
+$ git stash
+$ #... work work work
+$ git stash-unapply</code></pre>
 
-<p>Вообичаениот начин на работа со Git отприлика изгледа вака:</p>
+<h3 id='creating_a_branch_from_a_stash'>Creating a Branch from a Stash</h3>
 
-<p>1. Ги менувате датотеките од вашата локална папка.</p>
+<p>If you stash some work, leave it there for a while, and continue on the branch from which you stashed the work, you may have a problem reapplying the work. If the apply tries to modify a file that you’ve since modified, you’ll get a merge conflict and will have to try to resolve it. If you want an easier way to test the stashed changes again, you can run <code>git stash branch</code>, which creates a new branch for you, checks out the commit you were on when you stashed your work, reapplies your work there, and then drops the stash if it applies successfully:</p>
 
-<ol>
-<li>Ги поставувате датотеките на сцена, т.е. се прават слики од нив и се додаваат на сцената (staging area).</li>
+<pre><code>$ git stash branch testchanges
+Switched to a new branch &quot;testchanges&quot;
+# On branch testchanges
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#      modified:   index.html
+#
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#
+#      modified:   lib/simplegit.rb
+#
+Dropped refs/stash@{0} (f0dfc4d5dc332d1cee34a634182e168c4efc3359)</code></pre>
 
-<li>Правите комит, кој што ги зема датотеките како што се поставени на сцената и таа слика перманентно ја зачувува во локалната Git папка.</li>
-</ol>
-
-<p>Ако одредена верзија од датотеката се наоѓа во git папката, тогаш таа се смета за комитува-на. Доколку датотеката е променета и ако е додадена на сцена (staging area) тогаш таа се наоѓа во нова состојба - staged. Доколку пак датотеката е променета во однос на тоа кога е направен нов поглед во Git (checkout), и доколку променетата состојба не е додадена на сцена, тогаш датотеката едноставно се наоѓа во состојба која се нарекува променета. Во поглавје 2, ќе научите повеќе за тие состојби и како истите да ги искористите, или пак комплетно да го прескокнете чекорот од додавање на датотеката на сцена.</p>
+<p>This is a nice shortcut to recover stashed work easily and work on it in a new branch.</p>
 
 <div id='nav'>
 <a href='ch1-2.html'>prev</a> | <a href='ch1-4.html'>next</a>

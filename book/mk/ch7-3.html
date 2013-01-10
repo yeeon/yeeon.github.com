@@ -1,64 +1,72 @@
 ---
 layout: translation
-title: Pro Git 7.3 Customizing Git Git Hooks
+title: Pro Git 7.3 Како да започнам Основи на Git
 ---
-<h2 id='git_hooks'>Git Hooks</h2>
+<h2 id='__git'>Основи на Git</h2>
 
-<p>Like many other Version Control Systems, Git has a way to fire off custom scripts when certain important actions occur. There are two groups of these hooks: client side and server side. The client-side hooks are for client operations such as committing and merging. The server-side hooks are for Git server operations such as receiving pushed commits. You can use these hooks for all sorts of reasons, and you’ll learn about a few of them here.</p>
+<p>Во неколку збора, што е Git? Оваа секција е многу битно да ја разберете, бидејќи ако разберете што е Git и основите како работи, тогаш ефикасното користење на Git веројатно ќе биде многу едноставно за вас. Додека учите за Git, пробајте да ги изолирате работите што евентуално ги знаете за другите VCS, како што е Subversion и Perforce; на тој начин ќе ја избегнете забуната при користењето на алатката. Git ги складира и обработува информациите многу поразлично од другите системи, иако корисничкиот интерфејс е прилично сличен; доколку ги разберете тие разлики ќе ги избегнете забуните при неговото користење.</p>
 
-<h3 id='installing_a_hook'>Installing a Hook</h3>
+<h3 id='___'>Целосни слики, наместо закрпи</h3>
 
-<p>The hooks are all stored in the <code>hooks</code> subdirectory of the Git directory. In most projects, that’s <code>.git/hooks</code>. By default, Git populates this directory with a bunch of example scripts, many of which are useful by themselves; but they also document the input values of each script. All the examples are written as shell scripts, with some Perl thrown in, but any properly named executable scripts will work fine — you can write them in Ruby or Python or what have you. For post-1.6 versions of Git, these example hook files end with .sample; you’ll need to rename them. For pre-1.6 versions of Git, the example files are named properly but are not executable.</p>
+<p>Најголемата разлика помеѓу Git и било кој друг VCS (Subversion и сл.) е во начинот на кој Git ги обработува податоците. Концептуално, повеќето други системи информациите ги складираат како листа од промени над поединечните датотеки. Тие системи (CVS, Subversion, Perforce, Bazaar итн) информациите ги чуваат како множества од датотеки и промените настанати над тие датотеки со текот на времето, како што е прикажано на Слика 1-4.</p>
 
-<p>To enable a hook script, put a file in the <code>hooks</code> subdirectory of your Git directory that is named appropriately and is executable. From that point forward, it should be called. I’ll cover most of the major hook filenames here.</p>
+<p><center><img src="/figures/ch7/18333fig0104-tn.png"></center><br/> Слика 1-4. Другите системи чуваат закрпи за секоја датотека.</p>
 
-<h3 id='clientside_hooks'>Client-Side Hooks</h3>
+<p>Git не ги третира или чува податоците на тој начин. Наместо тоа, Git податоците ги третира како множества од целосни слики/копии од мини фајлсистем. Секогаш кога сакате да ја зачувате состојбата во која се наоѓа проектот во Git, тој едноставно прави слика од тоа како изгледаат сите датотеки во тој момент и зачувува референца до таа слика. За да биде ефикасен, доколку датотеките не се променети, Git не прави копија од датотеките туку само прави линк до претходно зачуваната идентична датотека. Git ги третира податоците како што е прикажано на сликата 1-5.</p>
 
-<p>There are a lot of client-side hooks. This section splits them into committing-workflow hooks, e-mail–workflow scripts, and the rest of the client-side scripts.</p>
+<p><center><img src="/figures/ch7/18333fig0105-tn.png"></center><br/> Слика 1-5. Git ги зачувува податоците како целосни копии од проектот.</p>
 
-<h4 id='committingworkflow_hooks'>Committing-Workflow Hooks</h4>
+<p>Ова е битна разлика помеѓу Git и речиси сите други VCS. Со тоа Git ги преиспитува речиси сите аспекти од системите за контрола на верзиите, за разлика од другите системи кои што едноставно ги копирале од претходните генерации. Тоа го прави Git да личи помалку на мини фајлсистем со извонредно моќни алатки над него, отколку како едноставен VCS. Ќе ги истражиме придобивките од таквото третирање на податоците при обработка на гранањето во Git во Поглавје 3.</p>
 
-<p>The first four hooks have to do with the committing process. The <code>pre-commit</code> hook is run first, before you even type in a commit message. It’s used to inspect the snapshot that’s about to be committed, to see if you’ve forgotten something, to make sure tests run, or to examine whatever you need to inspect in the code. Exiting non-zero from this hook aborts the commit, although you can bypass it with <code>git commit --no-verify</code>. You can do things like check for code style (run lint or something equivalent), check for trailing whitespace (the default hook does exactly that), or check for appropriate documentation on new methods.</p>
+<h3 id='____'>Речиси секоја операција е локална</h3>
 
-<p>The <code>prepare-commit-msg</code> hook is run before the commit message editor is fired up but after the default message is created. It lets you edit the default message before the commit author sees it. This hook takes a few options: the path to the file that holds the commit message so far, the type of commit, and the commit SHA-1 if this is an amended commit. This hook generally isn’t useful for normal commits; rather, it’s good for commits where the default message is auto-generated, such as templated commit messages, merge commits, squashed commits, and amended commits. You may use it in conjunction with a commit template to programmatically insert information.</p>
+<p>За повеќето операции што ги изведува Git му се потребни само локални датотеки и ресурси - генерално никакви информации од друг компјутер на мрежата не се потребни. Ако сте навикнати на користење на CVCS каде што повеќето операции имаат мрежна латенција, овој аспект на Git ќе ве натера да си помислите дека боговите на брзината го надариле Git со неискажлива моќ. Бидејќи целосниот историјат од проектот го имате локално на вашиот хард диск, повеќето операции изгледаат речиси моментални.</p>
 
-<p>The <code>commit-msg</code> hook takes one parameter, which again is the path to a temporary file that contains the current commit message. If this script exits non-zero, Git aborts the commit process, so you can use it to validate your project state or commit message before allowing a commit to go through. In the last section of this chapter, I’ll demonstrate using this hook to check that your commit message is conformant to a required pattern.</p>
+<p>На пример, за да ја прегледате историјата на проектот, Git не треба да оди до серверот за да ја земе историјата и да ви ја прикаже - туку едноставно ја чита директно од вашата локална база на податоци. Тоа значи дека историјатот на проектот го гледате речиси моментално. Доколку сакате да ги видите разликите помеѓу сегашната верзија на некоја датотека и верзијата од пред еден месец, Git може да ја види состојбата на датотеката од пред еден месец и локално да ви ги пресмета разликите, наместо да испрати барање за тоа до оддалечен сервер, или пак да побара постара верзија за датотеката од некој сервер за да ја пресмета разликата локално.</p>
 
-<p>After the entire commit process is completed, the <code>post-commit</code> hook runs. It doesn’t take any parameters, but you can easily get the last commit by running <code>git log -1 HEAD</code>. Generally, this script is used for notification or something similar.</p>
+<p>Тоа значи дека нема многу работи кои што нема да може да ги направите доколку сте офјалн или не сте на VPN. Доколку се качите на авион или воз, и сакате малку да поработите, можете да правите нови состојби од проектот (commit) се додека не добиете мрежна врска и тогаш ќе ги аплоадирате. Ако сте дома и не може да го натерате вашиот VPN клиент да проработи, сепак можете да си работите на проектот. Кај многу други системи, ваквиот начин на работа или е невозможен или многу тешко изводлив. Со Perforce, на пример, речиси ништо не можете да правите доколку немате конекција со серверот; кај Subversion и CVS, може да ги едитирате датотеките, меѓутоа не може да направите нова состојба од проектот (commit) бидејќи базата на податоци е на сервер. Можеби сето ова не изгледа како некоја голема работа, меѓутоа може да се изненадите колкава разлика може да ви направи.</p>
 
-<p>The committing-workflow client-side scripts can be used in just about any workflow. They’re often used to enforce certain policies, although it’s important to note that these scripts aren’t transferred during a clone. You can enforce policy on the server side to reject pushes of commits that don’t conform to some policy, but it’s entirely up to the developer to use these scripts on the client side. So, these are scripts to help developers, and they must be set up and maintained by them, although they can be overridden or modified by them at any time.</p>
+<h3 id='git__'>Git има интегритет</h3>
 
-<h4 id='email_workflow_hooks'>E-mail Workflow Hooks</h4>
+<p>Пред да се зачуваат работите во Git, им се пресметува контролна сума, а подоцна истите работи се референцираат преку таа сума. Тоа значи дека е невозможно да се промени содржината на некоја датотека без Git да дознае за тоа. Тоа функционалност е вградена во Git во најниските нивоа и е интегрален дел од неговата филозофија. Не може да изгубите информација при пренос или да имате корумпирана датотека без Git да го детектира тоа.</p>
 
-<p>You can set up three client-side hooks for an e-mail–based workflow. They’re all invoked by the <code>git am</code> command, so if you aren’t using that command in your workflow, you can safely skip to the next section. If you’re taking patches over e-mail prepared by <code>git format-patch</code>, then some of these may be helpful to you.</p>
+<p>Механизмот кој што го користи Git за пресметување на контролната сума се вика SHA-1 хеш. Тоа е стринг од 40 знаци составен од хексадекадни знаци (0-9 и a-f) и се пресметува врз основа на содржината на датотеката или папката во Git. SHA-1 хешот изгледа отприлика вака:</p>
 
-<p>The first hook that is run is <code>applypatch-msg</code>. It takes a single argument: the name of the temporary file that contains the proposed commit message. Git aborts the patch if this script exits non-zero. You can use this to make sure a commit message is properly formatted or to normalize the message by having the script edit it in place.</p>
+<pre><code>24b9da6552252987aa493b52f8696cd6d3b00373</code></pre>
 
-<p>The next hook to run when applying patches via <code>git am</code> is <code>pre-applypatch</code>. It takes no arguments and is run after the patch is applied, so you can use it to inspect the snapshot before making the commit. You can run tests or otherwise inspect the working tree with this script. If something is missing or the tests don’t pass, exiting non-zero also aborts the <code>git am</code> script without committing the patch.</p>
+<p>Насекаде ќе ги гледате ваквите хеш вредности во Git затоа што тој насекаде ги користи. Всушност, Git сите работи ги зачувува не според името на датотеката, туку во база на податоци која е адресабилна според хеш вредноста на нивната содржина.</p>
 
-<p>The last hook to run during a <code>git am</code> operation is <code>post-applypatch</code>. You can use it to notify a group or the author of the patch you pulled in that you’ve done so. You can’t stop the patching process with this script.</p>
+<h3 id='__git___'>Во основа Git само додава податоци</h3>
 
-<h4 id='other_client_hooks'>Other Client Hooks</h4>
+<p>Кога изведувате операции во Git, речиси сите тие само додаваат податоци во Git базата на податоци. Речиси е невозможно да го натерате системот да направи нешто што подоцна не може да се врати на претходната состојба, или пак да го натерате да избрише некои податоци. Како и со секој VCS, може да ги загубите податоците кои што не сте ги комитувале; но откако ќе ги комитувате и кога Git ќе направи слика од тоа, тогаш навистина е тешко да загубите нешто, особено доколку редовно вашата база ја синхронизирате (push) со друго репозитори.</p>
 
-<p>The <code>pre-rebase</code> hook runs before you rebase anything and can halt the process by exiting non-zero. You can use this hook to disallow rebasing any commits that have already been pushed. The example <code>pre-rebase</code> hook that Git installs does this, although it assumes that next is the name of the branch you publish. You’ll likely need to change that to whatever your stable, published branch is.</p>
+<p>Тоа го прави користењето на Git вистинско задоволство бидејќи знаеме дека може да експериментираме без притоа да се плашиме дека може да ги уништиме работите. Поде-тално за тоа како Git ги складира податоците и како може да ги реставрирате податоците кои изгледаат дека се загубени погледнете во &#8220;Под хаубата&#8221; во поглавје 9.</p>
 
-<p>After you run a successful <code>git checkout</code>, the <code>post-checkout</code> hook runs; you can use it to set up your working directory properly for your project environment. This may mean moving in large binary files that you don’t want source controlled, auto-generating documentation, or something along those lines.</p>
+<h3 id='_'>Трите нивоа</h3>
 
-<p>Finally, the <code>post-merge</code> hook runs after a successful <code>merge</code> command. You can use it to restore data in the working tree that Git can’t track, such as permissions data. This hook can likewise validate the presence of files external to Git control that you may want copied in when the working tree changes.</p>
+<p>Сега внимавајте. Ова е главната работа што треба да се запомни за Git доколку сакате понатамошниот процес на учење да ви оди лесно. Git има три нивоа во кои што може да се најдат датотеките: комитувани (committed), променети (modified) и поставени (staged). Комитувани значи дека податоците безбедно се зачувани во локалната база на податоци. Променети значи дека датотеките се променети, меѓутоа сеуште не се комитувани. Поста-вени (staged) значи дека сте ги маркирале променетите датотеки во нивната тековна состојба да бидат зачувани во следниот комит.</p>
 
-<h3 id='serverside_hooks'>Server-Side Hooks</h3>
+<p>Тоа не води до главните три секции од еден Git проект: Git папката, работна папка, и сцена (staging area).</p>
 
-<p>In addition to the client-side hooks, you can use a couple of important server-side hooks as a system administrator to enforce nearly any kind of policy for your project. These scripts run before and after pushes to the server. The pre hooks can exit non-zero at any time to reject the push as well as print an error message back to the client; you can set up a push policy that’s as complex as you wish.</p>
+<p><center><img src="/figures/ch7/18333fig0106-tn.png"></center><br/> Слика 1-6. Работна папка, сцена, и git папката.</p>
 
-<h4 id='prereceive_and_postreceive'>pre-receive and post-receive</h4>
+<p>Git папката е местото каде што Git ги складира мета-податоците и базата на податоци за вашиот проект. Тоа е најзначајниот дел од Git, и тоа е она што се копира кога клонирате репозитори од друг компјутер.</p>
 
-<p>The first script to run when handling a push from a client is <code>pre-receive</code>. It takes a list of references that are being pushed from stdin; if it exits non-zero, none of them are accepted. You can use this hook to do things like make sure none of the updated references are non-fast-forwards; or to check that the user doing the pushing has create, delete, or push access or access to push updates to all the files they’re modifying with the push.</p>
+<p>Работната папка е поглед (checkout) на една верзија/состојба од проектот. Датотеките се извлечени од компресираната база на податоци од Git папката и се поставени на хард дискот за да ги користите или менувате.</p>
 
-<p>The <code>post-receive</code> hook runs after the entire process is completed and can be used to update other services or notify users. It takes the same stdin data as the <code>pre-receive</code> hook. Examples include e-mailing a list, notifying a continuous integration server, or updating a ticket-tracking system — you can even parse the commit messages to see if any tickets need to be opened, modified, or closed. This script can’t stop the push process, but the client doesn’t disconnect until it has completed; so, be careful when you try to do anything that may take a long time.</p>
+<p>Сцена (staging area) е едноставна датотека, обично е сместена во Git папката, и во неа се наоѓаат информации за тоа што ќе оди во следниот комит. Понекогаш за ова се користи терминот индекс (index), но се поприфатен термин е да се нарекува сцена (staging area).</p>
 
-<h4 id='update'>update</h4>
+<p>Вообичаениот начин на работа со Git отприлика изгледа вака:</p>
 
-<p>The update script is very similar to the <code>pre-receive</code> script, except that it’s run once for each branch the pusher is trying to update. If the pusher is trying to push to multiple branches, <code>pre-receive</code> runs only once, whereas update runs once per branch they’re pushing to. Instead of reading from stdin, this script takes three arguments: the name of the reference (branch), the SHA-1 that reference pointed to before the push, and the SHA-1 the user is trying to push. If the update script exits non-zero, only that reference is rejected; other references can still be updated.</p>
+<p>1. Ги менувате датотеките од вашата локална папка.</p>
+
+<ol>
+<li>Ги поставувате датотеките на сцена, т.е. се прават слики од нив и се додаваат на сцената (staging area).</li>
+
+<li>Правите комит, кој што ги зема датотеките како што се поставени на сцената и таа слика перманентно ја зачувува во локалната Git папка.</li>
+</ol>
+
+<p>Ако одредена верзија од датотеката се наоѓа во git папката, тогаш таа се смета за комитува-на. Доколку датотеката е променета и ако е додадена на сцена (staging area) тогаш таа се наоѓа во нова состојба - staged. Доколку пак датотеката е променета во однос на тоа кога е направен нов поглед во Git (checkout), и доколку променетата состојба не е додадена на сцена, тогаш датотеката едноставно се наоѓа во состојба која се нарекува променета. Во поглавје 2, ќе научите повеќе за тие состојби и како истите да ги искористите, или пак комплетно да го прескокнете чекорот од додавање на датотеката на сцена.</p>
 
 <div id='nav'>
 <a href='ch7-2.html'>prev</a> | <a href='ch7-4.html'>next</a>

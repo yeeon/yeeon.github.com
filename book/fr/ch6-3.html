@@ -1,127 +1,64 @@
 ---
 layout: translation
-title: Pro Git 6.3 Utilitaires Git La remise
+title: Pro Git 6.3 Personnalisation de Git Crochets Git
 ---
-<h2 id='la_remise'>La remise</h2>
+<h2 id='crochets_git'>Crochets Git</h2>
 
-<p>Souvent, lorsque vous avez travaillé sur une partie de votre projet, les choses sont dans un état instable mais vous voulez changer de branches pour un peu de travailler sur autre chose. Le problème est que vous ne voulez pas consigner (commit) un travail à moitié fait seulement pour pouvoir y revenir plus tard. La réponse à cette problématique est la commande <code>git stash</code>.</p>
+<p>Comme de nombreux autres systèmes de gestion de version, Git dispose d&#8217;un moyen de lancer des scripts personnalisés quand certaines actions importantes ont lieu. Il y a deux groupes de crochets : ceux côté client et ceux côté serveur. Les crochets côté client concernent les opérations de client telles que la validation et la fusion. Les crochets côté serveur concernent les opérations de serveur Git telles que la réception de <em>commits</em>. Vous pouvez utiliser ces crochets pour toutes sortes de raisons dont nous allons détailler quelques unes.</p>
 
-<p>Remiser prend l&#8217;état en cours de votre répertoire de travail, c&#8217;est-à-dire les fichiers modifiés et la zone d&#8217;attente, et l&#8217;enregistre dans la pile des modifications non finies que vous pouvez réappliquer à n&#8217;importe quel moment.</p>
+<h3 id='installation_dun_crochet'>Installation d&#8217;un crochet</h3>
 
-<h3 id='remiser_votre_travail'>Remiser votre travail</h3>
+<p>Les crochets sont tous stockés dans le sous-répertoire <code>hooks</code> du répertoire Git. Dans la plupart des projets, c&#8217;est <code>.git/hooks</code>. Par défaut, Git popule ce répertoire avec quelques scripts d&#8217;exemple déjà utiles par eux-mêmes ; mais ils servent aussi de documentation sur les paramètres de chaque script. Tous les exemples sont des scripts shell avec un peu de Perl mais n&#8217;importe quel script exécutable nommé correctement fonctionnera. Vous pouvez les écrire en Ruby ou Python ou ce que vous voudrez. Pour les versions de Git postérieures à 1.6, ces fichiers crochet d&#8217;exemple se terminent en <code>.sample</code> et il faudra les renommer. Pour les versions de Git antérieures à 1.6, les fichiers d&#8217;exemple sont nommés correctement mais ne sont pas exécutables.</p>
 
-<p>Pour démontrer cette possibilité, vous allez dans votre projet et commencez à travailler sur quelques fichiers et mettre en zone d&#8217;attente l&#8217;un de ces changements. Si vous exécutez <code>git status</code>, vous pouvez voir votre état instable:</p>
+<p>Pour activer un script de crochet, placez un fichier dans le sous-répertoire <code>hook</code> de votre répertoire Git, nommé correctement et exécutable. À partir de ce moment, il devrait être appelé. Abordons donc les noms de fichiers de crochet les plus importants.</p>
 
-<pre><code>$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#      modified:   index.html
-#
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#
-#      modified:   lib/simplegit.rb
-#</code></pre>
+<h3 id='crochets_ct_client'>Crochets côté client</h3>
 
-<p>À ce moment là, vous voulez changer de branche, mais vous ne voulez pas encore consigner ce travail; vous allez donc remiser vos modifications. Pour créer une nouvelle remise sur votre pile, exécutez <code>git stash</code> :</p>
+<p>Il y a de nombreux crochets côté client. Ce chapitre les classe entre crochets de traitement de validation, scripts de traitement par e-mail et le reste des scripts côté client.</p>
 
-<pre><code>$ git stash
-Saved working directory and index state \
-  &quot;WIP on master: 049d078 added the index file&quot;
-HEAD is now at 049d078 added the index file
-(To restore them type &quot;git stash apply&quot;)</code></pre>
+<h4 id='crochets_de_traitement_de_validation'>Crochets de traitement de validation</h4>
 
-<p>Votre répertoire de travail est propre :</p>
+<p>Les quatre premiers crochets ont trait au processus de validation. Le crochet <code>pre-commit</code> est lancé en premier, avant même que vous ne saisissiez le message de validation. Il est utilisé pour inspecter l&#8217;instantané qui est sur le point d&#8217;être validé, pour vérifier si vous avez oublié quelque chose, pour s&#8217;assurer que les tests passent ou pour examiner ce que vous souhaitez inspecter dans le code. Un code de sortie non nul de ce crochet annule la validation, bien que vous puissiez le contourner avec <code>git commit --no-verify</code>. Vous pouvez réaliser des actions telles qu&#8217;une vérification de style (en utilisant lint ou un équivalent), d&#8217;absence de blancs en fin de ligne (le crochet par défaut fait exactement cela) ou de documentation des nouvelles méthodes.</p>
 
-<pre><code>$ git status
-# On branch master
-nothing to commit (working directory clean)</code></pre>
+<p>Le crochet <code>prepare-commit-msg</code> est appelé avant que l&#8217;éditeur de message de validation ne soit lancé après que le message par défaut a été créé. Il vous permet d&#8217;éditer le message par défaut avant que l&#8217;auteur ne le voit. Ce crochet accepte quelques options : le chemin du fichier qui contient le message de validation actuel, le type de validation et le SHA-1 du <em>commit</em> si c&#8217;est un <em>commit</em> amendé. Ce crochet ne sert généralement à rien pour les validations normales. Par contre, il est utile pour les validations où le message par défaut est généré, tel que les modèles de message de validation, les validations de fusion, les <em>commits</em> écrasés ou amendés. Vous pouvez l&#8217;utiliser en conjonction avec un modèle de messages pour insérer de l&#8217;information par programme.</p>
 
-<p>À ce moment, vous pouvez facilement changer de branche et travailler autre part; vos modifications sont conservées dans votre pile. Pour voir quelles remises vous avez sauvegardées, vous pouvez utiliser la commande <code>git stash list</code> :</p>
+<p>Le crochet <code>commit-msg</code> accepte un paramètre qui est encore le chemin du fichier temporaire qui contient le message de validation actuel. Si ce script rend un code de sortie non nul, Git abandonne le processus de validation, ce qui vous permet de vérifier l&#8217;état de votre projet ou du message de validation avant de laisser passer un <em>commit</em>. Dans la dernière section de ce chapitre, l&#8217;utilisation de ce crochet permettra de vérifier que le message de validation est conforme à un format obligatoire.</p>
 
-<pre><code>$ git stash list
-stash@{0}: WIP on master: 049d078 added the index file
-stash@{1}: WIP on master: c264051... Revert &quot;added file_size&quot;
-stash@{2}: WIP on master: 21d80a5... added number to log</code></pre>
+<p>Après l&#8217;exécution du processus complet de validation, le crochet <code>post-commit</code> est appelé. Il n&#8217;accepte aucun argument mais vous pouvez facilement accéder au dernier <em>commit</em> grâce à <code>git log -1 HEAD</code>. Généralement, ce script sert à réaliser des notifications ou des choses similaires.</p>
 
-<p>Dans ce cas, deux remises on été créées précédemment, vous avez donc accès à trois travaux remisés différents. Vous pouvez réappliquer celui que vous venez juste de remisé en utilisant la commande affichée dans la sortie d&#8217;aide de la première commande de remise : <code>git stash apply</code>. Si vous voulez appliquer une remise plus ancienne, vous pouvez la spécifier en la nommant, comme ceci : <code>git stash apply stash@{2}</code>. Si vous ne spécifier pas une remise, Git présume que vous voulez la remise la plus récente et essayes de l&#8217;appliquer.</p>
+<p>Les scripts de gestion de validation côté client peuvent être utilisés pour n&#8217;importe quelle méthode de travail. Ils sont souvent utilisés pour mettre en œuvre certaines politiques, bien qu&#8217;il faille noter que ces scripts ne sont pas transférés lors d&#8217;un clonage. Vous pouvez faire appliquer les politiques de gestion au niveau serveur pour rejeter les poussées de <em>commits</em> qui ne sont pas conformes à certaines règles, mais il reste complètement du ressort du développeur de les utiliser côté client. Ce sont des scripts destinés à aider les développeurs et ils doivent être mis en place et maintenus par ces derniers qui peuvent tout aussi bien les outrepasser ou les modifier à tout moment.</p>
 
-<pre><code>$ git stash apply
-# On branch master
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#
-#      modified:   index.html
-#      modified:   lib/simplegit.rb
-#</code></pre>
+<h4 id='crochets_de_gestion_email'>Crochets de gestion e-mail</h4>
 
-<p>Vous pouvez observer que Git remodifie les fichiers non consignés lorsque vous avez créé la remise. Dans ce cas, vous aviez un répertoire de travail propre lorsque vous avez essayer d&#8217;appliquer la remise, et vous l&#8217;avez fait sur la même branche que celle où vous l&#8217;aviez créée; mais avoir un répertoire de travail propre et l&#8217;appliquer sur la même branche n&#8217;est pas nécessaire pour réussir à appliquer une remise. Vous pouvez très bien créer une remise sur une branche, changer de branche et essayer d&#8217;appliquer les modifications. Vous pouvez même avoir des fichiers modifiés et non consignés dans votre répertoire de travail quand vous appliquez une remise, Git vous fournit les conflits de fusions si quoique ce soit ne s&#8217;applique pas proprement.</p>
+<p>Vous pouvez régler trois crochets côté client pour la gestion à base d&#8217;e-mail. Ils sont tous invoqués par la commande <code>git am</code>, donc si vous n&#8217;êtes pas habitués à utiliser cette commande dans votre mode de gestion, vous pouvez simplement passer la prochaine section. Si vous acceptez des patchs préparés par <code>git format-patch</code> par e-mail, alors certains de ces crochets peuvent vous être très utiles.</p>
 
-<p>Par défaut, les modifications de vos fichiers sont réappliqués, mais pas les mises en attente. Pour cela, vous devez exécutez la commande <code>git stash apply</code> avec l&#8217;option <code>--index</code> pour demandez à Git d&#8217;essayer de réappliquer les modifications de votre zone d&#8217;attente. Si vous exécutez cela à la place de la commande précédente, vous vous retrouvez dans la position d&#8217;origine de la remise :</p>
+<p>Le premier crochet lancé est <code>applypatch-msg</code>. Il accepte un seul argument : le nom du fichier temporaire qui contient le message de validation proposé. Git abandonne le patch si ce script sort avec un code non nul. Vous pouvez l&#8217;utiliser pour vérifier que la message de validation est correctement formaté ou pour normaliser le message en l&#8217;éditant sur place par script.</p>
 
-<pre><code>$ git stash apply --index
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#      modified:   index.html
-#
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#
-#      modified:   lib/simplegit.rb
-#</code></pre>
+<p>Le crochet lancé ensuite lors de l&#8217;application de patchs via <code>git am</code> s&#8217;appelle <code>pre-applypatch</code>. Il n&#8217;accepte aucun argument et est lancé après que le patch a été appliqué, ce qui vous permet d&#8217;inspecter l&#8217;instantané avant de réaliser la validation. Vous pouvez lancer des tests ou inspecter l&#8217;arborescence active avec ce script. S&#8217;il manque quelque chose ou que les tests ne passent pas, un code de sortie non nul annule la commande <code>git am</code> sans valider le patch.</p>
 
-<p>L&#8217;option <code>apply</code> essaye seulement d&#8217;appliquer le travail remisé, vous aurez toujours la remise dans votre pile. Pour la supprimer, vous pouvez exécuter <code>git stash drop</code> avec le nom de la remise à supprimer :</p>
+<p>Le dernier crochet lancé pendant l&#8217;opération <code>git am</code> s&#8217;appelle <code>post-applypatch</code>. Vous pouvez l&#8217;utiliser pour notifier un groupe ou l&#8217;auteur du patch que vous venez de l&#8217;appliquer. Vous ne pouvez plus arrêter le processus de validation avec ce script.</p>
 
-<pre><code>$ git stash list
-stash@{0}: WIP on master: 049d078 added the index file
-stash@{1}: WIP on master: c264051... Revert &quot;added file_size&quot;
-stash@{2}: WIP on master: 21d80a5... added number to log
-$ git stash drop stash@{0}
-Dropped stash@{0} (364e91f3f268f0900bc3ee613f9f733e82aaed43)</code></pre>
+<h4 id='autres_crochets_ct_client'>Autres crochets côté client</h4>
 
-<p>Vous pouvez également exécutez <code>git stash pop</code> pour appliquer et supprimer immédiatement la remise de votre pile.</p>
+<p>Le crochet <code>pre-rebase</code> est invoqueé avant que vous ne rebasiez et peut interrompre le processus s&#8217;il sort avec un code d&#8217;erreur non nul. Vous pouvez utiliser ce crochet pour empêcher de rebaser tout <em>commit</em> qui a déjà été poussé. C&#8217;est ce que fait le crochet d&#8217;exemple <code>pre-rebase</code> que Git installe, même s&#8217;il considère que la branche cible de publication s&#8217;appelle <code>next</code>. Il est très probable que vous ayez à changer ce nom pour celui que vous utilisez réellement en branche publique stable.</p>
 
-<h3 id='dfaire_leffet_dune_remise'>Défaire l&#8217;effet d&#8217;une remise</h3>
+<p>Après avoir effectué avec succès un <code>git checkout</code>, la crochet <code>post-chechout</code> est lancé. Vous pouvez l&#8217;utiliser pour paramétrer correctement votre environnement projet dans votre copie de travail. Cela peut signifier y déplacer des gros fichiers binaires que vous ne souhaitez pas voir en gestion de source, générer automatiquement la documentation ou quelque chose dans le genre.</p>
 
-<p>Dans certains cas, il est souhaitable de pouvoir appliquer une modification remisée, réaliser d&#8217;autres modifications, puis défaire les modifications de la remise. Git ne fournit pas de commande <code>stash unapply</code> mais il est possible d&#8217;obtenir le même effet en extrayant les modifications qui constituent la remise et en appliquant leur inverse :</p>
+<p>Enfin, le crochet <code>post-merge</code> s&#8217;exécute à la suite d&#8217;une commande <code>merge</code> réussie. Vous pouvez l&#8217;utiliser pour restaurer certaines données non gérées par Git dans le copie de travail telles que les informations de permission. Ce crochet permet de même de valider la présence de fichiers externes au contrôle de Git que vous souhaitez voir recopiés lorsque la copie de travail change.</p>
 
-<pre><code>$ git stash show -p stash@{0} | git apply -R</code></pre>
+<h3 id='crochets_ct_serveur'>Crochets côté serveur</h3>
 
-<p>Ici aussi, si la remise n&#8217;est pas indiquée, Git utilise la plus récente.</p>
+<p>En complément des crochets côté client, vous pouvez utiliser comme administrateur système quelques crochets côté serveur pour appliquer quasiment toutes les règles de votre projet. Ces scripts s&#8217;exécutent avant et après chaque poussée sur le serveur. Les crochets <code>pre</code> peuvent rendre un code d&#8217;erreur non nul à tout moment pour rejeter la poussée et afficher un message d&#8217;erreur au client. Vous pouvez mettre en place des règles aussi complexes que nécessaire.</p>
 
-<pre><code>$ git stash show -p | git apply -R</code></pre>
+<h4 id='prereceive_et_postreceive'>pre-receive et post-receive</h4>
 
-<p>La création d&#8217;un alias permettra d&#8217;ajouter effectivement la commande <code>stash-unapply</code> à votre Git. Par exemple :</p>
+<p>Le premier script lancé lors de la gestion d&#8217;une poussée depuis un client est <code>pre-receive</code>. Il accepte une liste de références lues sur <em>stdin</em>. S&#8217;il sort avec un code d&#8217;erreur non nul, aucune n&#8217;est acceptée. Vous pouvez utiliser ce crochet pour réaliser des tests tels que s&#8217;assurer que toutes les références mises à jour le sont en avance rapide ou pour s&#8217;assurer que l&#8217;utilisateur dispose bien des droits de création, poussée, destruction ou de lecture des mises à jour pour tous les fichiers qu&#8217;il cherche à mettre à jour dans cette poussée.</p>
 
-<pre><code>$ git config --global alias.stash-unapply &#39;!git stash show -p | git apply -R&#39;
-$ git stash
-$ #... work work work
-$ git stash-unapply</code></pre>
+<p>Le crochet <code>post-receive</code> est lancé après l&#8217;exécution complète du processus et peut être utilisé pour mettre à jour d&#8217;autres services ou pour notifier des utilisateurs. Il accepte les mêmes données sur <em>stdin</em> que <code>pre-receive</code>. Il peut par exemple envoyer un e-mail à une liste de diffusion, notifier un serveur d&#8217;intégration continue ou mettre à jour un système de suivi de tickets. Il peut aussi analyser les messages de validation à la recherche d&#8217;ordres de mise à jour de l&#8217;état des tickets. Ce script ne peut pas arrêter le processus de poussée mais le client n&#8217;est pas déconnecté tant qu&#8217;il n&#8217;a pas terminé. Il faut donc être prudent à ne pas essayer de lui faire réaliser des actions qui peuvent durer longtemps.</p>
 
-<h3 id='crer_une_branche_depuis_une_remise'>Créer une branche depuis une remise</h3>
+<h4 id='update'>update</h4>
 
-<p>Si vous remiser votre travail, l&#8217;oubliez pendant un temps en continuant sur la branche où vous avez créé la remise, vous pouvez avoir un problème en réappliquant le travail. Si l&#8217;application de la remise essaye de modifier un fichier que vous avez modifié depuis, vous allez obtenir des conflits de fusion et vous devrez essayer de les résoudre. Si vous voulez un moyen plus facile de tester une nouvelle fois les modifications remisées, vous pouvez exécuter <code>git stash branch</code>, qui créera une nouvelle branche à votre place, récupérant le commit où vous étiez lorsque vous avez créé la remise, réappliquera votre travail dedans, et supprimera finalement votre remise si cela a réussi :</p>
-
-<pre><code>$ git stash branch testchanges
-Switched to a new branch &quot;testchanges&quot;
-# On branch testchanges
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#      modified:   index.html
-#
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#
-#      modified:   lib/simplegit.rb
-#
-Dropped refs/stash@{0} (f0dfc4d5dc332d1cee34a634182e168c4efc3359)</code></pre>
-
-<p>C&#8217;est un bon raccourci pour récupérer du travail remisé facilement et de pouvoir travailler dessus dans une nouvelle branche.</p>
+<p>Le script <code>update</code> est très similaire au script <code>pre-receive</code>, à la différence qu&#8217;il est lancé une fois par branche qui doit être modifiée lors de la poussée. Si la poussée s&#8217;applique à plusieurs branches, <code>pre-receive</code> n&#8217;est lancé qu&#8217;une fois, tandis qu&#8217;<code>update</code> est lancé une fois par branche impactée. Au lieu de lire à partir de stdin, ce script accepte trois arguments : le nom de la référence (branche), le SHA-1 du <em>commit</em> pointé par la référence avant la poussée et le SHA-1 que l&#8217;utilisateur est en train de pousser. Si le script <code>update</code> se termine avec un code d&#8217;erreur non nul, seule la référence est rejetée. Les autres références pourront être mises à jour.</p>
 
 <div id='nav'>
 <a href='ch6-2.html'>prev</a> | <a href='ch6-4.html'>next</a>

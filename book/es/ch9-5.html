@@ -1,91 +1,49 @@
 ---
 layout: translation
-title: Pro Git 9.5 Los entesijos internos de Git Las especificaciones para hacer referencia a&#8230; (refspec)
+title: Pro Git 9.5 Git en un servidor Acceso público
 ---
-<h2 id='las_especificaciones_para_hacer_referencia_a_refspec'>Las especificaciones para hacer referencia a&#8230; (refspec)</h2>
+<h2 id='acceso_pblico'>Acceso público</h2>
 
-<p>A lo largo del libro has utilizado sencillos mapeados entre ramas remotas y referencias locales; pero las cosas pueden ser bastante más complejas. Supón que añades un remoto tal que:</p>
+<p>¿Qué hacer si necesitas acceso anónimo de lectura a tu proyecto? Por ejemplo, si en lugar de albergar un proyecto privado interno, quieres albergar un proyecto de código abierto. O si tienes un grupo de servidores de integración automatizados o servidores de integración continua que cambian muy a menudo, y no quieres estar todo el rato generando claves SSH. Es posible que desees añadirles un simple acceso anónimo de lectura.</p>
 
-<pre><code>$ git remote add origin git@github.com:schacon/simplegit-progit.git</code></pre>
+<p>La manera más sencilla de hacerlo para pequeños despliegues, es el preparar un servidor web estático cuya raiz de documentos sea la ubicación donde tengas tus repositorios Git; y luego activar el anclaje (hook) &#8216;post-update&#8217; que se ha mencionado en la primera parte de este capítulo. Si utilizamos el mismo ejemplo usado anteriormente, suponiendo que tengas los repositorios en la carpeta &#8216;/opt/git&#8217;, y que hay un servidor Apache en marcha en tu máquina. Veremos algunas configuraciones básicas de Apache, para que puedas hacerte una idea de lo que puedes necesitar. (Recordar que esto es solo un ejemplo, y que puedes utilizar cualquier otro servidor web.)</p>
 
-<p>Esto añade una nueva sección a tu archivo <code>.git/config</code>, indicando el nombre del remoto (<code>origin</code>), la ubicación (URL) del repositorio remoto y la referencia para recuperar (fench) desde él:</p>
+<p>Lo primero, es activar el anclaje (hook):</p>
 
-<pre><code>[remote &quot;origin&quot;]
-       url = git@github.com:schacon/simplegit-progit.git
-       fetch = +refs/heads/*:refs/remotes/origin/*</code></pre>
+<pre><code>$ cd project.git
+$ mv hooks/post-update.sample hooks/post-update
+$ chmod a+x hooks/post-update</code></pre>
 
-<p>El formato para esta referencia es un signo <code>+</code> opcional, seguido de una sentencia <code>&lt;orig&gt;:&lt;dest&gt;</code>; donde <code>&lt;orig&gt;</code> es la plantilla para referencias en el lado remoto y <code>&lt;dest&gt;</code> el lugar donde esas referencias se escribirán en el lado local. El <code>+</code>, si está presente, indica a Git que debe actualizar la referencia incluso en los casos en que no se dé un avance rápido (fast-forward).</p>
+<p>Si utilizas una versión de Git anterior a la 1.6, el comando &#8216;mv&#8217; no es necesario, ya que solo recientemente lleva Git los anclajes de ejemplo con el sufijo .sample</p>
 
-<p>En el caso por defecto en que es escrito por un comando <code>git remote add</code>, Git recupera del servidor todas las referencias bajo <code>refs/heads/</code>, y las escribe localmente en <code>refs/remotes/origin/</code>. De tal forma que, si existe una rama <code>master</code> en el servidor, puedes acceder a ella localmente a través de</p>
+<p>¿Que hace este anclaje &#8216;post-update&#8217;? Pues tiene una pinta tal como:</p>
 
-<pre><code>$ git log origin/master
-$ git log remotes/origin/master
-$ git log refs/remotes/origin/master</code></pre>
+<pre><code>$ cat .git/hooks/post-update 
+#!/bin/sh
+exec git-update-server-info</code></pre>
 
-<p>Todas estas sentencias son equivalentes, ya que Git expande cada una de ellas a <code>refs/remotes/origin/master</code>.</p>
+<p>Lo que significa que cada vez que envias (push) algo al servidor vía SSH, Git lanzará este comando y actualizará así los archivos necesarios para HTTP fetching. (_i_pendientedetraducir)</p>
 
-<p>Si, en cambio, quisieras hacer que Git recupere únicamente la rama <code>master</code> y no cualquier otra rama en el servidor remoto. Puedes cambiar la linea de recuperación a</p>
+<p>A continuación, has de añadir una entrada VirtualHost al archivo de configuración de Apache, fijando su raiz de documentos a la ubicación donde tengas tus proyectos Git. Aquí, estamos asumiendo que tienes un DNS comodin para redirigir <code>*.gitserver</code> hacia cualquier máquina que estés utilizando para todo esto:</p>
 
-<pre><code>fetch = +refs/heads/master:refs/remotes/origin/master</code></pre>
+<pre><code>&lt;VirtualHost *:80&gt;
+    ServerName git.gitserver
+    DocumentRoot /opt/git
+    &lt;Directory /opt/git/&gt;
+        Order allow, deny
+        allow from all
+    &lt;/Directory&gt;
+&lt;/VirtualHost&gt;</code></pre>
 
-<p>Quedando así esta referencia como la referencia por defecto para el comando <code>git fetch</code> para ese remoto. Para hacerlo puntualmente en un momento concreto, puedes especificar la referencia directamente en la linea de comando. Para recuperar la rama <code>master</code> del servidor remoto a tu rama <code>origin/mymaster</code> local, puedes lanzar el comando</p>
+<p>Asimismo, has de ajustar el grupo Unix de las carpetas bajo &#8216;/opt/git&#8217; a &#8216;www-data&#8217;, para que tu servidor web tenga acceso de lectura a los repositorios contenidos en ellas; porque la instancia de Apache que maneja los scripts CGI trabaja bajo dicho usuario:</p>
 
-<pre><code>$ git fetch origin master:refs/remotes/origin/mymaster</code></pre>
+<pre><code>$ chgrp -R www-data /opt/git</code></pre>
 
-<p>Puedes incluso indicar multiples referencias en un solo comando. Escribiendo algo asi como:</p>
+<p>Una vez reinicies Apache, ya deberias ser capaz de clonar tus repositorios bajo dicha carpeta, simplemente indicando la URL de tu projecto:</p>
 
-<pre><code>$ git fetch origin master:refs/remotes/origin/mymaster \
-   topic:refs/remotes/origin/topic
-From git@github.com:schacon/simplegit
- ! [rejected]        master     -&gt; origin/mymaster  (non fast forward)
- * [new branch]      topic      -&gt; origin/topic</code></pre>
+<pre><code>$ git clone http://git.gitserver/project.git</code></pre>
 
-<p>En este ejemplo, se ha rechazado la recuperación de la rama master porque no era una referencia de avance rápido (fast-forward). Puedes forzarlo indicando el signo <code>+</code> delante de la referencia.</p>
-
-<p>Es posible asimismo indicar referencias multiples en el archivo de configuración. Si, por ejemplo, siempre recuperas las ramas &#8216;master&#8217; y &#8216;experiment&#8217;, puedes poner dos lineas:</p>
-
-<pre><code>[remote &quot;origin&quot;]
-       url = git@github.com:schacon/simplegit-progit.git
-       fetch = +refs/heads/master:refs/remotes/origin/master
-       fetch = +refs/heads/experiment:refs/remotes/origin/experiment</code></pre>
-
-<p>Pero, en ningún caso puedes poner referencias genéricas parciales; por ejemplo, algo como esto sería erroneo:</p>
-
-<pre><code>fetch = +refs/heads/qa*:refs/remotes/origin/qa*</code></pre>
-
-<p>Aunque, para conseguir algo similar, puedes utilizar los espacios de nombres . Si tienes un equipo QA que envia al servidor una serie de ramas. Y deseas recuperar la rama master y cualquiera otra de las ramas del equipo; pero no recuperar ninguna rama de otro equipo. Puedes utilizar una sección de configuración como esta:</p>
-
-<pre><code>[remote &quot;origin&quot;]
-       url = git@github.com:schacon/simplegit-progit.git
-       fetch = +refs/heads/master:refs/remotes/origin/master
-       fetch = +refs/heads/qa/*:refs/remotes/origin/qa/*</code></pre>
-
-<p>De esta forma, puedes asignar facilmente espacios de nombres. Y resolver así complejos flujos de trabajo donde tengas simultáneamente , por ejemplo, un equipo QA enviando ramas, varios desarrolladores enviando ramas también y equipos integradores enviando y colaborando en ramas remotas.</p>
-
-<h3 id='enviando_push_referencias'>Enviando (push) referencias</h3>
-
-<p>Es util poder recuperar (fetch) referencias relativas en espacios de nombres, tal y como hemos visto. Pero, ¿cómo pueden enviar (push) sus ramas al espacio de nombres <code>qa/</code> los miembros de equipo QA ?. Pues utilizando las referencias (refspecs) para enviar.</p>
-
-<p>Si alguien del equipo QA quiere enviar su rama <code>master</code> a la ubicación <code>qa/master</code> en el servidor remoto, puede lanzar algo asi como:</p>
-
-<pre><code>$ git push origin master:refs/heads/qa/master</code></pre>
-
-<p>Y, para que se haga de forma automática cada vez que ejecute <code>git push origin</code>, puede añadir una entrada <code>push</code> a su archivo de configuración:</p>
-
-<pre><code>[remote &quot;origin&quot;]
-       url = git@github.com:schacon/simplegit-progit.git
-       fetch = +refs/heads/*:refs/remotes/origin/*
-       push = refs/heads/master:refs/heads/qa/master</code></pre>
-
-<p>Esto hará que un simple comando <code>git push origin</code> envie por defecto la rama local <code>master</code> a la rama remota <code>qa/master</code>,</p>
-
-<h3 id='borrando_referencias'>Borrando referencias</h3>
-
-<p>Se pueden utilizar las referencias (refspec) para borrar en el servidor remoto. Por ejemplo, lanzando algo como:</p>
-
-<pre><code>$ git push origin :topic</code></pre>
-
-<p>Se elimina la rama &#8216;topic&#8217; del servidor remoto, ya que la sustituimos or nada. (Al ser la referencia <code>&lt;origen&gt;:&lt;destino&gt;</code>, si no indicamos la parte <code>&lt;origen&gt;</code>, realmente estamos diciendo que enviamos &#8216;nada&#8217; a <code>&lt;destino&gt;</code>.)</p>
+<p>De esta manera, puedes preparar en cuestión de minutos accesos de lectura basados en HTTP a tus proyectos, para grandes cantidades de usuarios. Otra opción simple para habilitar accesos públicos sin autentificar, es arrancar el demonio Git, aunque esto supone demonizar el proceso. (Se verá esta opción en la siguiente sección.)</p>
 
 <div id='nav'>
 <a href='ch9-4.html'>prev</a> | <a href='ch9-6.html'>next</a>

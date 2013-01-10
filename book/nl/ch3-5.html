@@ -1,96 +1,91 @@
 ---
 layout: translation
-title: Pro Git 3.5 Branchen in Git Remote Branches
+title: Pro Git 3.5 Het binnenwerk van Git De refspec
 ---
-<h2 id='remote_branches'>Remote Branches</h2>
+<h2 id='de_refspec'>De refspec</h2>
 
-<p>Remote branches zijn referenties naar de staat ven de branches op je remote repositories. Ze zijn lokale branches die jij niet kunt verplaatsen; ze worden automatisch verplaatst zodra je wat netwerk communicatie doet. Remote branches gedragen zich als boekenleggers om je eraan te helpen herinneren waar de branches op je remote repositories waren de laatste keer dat je met ze in contact was.</p>
+<p>Door dit boek heen heb je eenvoudige verwijzingen van remote branches naar lokale referenties gebruikt; maar ze kunnen complexer zijn. Stel dat je een remote zoals dit toevoegt:</p>
 
-<p>Ze hebben de vorm <code>(remote)/(branch)</code>. Bijvoorbeeld, als je wil zien hoe de <code>master</code> branch op je <code>origin</code> er uit zag vanaf de laatste dat je er mee gecommuniceerd hebt, dan jou je de <code>origin/master</code> branch bekijken. Als je aan het werk bent aan een probleem met een partner en zij hebben een <code>iss53</code> branch teruggezet, dan zou je je eigen lokale <code>iss53</code> kunnen hebben; maar de branch op de server zou wijzen naar de commit op <code>origin/iss53</code>.</p>
+<pre><code>$ git remote add origin git@github.com:schacon/simplegit-progit.git</code></pre>
 
-<p>Dit kan wat verwarrend zijn, dus laten we eens naar een voorbeeld kijken. Stel dat je een Git server op je netwerk hebt op <code>git.ourcompany.com</code>. Als je hiervan cloned dan wordt die automatisch <code>origin</code> voor je genoemd, Git haalt al zijn gegevens binnen, maakt een verwijzing naar waar zijn <code>master</code> branch is, en noemt dat lokaal <code>origin/master</code>; en je kunt het niet verplaatsen. Git geeft je ook je eigen <code>master</code> branch, beginnend op dezelfde plaats als de <code>master</code> branch van origin, zodat je iets hebt om vanaf te werken (zie Figuur 3-22).</p>
+<p>Dit voegt een sectie aan je <code>.git/config</code> bestand toe, wat de naam van de remote (<code>origin</code>) specificeert, de URL van de remote repository, en de refspec die nodig is om te fetchen:</p>
 
-<p><center><img src="/figures/ch3/18333fig0322-tn.png"></center><br/> Figuur 3-22. Een Git clone geeft je je eigen master branch en origin/master wijzend naar de master branch van origin.</p>
+<pre><code>[remote &quot;origin&quot;]
+       url = git@github.com:schacon/simplegit-progit.git
+       fetch = +refs/heads/*:refs/remotes/origin/*</code></pre>
 
-<p>Als je wat werk doet op je lokale master branch, en in de tussentijd zet iemand anders iets terug naar <code>git.ourcompany.com</code> en vernieuwt die master branch, dan zijn jullie histories verschillend vooruit geschoven. En, zolang je geen contact hebt met je origin server, zal je <code>origin/master</code> verwijzing niet verplaatsen (zie Figuur 3-23).</p>
+<p>Het formaat van de refspec is een optionele <code>+</code>, gevolgd door <code>&lt;src&gt;:&lt;dst&gt;</code>, waarbij <code>&lt;src&gt;</code> het patroon voor referenties aan de remote kant is, en <code>&lt;dst&gt;</code> is de locatie waar die referenties lokaal geschreven worden. De <code>+</code> verteld Git om de referentie zelfs te vernieuwen als het geen fast-forward is.</p>
 
-<p><center><img src="/figures/ch3/18333fig0323-tn.png"></center><br/> Figuur 3-23. Lokaal werken terwijl iemand anders naar je remote server terugzet laat iedere historie anders vooruit gaan.</p>
+<p>In het standaard geval dat automatisch geschreven wordt door een <code>git remote add</code> commando, haalt Git alle referenties onder <code>refs/heads/</code> van de server en schrijft ze lokaal naar <code>refs/remotes/origin/</code>. Dus als er een <code>master</code> branch op de server bestaat, kun je de log van die branch lokaal benaderen via</p>
 
-<p>Om je werk te synchroniseren, voer je een <code>git fetch origin</code> commando uit. Dit commando bekijkt welke server origin is (in dit geval is het <code>git.ourcompany.com</code>), haalt gegevens er vanaf die je nog niet hebt, en vernieuwt je lokale gegevensbank, waarbij je <code>origin/master</code> verwijzing naar zijn nieuwere positie verplaast wordt (zie Figuur 3-24).</p>
+<pre><code>$ git log origin/master
+$ git log remotes/origin/master
+$ git log refs/remotes/origin/master</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0324-tn.png"></center><br/> Figuur 3-24. Het git fetch commando vernieuwt je remote referenties.</p>
+<p>Ze zijn allemaal gelijk, omdat Git elk expandeert naar <code>refs/remotes/origin/master</code>.</p>
 
-<p>Om het hebben van meerdere remote servers te demonstreren en hoe remote branches voor die remote projecten er uit zien, laten we eens aannemen dat je nog een interne Git server hebt, die alleen wordt gebruikt voor ontwikkeling gedaan door een van je sprint teams. Deze server bevindt zich op <code>git.team1.ourcompany.com</code>. Je kunt het als een nieuwe remote referentie toevoegen aan het project waar je nu aan werkt door het <code>git remote add</code> commando uit te voeren, zoals we behandeld hebben in Hoofdstuk 2. Noem deze remote <code>teamone</code>, wat je afkorting voor die hele URL wordt (zie Figuur 3-25).</p>
+<p>Als je wilt dat Git alleen de <code>master</code> branch pulled, en niet alle andere branches op de remote server, kun je de fetch regel veranderen in</p>
 
-<p><center><img src="/figures/ch3/18333fig0325-tn.png"></center><br/> Figuur 3-25. Een andere server als een remote toevoegen.</p>
+<pre><code>fetch = +refs/heads/master:refs/remotes/origin/master</code></pre>
 
-<p>Nu kun je <code>git fetch teamone</code> uitvoeren om alles op te halen dat de server heeft en jij nog niet. Omdat server een subset is van de gegevens die je <code>origin</code> server op dit moment heeft, haalt Git geen gegevens maar stelt een remote branch genaamd <code>teamone/master</code> in om te wijzen naar de commit die <code>teamone</code> heeft naar zijn <code>master</code> branch (zie Figuur 3-26).</p>
+<p>Dit is alleen de standaard refspec voor <code>git fetch</code> voor die remote. Als je iets alleen eenmalig wilt doen, kun je de refspec ook op de commandoregel specificeren. Om de <code>master</code> branch op de remote naar de lokale <code>origin/mymaster</code> te pullen, kun je dit uitvoeren</p>
 
-<p><center><img src="/figures/ch3/18333fig0326-tn.png"></center><br/> Figuur 3-26. Je krijgt lokaal een referentie naar de positie van teamone&#8217;s master branch.</p>
+<pre><code>$ git fetch origin master:refs/remotes/origin/mymaster</code></pre>
 
-<h3 id='terugzetten'>Terugzetten</h3>
+<p>Je kunt ook meerdere refspecs specificeren. Met de commandoregel kun je meerdere branches op deze manier pullen:</p>
 
-<p>Als je een branch wil delen met de wereld, dan moet je het naar een remote terugzetten waar je schrijftoegang op hebt. Je lokale branches worden niet automatisch gesynchroniseerd met de remotes waar je naar schrijft – je moet de branches die je wilt delen expliciet terugzetten. Op die manier, kun je privé branches gebruiken voor werk dat je niet wil delen, en alleen de onderwerp branches terugzetten waar je op wilt samenwerken.</p>
-
-<p>Als je een branch genaamd <code>serverfix</code> hebt, waar je met anderen aan wilt werken, dan kun je die terugzetten op dezelfde manier waarop je je eerste branch hebt teruggezet. Voer <code>git push (remote) (branch)</code> uit:</p>
-
-<pre><code>$ git push origin serverfix
-Counting objects: 20, done.
-Compressing objects: 100% (14/14), done.
-Writing objects: 100% (15/15), 1.74 KiB, done.
-Total 15 (delta 5), reused 0 (delta 0)
-To git@github.com:schacon/simplegit.git
- * [new branch]      serverfix -&gt; serverfix</code></pre>
-
-<p>Dit is een beetje kort door de bocht. Git zal de <code>serverfix</code> branchnaam automatisch expanderen naar <code>refs/heads/serverfix:refs/heads/serverfix</code>, wat betekent &#8220;Neem mijn lokale serverfix branch en zet dat terug om de serverfix branch van de remote te vernieuwen.&#8221;. We zullen in detail over het <code>refs/heads</code> gedeelte gaan hebben in Hoofdstuk 9, maar je kunt het over het algemeen weglaten. Je kun ook <code>git push origin serverfix:serverfix</code> doen, wat hetzelfde doet – het zegt, &#8220;Neem mijn serverfix en maak het de serverfix van de remote.&#8221; Je kunt dit formaat gebruiken om een lokale branch naar een remote branch die anders heet terug te zetten. Als je niet wil dat het <code>serverfix</code> heet aan de remote kant, kun je in plaats daarvan <code>git push origin serverfix:awesomebranch</code> gebruiken om je lokale <code>serverfix</code> branch naar de <code>awesomebranch</code> op het remote project terug te zetten.</p>
-
-<p>De volgende keer dat één van je medewerkers van de server fetched, zullen ze een referentie krijgen naar waar de servers versie van <code>serverfix</code> is onder de remote branch <code>origin/serverfix</code>:</p>
-
-<pre><code>$ git fetch origin
-remote: Counting objects: 20, done.
-remote: Compressing objects: 100% (14/14), done.
-remote: Total 15 (delta 5), reused 0 (delta 0)
-Unpacking objects: 100% (15/15), done.
+<pre><code>$ git fetch origin master:refs/remotes/origin/mymaster \
+   topic:refs/remotes/origin/topic
 From git@github.com:schacon/simplegit
- * [new branch]      serverfix    -&gt; origin/serverfix</code></pre>
+ ! [rejected]        master     -&gt; origin/mymaster  (non fast forward)
+ * [new branch]      topic      -&gt; origin/topic</code></pre>
 
-<p>Het is belangrijk om op te merken dat als je een fetch doet die nieuwe remote branches ophaalt, je niet automatisch lokale, aanpasbare kopiëen daarvan hebt. In andere woorden, in dit geval heb je geen nieuwe <code>serverfix</code> branch – je hebt alleen een <code>origin/serverfix</code> verwijzing die je niet kunt aanpassen.</p>
+<p>In dit geval wordt de pull van de master branch geweigerd, omdat het geen fast-forward referentie is. Je kunt dat teniet doen door de <code>+</code> voor de refspec te zetten.</p>
 
-<p>Om dit werk in je huidige werk branch samen te voegen, kun je <code>git merge origin/serverfix</code> uitvoeren. Als je je eigen <code>serverfix</code> branch wilt waar je op kunt werken, dan kun je deze vanaf je remote branch baseren:</p>
+<p>Je kun ook meerdere refspecs voor het fetchen specificeren in je configuratie bestand. Als je altijd de master en experiment branches wilt fetchen, voeg dan twee regels toe:</p>
 
-<pre><code>$ git checkout -b serverfix origin/serverfix
-Branch serverfix set up to track remote branch refs/remotes/origin/serverfix.
-Switched to a new branch &quot;serverfix&quot;</code></pre>
+<pre><code>[remote &quot;origin&quot;]
+       url = git@github.com:schacon/simplegit-progit.git
+       fetch = +refs/heads/master:refs/remotes/origin/master
+       fetch = +refs/heads/experiment:refs/remotes/origin/experiment</code></pre>
 
-<p>Dit geeft je een lokale branch waar je op kunt werken, die begint met waar <code>origin/serverfix</code> is.</p>
+<p>Je kunt geen gedeeltelijke globs in het patroon gebruiken, dus het volgende zou ongeldig zijn:</p>
 
-<h3 id='volg_branches'>Volg Branches</h3>
+<pre><code>fetch = +refs/heads/qa*:refs/remotes/origin/qa*</code></pre>
 
-<p>Een lokale branch uitchecken van een remote branch creëert automatisch een zogenaamde <em>volg branch</em> (_tracking branch_). Volg branches zijn lokale branches die een directe releatie met een remote branch hebben. Als je op een volg branch zit en git push typed, dat weet Git automatisch naar welke server en branch hij moet terugzetten. En, terwijl je op een van die branches zit zal het uitvoeren van <code>git pull</code> alle remote referenties ophalen en ze automatisch in de corresponderende remote branch samenvoegen.</p>
+<p>Maar je kunt wel naamruimtes gebruiken om zoiets voor elkaar te krijgen. Als je een QA team hebt dat naar een serie branches pushed, en je wilt de master branch en alle QA team branches hebben, maar niets anders, kun je een configuratie sectie zoals dit gebruiken:</p>
 
-<p>Als je een repository cloned, zal het over het algemeen automatisch een <code>master</code> branch aanmaken, die <code>origin/master</code> volgt. Daarom werken <code>git push</code> en <code>git pull</code> zo uit het doosje, zonder verdere argumenten. Maar, kun je kunt ook andere volg branches instellen als je dat wilt – anderen die niet branches volgen op <code>origin</code> en niet de <code>master</code> branch volgen. Het eenvoudige geval is het voorbeeld dat je zojuist zag, <code>git checkout -b [branch] [remotenaam]/[branch]</code> uitvoeren. Als je Git versie 1.6.2 of nieuwer hebt, kun je ook de <code>--track</code> afkorting gebruiken:</p>
+<pre><code>[remote &quot;origin&quot;]
+       url = git@github.com:schacon/simplegit-progit.git
+       fetch = +refs/heads/master:refs/remotes/origin/master
+       fetch = +refs/heads/qa/*:refs/remotes/origin/qa/*</code></pre>
 
-<pre><code>$ git checkout --track origin/serverfix
-Branch serverfix set up to track remote branch refs/remotes/origin/serverfix.
-Switched to a new branch &quot;serverfix&quot;</code></pre>
+<p>Als je een ingewikkeld werkproces hebt waarbij het QA team branches pushed, ontwikkelaars branches pushen, en integratie teams pushen en samenwerken op remote branches, kun je ze op deze manier eenvoudig in naamruimten stoppen.</p>
 
-<p>Om een lokale branch in te stellen met een andere naam dan de remote branch, kun je eenvoudig de eerste versie met een andere lokale branch naam gebruiken:</p>
+<h3 id='refspecs_pushen'>Refspecs pushen</h3>
 
-<pre><code>$ git checkout -b sf origin/serverfix
-Branch sf set up to track remote branch refs/remotes/origin/serverfix.
-Switched to a new branch &quot;sf&quot;</code></pre>
+<p>Het is fijn dat je op die manier referenties in naamruimten kunt fetchen, maar hoe krijgt het QA team in de eerste plaats al hun branches in een <code>qa/</code> naamruimte? Je krijgt dat voor elkaar door refspecs te gebruiken om mee te pushen.</p>
 
-<p>Nu zal je lokale sf branch automatisch halen en terugzetten van origin/serverfix.</p>
+<p>Als het QA team hun <code>master</code> branch naar <code>qa/master</code> op de remote server wil pushen, kunnen ze dit uitvoeren</p>
 
-<h3 id='remote_branches_verwijderen'>Remote Branches Verwijderen</h3>
+<pre><code>$ git push origin master:refs/heads/qa/master</code></pre>
 
-<p>Stel dat je klaar bent met een remote branch – stel dat jij en je medewerkers klaar zijn met een eigenschap en het hebben samengevoegd in je <code>master</code> branch van je remote (of welke branch je stabiele codelijn ook in zit). Dan kun je een remote branch verwijderen door de nogal stompzinnige syntax <code>git push [remotenaam] :[branch]</code> te gebruiken. Als je je <code>serverfix</code> branch van de server wilt verwijderen, dan voer je het volgende uit:</p>
+<p>Als ze willen dat Git dat automatisch doet iedere keer als ze <code>git push origin</code> uitvoeren, dan kunnen ze een push waarde aan hun configuratie bestand toevoegen:</p>
 
-<pre><code>$ git push origin :serverfix
-To git@github.com:schacon/simplegit.git
- - [deleted]         serverfix</code></pre>
+<pre><code>[remote &quot;origin&quot;]
+       url = git@github.com:schacon/simplegit-progit.git
+       fetch = +refs/heads/*:refs/remotes/origin/*
+       push = refs/heads/master:refs/heads/qa/master</code></pre>
 
-<p>Boem. Geen branch meer op je server. Je zult deze pagina wel een ezelsoor willen geven, omdat je dat commando nodig hebt, en je het waarschijnlijk zult vergeten. Een manier om dit commando te onthouden is door de <code>git push [remotenaam] [lokalebranch]:[remotebranch]</code> syntax te onthouden die we iets eerder behandeld hebben. Als je het <code>[lokalebranch]</code> gedeelte weglaat, dan zeg je in feite, &#8220;Neem iets willekeurigs aan mijn kant en maak dat de <code>[remotebranch]</code>.&#8221;</p>
+<p>Nogmaals, dit zal zorgen dat <code>git push origin</code> de lokale <code>master</code> branch standaard naar de remote <code>qa/master</code> branch zal pushen.</p>
+
+<h3 id='referenties_verwijderen'>Referenties verwijderen</h3>
+
+<p>Je kunt de refspec ook gebruiken om referenties te verwijderen van de remote server door zoiets als dit uit te voeren:</p>
+
+<pre><code>$ git push origin :topic</code></pre>
+
+<p>Omdat de refspec <code>&lt;src&gt;:&lt;dst&gt;</code> is, verteld het weglaten van het <code>&lt;src&gt;</code> gedeelte in feite dat de onderwerp branch op de remote niks is, wat het verwijderd.</p>
 
 <div id='nav'>
 <a href='ch3-4.html'>prev</a> | <a href='ch3-6.html'>next</a>

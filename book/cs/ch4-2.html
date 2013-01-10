@@ -1,59 +1,211 @@
 ---
 layout: translation
-title: Pro Git 4.2 Git on the Server Getting Git on a Server
+title: Pro Git 4.2 Větve v systému Git Základy větvení a slučování
 ---
-<h2 id='getting_git_on_a_server'>Getting Git on a Server</h2>
+<h2 id='zklady_vtven_a_sluovn'>Základy větvení a slučování</h2>
 
-<p>In order to initially set up any Git server, you have to export an existing repository into a new bare repository — a repository that doesn’t contain a working directory. This is generally straightforward to do. In order to clone your repository to create a new bare repository, you run the clone command with the <code>--bare</code> option. By convention, bare repository directories end in <code>.git</code>, like so:</p>
+<p>Vytvořme si jednoduchý příklad větvení a slučování s pracovním postupem, který můžete využít i v reálném životě. Budete provádět tyto kroky:</p>
 
-<pre><code>$ git clone --bare my_project my_project.git
-Initialized empty Git repository in /opt/projects/my_project.git/</code></pre>
+<ol>
+<li>Pracujete na webových stránkách.</li>
 
-<p>The output for this command is a little confusing. Since <code>clone</code> is basically a <code>git init</code> then a <code>git fetch</code>, we see some output from the <code>git init</code> part, which creates an empty directory. The actual object transfer gives no output, but it does happen. You should now have a copy of the Git directory data in your <code>my_project.git</code> directory.</p>
+<li>Vytvoříte větev pro novou část stránek, v níž budete pracovat.</li>
 
-<p>This is roughly equivalent to something like</p>
+<li>Vytvoříte práci v této větvi.</li>
+</ol>
 
-<pre><code>$ cp -Rf my_project/.git my_project.git</code></pre>
+<p>V tomto okamžiku vám zavolají, že se vyskytla jiná kritická chyba, která vyžaduje hotfix. Uděláte následující:</p>
 
-<p>There are a couple of minor differences in the configuration file; but for your purpose, this is close to the same thing. It takes the Git repository by itself, without a working directory, and creates a directory specifically for it alone.</p>
+<ol>
+<li>Vrátíte se zpět na produkční větev.</li>
 
-<h3 id='putting_the_bare_repository_on_a_server'>Putting the Bare Repository on a Server</h3>
+<li>Vytvoříte větev pro přidání hotfixu.</li>
 
-<p>Now that you have a bare copy of your repository, all you need to do is put it on a server and set up your protocols. Let’s say you’ve set up a server called <code>git.example.com</code> that you have SSH access to, and you want to store all your Git repositories under the <code>/opt/git</code> directory. You can set up your new repository by copying your bare repository over:</p>
+<li>Po úspěšném otestování začleníte větev s hotfixem a odešlete ji do produkce.</li>
 
-<pre><code>$ scp -r my_project.git user@git.example.com:/opt/git</code></pre>
+<li>Přepnete zpět na svou původní část a pokračujete v práci.</li>
+</ol>
 
-<p>At this point, other users who have SSH access to the same server which has read-access to the <code>/opt/git</code> directory can clone your repository by running</p>
+<h3 id='zkladn_vtven'>Základní větvení</h3>
 
-<pre><code>$ git clone user@git.example.com:/opt/git/my_project.git</code></pre>
+<p>Řekněme, že pracujete na projektu a už jste vytvořili několik revizí (viz obrázek 3-10).</p>
 
-<p>If a user SSHs into a server and has write access to the <code>/opt/git/my_project.git</code> directory, they will also automatically have push access. Git will automatically add group write permissions to a repository properly if you run the <code>git init</code> command with the <code>--shared</code> option.</p>
+<p><center><img src="/figures/ch4/18333fig0310-tn.png"></center><br/> Figure 3-10. Krátká a jednoduchá historie revizí</p>
 
-<pre><code>$ ssh user@git.example.com
-$ cd /opt/git/my_project.git
-$ git init --bare --shared</code></pre>
+<p>Rozhodli jste se, že budete pracovat na chybě č. 53, ať už vaše společnost používá jakýkoli systém sledování chyb. Přesněji řečeno, Git není začleněn do žádného konkrétního systému sledování chyb, ale protože je chyba č. 53 významná a chcete na ní pracovat, vytvoříte si pro ni novou větev. Abyste vytvořili novou větev a rovnou na ni přepnuli, můžete spustit příkaz <code>git checkout</code> s přepínačem <code>-b</code>:</p>
 
-<p>You see how easy it is to take a Git repository, create a bare version, and place it on a server to which you and your collaborators have SSH access. Now you’re ready to collaborate on the same project.</p>
+<pre><code>$ git checkout -b iss53
+Switched to a new branch &quot;iss53&quot;</code></pre>
 
-<p>It’s important to note that this is literally all you need to do to run a useful Git server to which several people have access — just add SSH-able accounts on a server, and stick a bare repository somewhere that all those users have read and write access to. You’re ready to go — nothing else needed.</p>
+<p>Tímto způsobem jste spojili dva příkazy:</p>
 
-<p>In the next few sections, you’ll see how to expand to more sophisticated setups. This discussion will include not having to create user accounts for each user, adding public read access to repositories, setting up web UIs, using the Gitosis tool, and more. However, keep in mind that to collaborate with a couple of people on a private project, all you <em>need</em> is an SSH server and a bare repository.</p>
+<pre><code>$ git branch iss53
+$ git checkout iss53</code></pre>
 
-<h3 id='small_setups'>Small Setups</h3>
+<p>Obrázek 3-11 ukazuje výsledek.</p>
 
-<p>If you’re a small outfit or are just trying out Git in your organization and have only a few developers, things can be simple for you. One of the most complicated aspects of setting up a Git server is user management. If you want some repositories to be read-only to certain users and read/write to others, access and permissions can be a bit difficult to arrange.</p>
+<p><center><img src="/figures/ch4/18333fig0311-tn.png"></center><br/> Figure 3-11. Vytvoření nového ukazatele na větev</p>
 
-<h4 id='ssh_access'>SSH Access</h4>
+<p>Pracujete na webových stránkách a zapíšete několik revizí. S každou novou revizí se větev <code>iss53</code> posune vpřed, protože jste provedli její checkout (to znamená, že jste na ni přepnuli a ukazuje na ni soubor HEAD – viz obrázek 3-12):</p>
 
-<p>If you already have a server to which all your developers have SSH access, it’s generally easiest to set up your first repository there, because you have to do almost no work (as we covered in the last section). If you want more complex access control type permissions on your repositories, you can handle them with the normal filesystem permissions of the operating system your server runs.</p>
+<pre><code>$ vim index.html
+$ git commit -a -m &#39;added a new footer [issue 53]&#39;</code></pre>
 
-<p>If you want to place your repositories on a server that doesn’t have accounts for everyone on your team whom you want to have write access, then you must set up SSH access for them. We assume that if you have a server with which to do this, you already have an SSH server installed, and that’s how you’re accessing the server.</p>
+<p><center><img src="/figures/ch4/18333fig0312-tn.png"></center><br/> Figure 3-12. Větev iss53 se s vaší prací posouvá vpřed.</p>
 
-<p>There are a few ways you can give access to everyone on your team. The first is to set up accounts for everybody, which is straightforward but can be cumbersome. You may not want to run <code>adduser</code> and set temporary passwords for every user.</p>
+<p>V tomto okamžiku vám zavolají, že se na webových stránkách vyskytl problém, který musíte okamžitě vyřešit. Jelikož pracujete v systému Git, nemusíte svou opravu vytvářet uprostřed změn, které jste provedli v části <code>iss53</code>, ani nemusíte dělat zbytečnou práci, abyste všechny tyto změny vrátili, než budete moci začít pracovat na opravě produkční verze stránek. Jediné, co teď musíte udělat, je přepnout zpět na hlavní větev.</p>
 
-<p>A second method is to create a single &#8216;git&#8217; user on the machine, ask every user who is to have write access to send you an SSH public key, and add that key to the <code>~/.ssh/authorized_keys</code> file of your new &#8216;git&#8217; user. At that point, everyone will be able to access that machine via the &#8216;git&#8217; user. This doesn’t affect the commit data in any way — the SSH user you connect as doesn’t affect the commits you’ve recorded.</p>
+<p>Než tak učiníte, zkontrolujte, zda nemáte v pracovním adresáři nebo v oblasti připravených změn nezapsané změny, které kolidují s větví, jejíž checkout provádíte. V takovém případě by vám Git přepnutí větví nedovolil. Při přepínání větví je ideální, pokud máte čistý pracovní stav. Existují způsoby, jak toho docílit (jmenovitě odložení a doplnění revize), těm se však budeme věnovat až později. Pro tuto chvíli jste zapsali všechny provedené změny a můžete přepnout zpět na hlavní větev.</p>
 
-<p>Another way to do it is to have your SSH server authenticate from an LDAP server or some other centralized authentication source that you may already have set up. As long as each user can get shell access on the machine, any SSH authentication mechanism you can think of should work.</p>
+<pre><code>$ git checkout master
+Switched to branch &quot;master&quot;</code></pre>
+
+<p>V tomto okamžiku vypadá váš pracovní adresář přesně tak, jak vypadal, než jste začali pracovat na chybě č. 53, a vy se nyní můžete soustředit na rychlou opravu. Na paměti byste však stále měli mít následující: Git vždy vrátí pracovní adresář do stejného stavu, jak vypadal snímek revize, na niž ukazuje větev, jejíž checkout nyní provádíte. Automaticky budou přidány, odstraněny a upraveny soubory tak, aby byla vaše pracovní kopie totožná se stavem větve v okamžiku, kdy jste na ni zapsali poslední revizi.</p>
+
+<p>Nyní přichází na řadu hotfix. Vytvořme větev s hotfixem, v níž budeme pracovat, dokud nebude oprava hotová (viz obrázek 3-13):</p>
+
+<pre><code>$ git checkout -b &#39;hotfix&#39;
+Switched to a new branch &quot;hotfix&quot;
+$ vim index.html
+$ git commit -a -m &#39;fixed the broken email address&#39;
+[hotfix]: created 3a0874c: &quot;fixed the broken email address&quot;
+ 1 files changed, 0 insertions(+), 1 deletions(-)</code></pre>
+
+<p><center><img src="/figures/ch4/18333fig0313-tn.png"></center><br/> Figure 3-13. Větev „hotfix“ začleněná zpět v místě hlavní větve</p>
+
+<p>Můžete provádět testování, ujistit se, že hotfix splňuje všechny požadavky, a pak můžete větev začlenit (merge) zpět do hlavní větve, aby byla připravena do produkce. Učiníte tak příkazem <code>git merge</code>:</p>
+
+<pre><code>$ git checkout master
+$ git merge hotfix
+Updating f42c576..3a0874c
+Fast forward
+ README |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)</code></pre>
+
+<p>Při sloučení jste si možná všimli spojení „Fast forward“ (rychle vpřed). Jelikož revize, na niž ukazovala větev, do níž jste začleňovali, byla v přímé linii s revizí, na níž jste se nacházeli, Git přesunul ukazatel vpřed. Jinými slovy: pokud se pokoušíte sloučit jednu revizi s revizí druhou, k níž lze dospět následováním historie první revize, Git proces zjednoduší a přesune ukazatel vpřed, protože neexistuje žádná rozdílná práce, kterou by bylo třeba sloučit. Tomuto postupu se říká „rychle vpřed“.</p>
+
+<p>Vaše změna je nyní obsažena ve snímku revize, na niž ukazuje hlavní větev <code>master</code>, a vy můžete pokračovat v provádění změn (viz obrázek 3-14).</p>
+
+<p><center><img src="/figures/ch4/18333fig0314-tn.png"></center><br/> Figure 3-14. Hlavní větev ukazuje po sloučení na stejné místo jako větev „hotfix“.</p>
+
+<p>Poté, co jste dokončili práci na bezodkladné opravě, můžete přepnout zpět na práci, jíž jste se věnovali před telefonátem. Nejprve však smažete větev <code>hotfix</code>, kterou teď už nebudete potřebovat – větev <code>master</code> ukazuje na totéž místo. Větev smažete přidáním parametru <code>-d</code> k příkazu <code>git branch</code>:</p>
+
+<pre><code>$ git branch -d hotfix
+Deleted branch hotfix (3a0874c).</code></pre>
+
+<p>Nyní můžete přepnout zpět na větev s rozdělanou prací a pokračovat na chybě č. 53 (viz obrázek 3-15):</p>
+
+<pre><code>$ git checkout iss53
+Switched to branch &quot;iss53&quot;
+$ vim index.html
+$ git commit -a -m &#39;finished the new footer [issue 53]&#39;
+[iss53]: created ad82d7a: &quot;finished the new footer [issue 53]&quot;
+ 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
+
+<p><center><img src="/figures/ch4/18333fig0315-tn.png"></center><br/> Figure 3-15. Větev iss53 může nezávisle postupovat vpřed.</p>
+
+<p>Za zmínku stojí, že práce, kterou jste udělali ve větvi <code>hotfix</code>, není obsažena v souborech ve větvi <code>iss53</code>. Pokud potřebujete tyto změny do větve natáhnout, můžete začlenit větev <code>master</code> do větve <code>iss53</code> – použijte příkaz <code>git merge master</code>. Druhou možností je s integrací změn vyčkat a provést ji až ve chvíli, kdy budete chtít větev <code>iss53</code> natáhnout zpět do větve <code>master</code>.</p>
+
+<h3 id='zkladn_sluovn'>Základní slučování</h3>
+
+<p>Předpokládejme, že jste dokončili práci na chybě č. 53 a nyní byste ji rádi začlenili do větve <code>master</code>. Učiníte tak začleněním větve <code>iss53</code>, které bude probíhat velmi podobně jako předchozí začlenění větve <code>hotfix</code>. Jediné, co pro to musíte udělat, je přepnout na větev, do níž chcete tuto větev začlenit, a spustit příkaz <code>git merge</code>.</p>
+
+<pre><code>$ git checkout master
+$ git merge iss53
+Merge made by recursive.
+ README |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
+
+<p>Toto už se trochu liší od začlenění větve <code>hotfix</code>, které jste prováděli před chvílí. V tomto případě se historie vývoje od určitého bodu v minulosti rozbíhala. Vzhledem k tomu, že revize na větvi, na níž se nacházíte, není přímým předkem větve, kterou chcete začlenit, Git bude muset podniknout určité kroky. Git v tomto případě provádí jednoduché třícestné sloučení: vychází ze dvou snímků, na které ukazují větve, a jejich společného předka. Obrázek 3-16 označuje ony tři snímky, které Git v tomto případě použije ke sloučení.</p>
+
+<p><center><img src="/figures/ch4/18333fig0316-tn.png"></center><br/> Figure 3-16. Git automaticky identifikuje nejvhodnějšího společného předka jako základnu pro sloučení větví.</p>
+
+<p>Git tentokrát neposune ukazatel větve vpřed, ale vytvoří nový snímek jako výsledek tohoto třícestného sloučení a automaticky vytvoří novou revizi, která bude na snímek ukazovat (viz obrázek 3-17). Takové revizi se říká revize sloučením (merge commit) a její zvláštností je to, že má více než jednoho rodiče.</p>
+
+<p>Na tomto místě bych chtěl zopakovat, že Git určuje nejvhodnějšího společného předka, který bude použit jako základna pro sloučení, automaticky. Liší se tím od systému CVS i Subversion (před verzí 1.5), kde musí vývojář při slučování najít nejvhodnější základnu pro sloučení sám. Slučování větví je tak v systému Git o poznání jednodušší než v těchto ostatních systémech.</p>
+
+<p><center><img src="/figures/ch4/18333fig0317-tn.png"></center><br/> Figure 3-17. Git automaticky vytvoří nový objekt revize, který obsahuje sloučenou práci.</p>
+
+<p>Nyní, když jste svou práci sloučili, větev <code>iss53</code> už nebudete potřebovat. Můžete ji smazat a poté ručně zavřít tiket v systému sledování tiketů:</p>
+
+<pre><code>$ git branch -d iss53</code></pre>
+
+<h3 id='zkladn_konflikty_pi_sluovn'>Základní konflikty při slučování</h3>
+
+<p>Může se stát, že sloučení neproběhne bez problémů. Pokud jste tutéž část jednoho souboru změnili odlišně ve dvou větvích, které chcete sloučit, Git je nebude umět sloučit čistě. Pokud se oprava chyby č. 53 týkala stejné části souboru jako větev <code>hotfix</code>, dojde ke konfliktu při slučování (merge conflict). Vypadá zhruba takto:</p>
+
+<pre><code>$ git merge iss53
+Auto-merging index.html
+CONFLICT (content): Merge conflict in index.html
+Automatic merge failed; fix conflicts and then commit the result.</code></pre>
+
+<p>Git nepřistoupil k automatickému vytvoření nové revize sloučením. Prozatím pozastavil celý proces do doby, než konflikt vyřešíte. Chcete-li kdykoli po konfliktu zjistit, které soubory zůstaly nesloučeny, spusťte příkaz <code>git status</code>:</p>
+
+<pre><code>[master*]$ git status
+index.html: needs merge
+# On branch master
+# Changes not staged for commit:
+#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+#   (use &quot;git checkout -- &lt;file&gt;...&quot; to discard changes in working directory)
+#
+#	unmerged:   index.html
+#</code></pre>
+
+<p>Vše, co při sloučení kolidovalo a nebylo vyřešeno, je označeno jako „unmerged“ (nesloučeno). Git přidává ke kolidujícím souborům standardní poznámky o řešení konfliktů (conflict-resolution markers), takže je můžete ručně otevřít a konflikty vyřešit. Jedna část vašeho souboru bude vypadat zhruba takto:</p>
+
+<pre><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD:index.html
+&lt;div id=&quot;footer&quot;&gt;contact : email.support@github.com&lt;/div&gt;
+=======
+&lt;div id=&quot;footer&quot;&gt;
+  please contact us at support@github.com
+&lt;/div&gt;
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; iss53:index.html</code></pre>
+
+<p>To znamená, že verze ve větvi s ukazatelem HEAD (vaše hlavní větev – v té jste se nacházeli při provádění příkazu merge) je uvedena v horní části tohoto bloku (všechno nad oddělovačem <code>=======</code>), verze obsažená ve větvi <code>iss53</code> je vše, co se nachází v dolní části. Chcete-li vzniklý konflikt vyřešit, musíte buď vybrat jednu z obou stran, nebo konflikt sloučit sami. Tento konflikt můžete vyřešit například nahrazením celého bloku tímto textem:</p>
+
+<pre><code>&lt;div id=&quot;footer&quot;&gt;
+please contact us at email.support@github.com
+&lt;/div&gt;</code></pre>
+
+<p>Toto řešení obsahuje trochu z každé části a zcela jsem odstranil řádky <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code>, <code>=======</code> a <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code>. Poté, co vyřešíte všechny tyto části ve všech kolidujících souborech, spusťte pro každý soubor příkaz <code>git add</code>, jímž ho označíte jako vyřešený. Připravení souboru k zápisu ho v systému Git označí jako vyřešený. Chcete-li k vyřešení problémů použít grafický nástroj, můžete spustit příkaz <code>git mergetool</code>, kterým otevřete příslušný vizuální nástroj pro slučování, a ten vás všemi konflikty provede:</p>
+
+<pre><code>$ git mergetool
+merge tool candidates: kdiff3 tkdiff xxdiff meld gvimdiff opendiff emerge vimdiff
+Merging the files: index.html
+
+Normal merge conflict for &#39;index.html&#39;:
+  {local}: modified
+  {remote}: modified
+Hit return to start merge resolution tool (opendiff):</code></pre>
+
+<p>Chcete-li použít jiný než výchozí nástroj pro slučování (Git mi v tomto případě vybral <code>opendiff</code>, protože jsem příkaz zadal v systému Mac), všechny podporované nástroje jsou uvedeny na začátku výstupu v části „merge tool candidates“ (možné nástroje pro slučování). Zadejte název nástroje, který chcete použít. V kapitole 7 probereme, jak lze tuto výchozí hodnotu pro vaše prostředí změnit.</p>
+
+<p>Až nástroj pro slučování zavřete, Git se vás zeptá, zda sloučení proběhlo úspěšně. Pokud skriptu oznámíte, že ano, připraví soubor k zapsání a tím ho označí jako vyřešený.</p>
+
+<p>Ještě jednou můžete spustit příkaz <code>git status</code>, abyste si ověřili, že byly všechny konflikty vyřešeny:</p>
+
+<pre><code>$ git status
+# On branch master
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+#	modified:   index.html
+#</code></pre>
+
+<p>Pokud jste s výsledkem spokojeni a ujistili jste se, že všechny kolidující soubory jsou připraveny k zapsání, můžete zadat příkaz <code>git commit</code> a dokončit revizi sloučením. Zpráva revize má v takovém případě přednastavenu tuto podobu:</p>
+
+<pre><code>Merge branch &#39;iss53&#39;
+
+Conflicts:
+  index.html
+#
+# It looks like you may be committing a MERGE.
+# If this is not correct, please remove the file
+# .git/MERGE_HEAD
+# and try again.
+#</code></pre>
+
+<p>Pokud myslíte, že to může být pro spolupracovníky, kteří si jednou budou toto sloučení prohlížet, užitečné, můžete tuto zprávu upravit a doplnit o podrobnosti, jak jste sloučení vyřešili – pokud to není zřejmé, můžete okomentovat, co jste udělali a proč právě takto.</p>
 
 <div id='nav'>
 <a href='ch4-1.html'>prev</a> | <a href='ch4-3.html'>next</a>

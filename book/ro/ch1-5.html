@@ -1,0 +1,66 @@
+---
+layout: translation
+title: Pro Git 1.5 Introducere Stările Git Pentru Prima Rulare
+---
+<h2 id='strile_git_pentru_prima_rulare'>Stările Git Pentru Prima Rulare</h2>
+
+<p>Acum că aveți Git instalat pe sistemul dumneavoastră, veți dori să faceți câteva schimbări în mediul dumneavoastră Git. Ar trebui să faceți aceste lucruri o singură dată; ele se vor păstra între diverse actualizări. Puteți de asemenea să le schimbați în orice moment rulând din nou comenzile.</p>
+
+<p>Git vine cu un utilitar denumit git config care vă permite să setați variabile de configurare care controlează toate aspectele legate de funcționarea Git și interfața sa. Aceste variabile pot fi păstrate în diverse locuri:</p>
+
+<ul>
+<li>fișierul <code>/etc/gitconfig</code>: Conține valuroi pentru fiecare utilizator al unui sistem și pentru toate repository-urile sale. Dacă introduceți opțiunea <code> --system</code> pentru <code>git config</code>, va citi și scrie din fișierul menționat anterior.</li>
+
+<li>fișierul <code>~/.gitconfig</code>: Specific utilizatorului dumneavoastră. Puteți de asemenea să instruiți Git să citească și să scrie în acest fișier dacă introduceți opțiunea <code>--global</code>.</li>
+
+<li>fișierul de configurare pentru configurația git (adică, <code>.git/config</code>) sau specific repository-ului curent: Specific doar pentru acel repository. Fiecare nivel suprascrie valorile din celălalt nivel, deci valorile din <code>.git/config</code> le suprascriu pe cele din <code>/etc/gitconfig</code>.</li>
+</ul>
+
+<p>În sistemele Windows, Git caută fișierul <code>.gitconfig</code> din directorul <code>$HOME</code> (<code>C:\Documents and Settings\$USER</code> (utilizator <span>ro</span>)). De asemenea se va uita în /etc/gitconfig, chiar dacă este relativ la rădăcin MSys, care este dată de locul unde v-ați decis să instalați Git pe sistemul dumneavoastră Windows la instalare.</p>
+
+<h3 id='identitatea_dumneavoastr'>Identitatea Dumneavoastră</h3>
+
+<p>Primul lucru care ar trebui să îl faceți atunci când instalați Git este să vă stabiliți numele și adresa de email. Acest aspect este important deoarece fiecare commit în Git va folosi aceste informații, și acestea vor fi conținute în commit-urile care le veți distribui:</p>
+
+<pre><code>$ git config --global user.name &quot;John Doe&quot;
+$ git config --global user.email johndoe@example.com</code></pre>
+
+<p>Din nou, va fi necesar să efectuați acești pași o singură dată dacă introduceți opțiunea <code>--global</code>, deoarece atunci Git va folosi întotdeauna aceste informații pentru toate operațiile efectuate pe acel sistem. Dacă doriți să suprascrieți aceste informații cu un nume sau email diferite pentru anumite proiecte, atunci puteți executa comanda fără opțiunea <code>--global</code> atunci când vă aflați în acel proiect.</p>
+
+<h3 id='editorul_dumneavoastr'>Editorul Dumneavoastră</h3>
+
+<p>Acum că v-ați setat identitatea, puteți configura editorul de text ce va fi folosit implicit atunci când Git are nevoie să introduceți mesaje. Implicit, Git va folosi editorul definit în sistem, cel mai des acesta va fi Vi sau Vim. Dacă doriți să folosiți un editor text diferit, cum ar fi Emacs, puteți să faceți următoarele:</p>
+
+<pre><code>$ git config --global core.editor emacs</code></pre>
+
+<h3 id='utilitatorul_pentru_diferene'>Utilitatorul Pentru Diferențe</h3>
+
+<p>O altă configurare utilă pe care o puteți face este utilitarul folosit în aflarea diferențelor (diff <span>en</span>) folosit pentru rezolvarea conflictelor. Să presupunem că doriți să folosiți vimdiff:</p>
+
+<pre><code>$ git config --global merge.tool vimdiff</code></pre>
+
+<p>Git acceptă ca și unelte valide pentru diferențe următoarele: kdiff3, tkdiff, meld, xxdiff, emerge, vimdiff, gvimdiff, ecmerge, și opendiff. Puteți de asemenea să configurați un utlitar personalizat; vedeți Capitolul 7 pentru mai multe informații despre această procedură.</p>
+
+<h3 id='verificarea_setrilor'>Verificarea Setărilor</h3>
+
+<p>Dacă doriți să vă verificați setările, puteți folosi comanda <code>git config --list</code> pentru a afișa toate setările pe care Git le poate utiliza în prezent:</p>
+
+<pre><code>$ git config --list
+user.name=Scott Chacon
+user.email=schacon@gmail.com
+color.status=auto
+color.branch=auto
+color.interactive=auto
+color.diff=auto
+...</code></pre>
+
+<p>Puteți vedea și mai multe chei de mai multe ori, deoarece Git citește aceeași cheie din fișiere diferite (<code>/etc/gitconfig</code> și <code>~/.gitconfig</code>, de exemplu). În acest caz, Git folosește ultima valoare pentru fiecare cheie unică întâlnită.</p>
+
+<p>Puteți de asemenea să vedeți ceea ce Git crede despre valoarea unei anumite chei dacă scrieți <code>git config {cheie}</code>:</p>
+
+<pre><code>$ git config user.name
+Scott Chacon</code></pre>
+
+<div id='nav'>
+<a href='ch1-4.html'>prev</a> | <a href='ch1-6.html'>next</a>
+</div>

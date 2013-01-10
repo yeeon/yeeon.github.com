@@ -1,65 +1,96 @@
 ---
 layout: translation
-title: Pro Git 1.5 Како да започнам Прво поставување на Git
+title: Pro Git 1.5 Git Tools Debugging with Git
 ---
-<h2 id='___git'>Прво поставување на Git</h2>
+<h2 id='debugging_with_git'>Debugging with Git</h2>
 
-<p>Сега кога го имате Git на вашиот систем, ќе сакате да направите неколку работи за да ја подесите вашата Git околина. Овие работи треба да ги направите само еднаш, и тие ќе си останат такви и после надградбите. Исто така може да ги промените во било кое време извршувајќи соодветни наредби.</p>
+<p>Git also provides a couple of tools to help you debug issues in your projects. Because Git is designed to work with nearly any type of project, these tools are pretty generic, but they can often help you hunt for a bug or culprit when things go wrong.</p>
 
-<p>Git доаѓа со алатка наречена git config која што ви овозможува да прегледате и да ги поставите конфигурациските променливи кои што ги контролираат сите аспекти за тоа како изгледа и како се однесува Git. Тие променливи може да бидат поставени на три различни места:</p>
+<h3 id='file_annotation'>File Annotation</h3>
 
-<ul>
-<li><code>/etc/gitconfig</code> датотека: Содржи параметри за сите корисници на системот и сите нивни репозиторија. Ако го додадете аргументот<code> --system</code> на <code>git config</code>, тогаш тој чита и запишува од оваа датотека.</li>
+<p>If you track down a bug in your code and want to know when it was introduced and why, file annotation is often your best tool. It shows you what commit was the last to modify each line of any file. So, if you see that a method in your code is buggy, you can annotate the file with <code>git blame</code> to see when each line of the method was last edited and by whom. This example uses the <code>-L</code> option to limit the output to lines 12 through 22:</p>
 
-<li><code>~/.gitconfig</code> датотека: Специфична за секој корисник. Git чита и запишува во оваа датотека со додавање на аргументот <code>--global</code>.</li>
+<pre><code>$ git blame -L 12,22 simplegit.rb 
+^4832fe2 (Scott Chacon  2008-03-15 10:31:28 -0700 12)  def show(tree = &#39;master&#39;)
+^4832fe2 (Scott Chacon  2008-03-15 10:31:28 -0700 13)   command(&quot;git show #{tree}&quot;)
+^4832fe2 (Scott Chacon  2008-03-15 10:31:28 -0700 14)  end
+^4832fe2 (Scott Chacon  2008-03-15 10:31:28 -0700 15)
+9f6560e4 (Scott Chacon  2008-03-17 21:52:20 -0700 16)  def log(tree = &#39;master&#39;)
+79eaf55d (Scott Chacon  2008-04-06 10:15:08 -0700 17)   command(&quot;git log #{tree}&quot;)
+9f6560e4 (Scott Chacon  2008-03-17 21:52:20 -0700 18)  end
+9f6560e4 (Scott Chacon  2008-03-17 21:52:20 -0700 19) 
+42cf2861 (Magnus Chacon 2008-04-13 10:45:01 -0700 20)  def blame(path)
+42cf2861 (Magnus Chacon 2008-04-13 10:45:01 -0700 21)   command(&quot;git blame #{path}&quot;)
+42cf2861 (Magnus Chacon 2008-04-13 10:45:01 -0700 22)  end</code></pre>
 
-<li>конфигурациска датотека во git папката (т.е., <code>.git/config</code>) од репозиторито кое момен-тално го користите: Се однесува единствено на тоа репозитори. Секое ниво ги засенува вредностите од претходното ниво, па така, вредностите во <code>.git/config</code> ги засенуваат вредностите во <code>/etc/gitconfig</code>.</li>
-</ul>
+<p>Notice that the first field is the partial SHA-1 of the commit that last modified that line. The next two fields are values extracted from that commit—the author name and the authored date of that commit — so you can easily see who modified that line and when. After that come the line number and the content of the file. Also note the <code>^4832fe2</code> commit lines, which designate that those lines were in this file’s original commit. That commit is when this file was first added to this project, and those lines have been unchanged since. This is a tad confusing, because now you’ve seen at least three different ways that Git uses the <code>^</code> to modify a commit SHA, but that is what it means here.</p>
 
-<p>На Windows системите, Git ја бара <code>.gitconfig</code> датотеката во <code>$HOME</code> папката (најчесто <code>C:\Documents and Settings\$USER</code>). Исто така ја бара и /etc/gitconfig, иако таа патека е релативна во однос на MSys коренот, кој се наоѓа онаму каде што сте одлучиле да го инсталирате Git на Windows.</p>
+<p>Another cool thing about Git is that it doesn’t track file renames explicitly. It records the snapshots and then tries to figure out what was renamed implicitly, after the fact. One of the interesting features of this is that you can ask it to figure out all sorts of code movement as well. If you pass <code>-C</code> to <code>git blame</code>, Git analyzes the file you’re annotating and tries to figure out where snippets of code within it originally came from if they were copied from elsewhere. Recently, I was refactoring a file named <code>GITServerHandler.m</code> into multiple files, one of which was <code>GITPackUpload.m</code>. By blaming <code>GITPackUpload.m</code> with the <code>-C</code> option, I could see where sections of the code originally came from:</p>
 
-<h3 id='_'>Вашиот идентитет</h3>
+<pre><code>$ git blame -C -L 141,153 GITPackUpload.m 
+f344f58d GITServerHandler.m (Scott 2009-01-04 141) 
+f344f58d GITServerHandler.m (Scott 2009-01-04 142) - (void) gatherObjectShasFromC
+f344f58d GITServerHandler.m (Scott 2009-01-04 143) {
+70befddd GITServerHandler.m (Scott 2009-03-22 144)         //NSLog(@&quot;GATHER COMMI
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 145)
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 146)         NSString *parentSha;
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 147)         GITCommit *commit = [g
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 148)
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 149)         //NSLog(@&quot;GATHER COMMI
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 150)
+56ef2caf GITServerHandler.m (Scott 2009-01-05 151)         if(commit) {
+56ef2caf GITServerHandler.m (Scott 2009-01-05 152)                 [refDict setOb
+56ef2caf GITServerHandler.m (Scott 2009-01-05 153)</code></pre>
 
-<p>Прва работа што треба да ја направите по инсталирањето на Git е да го подесите вашето име и e-mail адреса. Ова е важно затоа што секој Git комит ги користи тие информации, и истите се вградени во секој комит што ќе го направите:</p>
+<p>This is really useful. Normally, you get as the original commit the commit where you copied the code over, because that is the first time you touched those lines in this file. Git tells you the original commit where you wrote those lines, even if it was in another file.</p>
 
-<pre><code>$ git config --global user.name &quot;John Doe&quot;
-$ git config --global user.email johndoe@example.com</code></pre>
+<h3 id='binary_search'>Binary Search</h3>
 
-<p>Ова треба да го направите само еднаш доколку како аргумент во наредбата ја користите <code>--global</code> опцијата, бидејќи во тој случај Git секогаш ќе ги користи тие информации за сите активности што ги изведувате на тој систем. Доколку за одреден проект сакате да користите поинакво име и e-mail адреса, тогаш повикајте ги наредбите без <code>--global</code> опцијата кога се наоѓате во тој проект.</p>
+<p>Annotating a file helps if you know where the issue is to begin with. If you don’t know what is breaking, and there have been dozens or hundreds of commits since the last state where you know the code worked, you’ll likely turn to <code>git bisect</code> for help. The <code>bisect</code> command does a binary search through your commit history to help you identify as quickly as possible which commit introduced an issue.</p>
 
-<h3 id='_'>Вашиот едитор</h3>
+<p>Let’s say you just pushed out a release of your code to a production environment, you’re getting bug reports about something that wasn’t happening in your development environment, and you can’t imagine why the code is doing that. You go back to your code, and it turns out you can reproduce the issue, but you can’t figure out what is going wrong. You can bisect the code to find out. First you run <code>git bisect start</code> to get things going, and then you use <code>git bisect bad</code> to tell the system that the current commit you’re on is broken. Then, you must tell bisect when the last known good state was, using <code>git bisect good [good_commit]</code>:</p>
 
-<p>Сега кога вашиот идентитет е подесен, може да подесите и кој стандарден текстуален едитор ќе биде користен од Git кога ќе треба да внесете некоја порака. Стандардно, Git како едитор ќе го користи системскиот стандарден едитор, кој што вообичаено е Vi или Vim. Доколку сакате да користите друг текстуален едитор како што е Emacs, тоа може да го направите на следниов начин:</p>
+<pre><code>$ git bisect start
+$ git bisect bad
+$ git bisect good v1.0
+Bisecting: 6 revisions left to test after this
+[ecb6e1bc347ccecc5f9350d878ce677feb13d3b2] error handling on repo</code></pre>
 
-<pre><code>$ git config --global core.editor emacs</code></pre>
+<p>Git figured out that about 12 commits came between the commit you marked as the last good commit (v1.0) and the current bad version, and it checked out the middle one for you. At this point, you can run your test to see if the issue exists as of this commit. If it does, then it was introduced sometime before this middle commit; if it doesn’t, then the problem was introduced sometime after the middle commit. It turns out there is no issue here, and you tell Git that by typing <code>git bisect good</code> and continue your journey:</p>
 
-<h3 id='_diff_'>Вашата Diff алатка</h3>
+<pre><code>$ git bisect good
+Bisecting: 3 revisions left to test after this
+[b047b02ea83310a70fd603dc8cd7a6cd13d15c04] secure this thing</code></pre>
 
-<p>Друга корисна опција која што можеби би сакале да ја подесите е која diff алатка да се користи за разрешување на конфликти при спојување (merge) на гранки. Доколку за таа намена сакате да го користите vimdiff:</p>
+<p>Now you’re on another commit, halfway between the one you just tested and your bad commit. You run your test again and find that this commit is broken, so you tell Git that with <code>git bisect bad</code>:</p>
 
-<pre><code>$ git config --global merge.tool vimdiff</code></pre>
+<pre><code>$ git bisect bad
+Bisecting: 1 revisions left to test after this
+[f71ce38690acf49c1f3c9bea38e09d82a5ce6014] drop exceptions table</code></pre>
 
-<p>Git ги прифаќа kdiff3, tkdiff, meld, xxdiff, emerge, vimdiff, gvimdiff, ecmerge и opendiff како валидни алатки за разрешување конфликти. Исто така за таа намена може да подесите и произволна алатка - за повеќе информации како се прави тоа видете во поглавје 7.</p>
+<p>This commit is fine, and now Git has all the information it needs to determine where the issue was introduced. It tells you the SHA-1 of the first bad commit and show some of the commit information and which files were modified in that commit so you can figure out what happened that may have introduced this bug:</p>
 
-<h3 id='___'>Прегледување на вашите подесувања</h3>
+<pre><code>$ git bisect good
+b047b02ea83310a70fd603dc8cd7a6cd13d15c04 is first bad commit
+commit b047b02ea83310a70fd603dc8cd7a6cd13d15c04
+Author: PJ Hyett &lt;pjhyett@example.com&gt;
+Date:   Tue Jan 27 14:48:32 2009 -0800
 
-<p>Доколку сакате да ги проверите вашите подесувања, може да ја користите наредбата <code>git config --list</code> за да ги излистате сите подесувања кои ги користи Git во тој момент:</p>
+    secure this thing
 
-<pre><code>$ git config --list
-user.name=Scott Chacon
-user.email=schacon@gmail.com
-color.status=auto
-color.branch=auto
-color.interactive=auto
-color.diff=auto
-...</code></pre>
+:040000 040000 40ee3e7821b895e52c1695092db9bdc4c61d1730
+f24d3c6ebcfc639b1a3814550e62d60b8e68a8e4 M  config</code></pre>
 
-<p>Можеби ќе видите ист клуч повеќе пати, бидејќи Git го чита истиот клуч од различни датотеки (<code>/etc/gitconfig</code> и <code>~/.gitconfig</code>, на пример). Во тој случај, Git ја користи последната вредност за секој пронајден клуч.</p>
+<p>When you’re finished, you should run <code>git bisect reset</code> to reset your HEAD to where you were before you started, or you’ll end up in a weird state:</p>
 
-<p>Може да проверите која вредност ја користи Git за некој клуч со испишување на <code>git config {key}</code>:</p>
+<pre><code>$ git bisect reset</code></pre>
 
-<pre><code>$ git config user.name
-Scott Chacon</code></pre>
+<p>This is a powerful tool that can help you check hundreds of commits for an introduced bug in minutes. In fact, if you have a script that will exit 0 if the project is good or non-0 if the project is bad, you can fully automate <code>git bisect</code>. First, you again tell it the scope of the bisect by providing the known bad and good commits. You can do this by listing them with the <code>bisect start</code> command if you want, listing the known bad commit first and the known good commit second:</p>
+
+<pre><code>$ git bisect start HEAD v1.0
+$ git bisect run test-error.sh</code></pre>
+
+<p>Doing so automatically runs <code>test-error.sh</code> on each checked-out commit until Git finds the first broken commit. You can also run something like <code>make</code> or <code>make tests</code> or whatever you have that runs automated tests for you.</p>
 
 <div id='nav'>
 <a href='ch1-4.html'>prev</a> | <a href='ch1-6.html'>next</a>

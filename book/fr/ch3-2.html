@@ -1,211 +1,257 @@
 ---
 layout: translation
-title: Pro Git 3.2 Les branches avec Git Brancher et fusionner : les bases
+title: Pro Git 3.2 Les tripes de Git Les objets Git
 ---
-<h2 id='brancher_et_fusionner_les_bases'>Brancher et fusionner : les bases</h2>
+<h2 id='les_objets_git'>Les objets Git</h2>
 
-<p>Suivons un exemple simple de branche et fusion dans une utilisation que vous feriez dans le monde réel. Vous feriez les étapes suivantes :</p>
+<p>Git est un système de fichier adressables par contenu. Super ! Mais qu&#8217;est-ce que ça veut dire ? Ça veut dire que le cœur de Git est une simple base de paires clé/valeur. Vous pouvez y insérer n&#8217;importe quelle sorte de données et il vous retournera une clé que vous pourrez utiliser à n&#8217;importe quel moment pour récupérer ces données. Pour illustrer cela, vous pouvez utiliser la commande de plomberie <code>hash-object</code>, qui prend des données, les stocke dans votre répertoire <code>.git</code>, puis retourne la clé sous laquelle les données sont stockées. Tout d&#8217;abord, créez un nouveau dépôt Git et vérifiez que rien ne se trouve dans le répertoire <code>object</code> :</p>
 
-<ol>
-<li>Travailler sur un site web</li>
+<pre><code>$ mkdir test
+$ cd test
+$ git init
+Initialized empty Git repository in /tmp/test/.git/
+$ find .git/objects
+.git/objects
+.git/objects/info
+.git/objects/pack
+$ find .git/objects -type f
+$</code></pre>
 
-<li>Créer une branche pour une nouvelle Story sur laquelle vous souhaiteriez travailler</li>
+<p>Git a initialisé le répertoire <code>objects</code> et y a créé les sous-répertoires <code>pack</code> et <code>info</code>, mais ils ne contiennent pas de fichier régulier. Maintenant, stockez du texte dans votre base de données Git :</p>
 
-<li>Réaliser quelques tâches sur cette branche</li>
-</ol>
+<pre><code>$ echo &#39;test content&#39; | git hash-object -w --stdin
+d670460b4b4aece5915caf5c68d12f560a9fe3e4</code></pre>
 
-<p>À cette étape, vous recevez un appel pour vous dire qu&#8217;un problème critique a été découvert et qu&#8217;il faut le régler au plus tôt. Vous feriez ce qui suit :</p>
+<p>L&#8217;option <code>-w</code> spécifie à <code>hash-object</code> de stocker l&#8217;objet, sinon la commande répondrait seulement quelle serait la clé. <code>--stdin</code> spécifie à la commande de lire le contenu depuis l&#8217;entrée standard, sinon <code>hash-object</code> s&#8217;attend à trouver un chemin vers un fichier. La sortie de la commande est une empreinte de 40 caractères. C&#8217;est l&#8217;empreinte SHA-1 : une somme de contrôle du contenu du fichier que vous stockez plus un en-tête, dont les détails sont un peu plus bas. Voyez maintenant comment Git a stocké vos données :</p>
 
-<ol>
-<li>Revenir à la branche de production</li>
+<pre><code>$ find .git/objects -type f
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4</code></pre>
 
-<li>Créer une branche et y développer le correctif</li>
+<p>Vous pouvez voir un fichier dans le répertoire <code>objects</code>. C&#8217;est comme cela que Git stocke initialement du contenu : un fichier par contenu, nommé d&#8217;après la somme de contrôle SHA-1 du contenu et de son en-tête. Le sous-répertoire est nommé d&#8217;après les 2 premiers caractères de l&#8217;empreinte et le fichier d&#8217;après les 38 caractères restants.</p>
 
-<li>Après un test, fusionner la branche de correctif et pousser le résultat à la production</li>
+<p>Vous pouvez récupérer le contenu avec la commande <code>cat-file</code>. Cette commande est un peu le couteau suisse pour l&#8217;inspection des objets Git. Utiliser l&#8217;option <code>-p</code> avec <code>cat-file</code> vous permet de connaître le type de contenu et de l&#8217;afficher clairement :</p>
 
-<li>Rebasculer à la branche initiale et continuer le travail</li>
-</ol>
+<pre><code>$ git cat-file -p d670460b4b4aece5915caf5c68d12f560a9fe3e4
+test content</code></pre>
 
-<h3 id='le_branchement_de_base'>Le branchement de base</h3>
+<p>Vous pouvez maintenant ajouter du contenu à Git et le récupérer. Vous pouvez aussi faire ceci avec des fichiers. Par exemple, vous pouvez mettre en œuvre une gestion de version simple d&#8217;un fichier. D&#8217;abord, créez un nouveau fichier et enregistrez son contenu dans la base de données :</p>
 
-<p>Premièrement, supposons que vous êtes à travailler sur votre projet et avez déjà quelques commits (voir figure 3-10).</p>
+<pre><code>$ echo &#39;version 1&#39; &gt; test.txt
+$ git hash-object -w test.txt
+83baae61804e65cc73a7201a7252750c76066a30</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0310-tn.png"></center><br/> Figure 3-10. Un historique simple et court.</p>
+<p>Puis, modifiez le contenu du fichier et enregistrez-le à nouveau :</p>
 
-<p>Vous avez décidé de travailler sur le problème numéroté #53 dans le suivi de faits techniques que votre entreprise utilise. Pour clarifier, Git n&#8217;est pas lié à un gestionnaire particulier de faits techniques. Mais comme le problème #53 est un problème ciblé sur lequel vous voulez travailler, vous allez créer une nouvelle branche dédiée à sa résolution. Pour créer une branche et y basculer tout de suite, vous pouvez lancer la commande <code>git checkout</code> avec l&#8217;option <code>-b</code> :</p>
+<pre><code>$ echo &#39;version 2&#39; &gt; test.txt
+$ git hash-object -w test.txt
+1f7a7a472abf3dd9643fd615f6da379c4acb3e3a</code></pre>
 
-<pre><code>$ git checkout -b prob53
-Switched to a new branch &quot;prob53&quot;</code></pre>
+<p>Votre base de données contient les 2 versions du fichier, ainsi que le premier contenu que vous avez stocké ici :</p>
 
-<p>C&#8217;est un raccourci pour :</p>
+<pre><code>$ find .git/objects -type f
+.git/objects/1f/7a7a472abf3dd9643fd615f6da379c4acb3e3a
+.git/objects/83/baae61804e65cc73a7201a7252750c76066a30
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4</code></pre>
 
-<pre><code>$ git branch prob53
-$ git checkout prob53</code></pre>
+<p>Vous pouvez restaurer le fichier à sa première version :</p>
 
-<p>La figure 3-11 illustre le résultat.</p>
+<pre><code>$ git cat-file -p 83baae61804e65cc73a7201a7252750c76066a30 &gt; test.txt
+$ cat test.txt
+version 1</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0311-tn.png"></center><br/> Figure 3-11. Création d&#8217;un nouveau pointeur de branche.</p>
+<p>ou à sa seconde version :</p>
 
-<p>Vous travaillez sur votre site web et validez des modifications. Ce faisant, la branche <code>prob53</code> avance, parce que vous l&#8217;avez extraite (c&#8217;est-à-dire que votre pointeur HEAD pointe dessus, voir figure 3-12) :</p>
+<pre><code>$ git cat-file -p 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a &gt; test.txt
+$ cat test.txt
+version 2</code></pre>
 
-<pre><code>$ vim index.html
-$ git commit -a -m &#39;ajout d&#39;un pied de page [problème 53]&#39;</code></pre>
+<p>Se souvenir de la clé SHA-1 de chaque version de votre fichier n&#8217;est pas pratique. En plus, vous ne stockez pas le fichier lui-même, mais seulement son contenu, dans votre base. Ce type d&#8217;objet est appelé un blob (<em>Binary Large OBject</em>, soit en français : Gros Objet Binaire). Git peut vous donner le type d&#8217;objet de n&#8217;importe quel objet Git, étant donné sa clé SHA-1, avec <code>cat-file -t</code> :</p>
 
-<p><center><img src="/figures/ch3/18333fig0312-tn.png"></center><br/> Figure 3-12. La branche prob53 a avancé avec votre travail.</p>
+<pre><code>$ git cat-file -t 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a
+blob</code></pre>
 
-<p>Maintenant vous recevez un appel qui vous apprend qu&#8217;il y a un problème sur le site web, un problème qu&#8217;il faut résoudre immédiatement. Avec Git, vous n&#8217;avez pas besoin de déployer les modifications déjà validée pour <code>prob53</code> avec les correctifs du problème et vous n&#8217;avez pas non plus à suer pour éliminer ces modifications avant de pouvoir appliquer les correctifs du problème en production. Tout ce que vous avez à faire, c&#8217;est simplement rebasculer sur la branche <code>master</code>.</p>
+<h3 id='objets_arbre'>Objets arbre</h3>
 
-<p>Cependant, avant de le faire, notez que si votre copie de travail ou votre zone de préparation contient des modifications non validées qui sont en conflit avec la branche que vous extrayez, Git ne vous laissera pas basculer de branche. Le mieux est d&#8217;avoir votre copie de travail dans un état propre au moment de basculer de branche. Il y a des moyens de contourner ceci (précisément par la planque et l&#8217;amendement de commit) dont nous parlerons plus loin. Pour l&#8217;instant, vous avez validé tous vos changements dans la branche <code>prob53</code> et vous pouvez donc rebasculer vers la branche <code>master</code> :</p>
+<p>Le prochain type que vous allez étudier est l&#8217;objet arbre (<em>tree</em>) qui résout le problème de stockage d&#8217;un groupe de fichiers. Git stocke du contenu de la même manière, mais plus simplement, qu&#8217;un système de fichier UNIX. Tout le contenu est stocké comme des objets de type arbre ou blob : un arbre correspondant à un répertoire UNIX et un blob correspond à peu près à un i-nœud ou au contenu d&#8217;un fichier. Un unique arbre contient une ou plusieurs entrées de type arbre, chacune incluant un pointeur SHA-1 vers un blob, un sous-arbre (<em>sub-tree</em>), ainsi que les droits d&#8217;accès (<em>mode</em>), le type et le nom de fichier. L&#8217;arbre le plus récent du projet simplegit pourrait ressembler, par exemple à ceci :</p>
 
-<pre><code>$ git checkout master
-Switched to branch &quot;master&quot;</code></pre>
+<pre><code>$ git cat-file -p master^{tree}
+100644 blob a906cb2a4a904a152e80877d4088654daad0c859      README
+100644 blob 8f94139338f9404f26296befa88755fc2598c289      Rakefile
+040000 tree 99f1a6d12cb4b6f19c8655fca46c3ecf317074e0      lib</code></pre>
 
-<p>À présent, votre répertoire de copie de travail est exactement dans l&#8217;état précédent les modifications pour le problème #53 et vous pouvez vous consacrer à votre correctif. C&#8217;est un point important : Git réinitialise le répertoire de travail pour qu&#8217;il ressemble à l&#8217;instantané de la validation sur laquelle la branche que vous extrayez pointe. Il ajoute, retire et modifie les fichiers automatiquement pour assurer que la copie de travail soit identique à ce qu&#8217;elle était lors de votre dernière validation sur la branche.</p>
+<p>La syntaxe <code>master^{tree}</code> signifie l&#8217;objet arbre qui est pointé par le dernier <em>commit</em> de la branche <code>master</code>. Remarquez que le sous-répertoire <code>lib</code> n&#8217;est pas un blob, mais un pointeur vers un autre arbre :</p>
 
-<p>Ensuite, vous avez un correctif à faire. Créons une branche de correctif sur laquelle travailler jusqu&#8217;à ce que ce soit terminé (voir figure 3-13) :</p>
+<pre><code>$ git cat-file -p 99f1a6d12cb4b6f19c8655fca46c3ecf317074e0
+100644 blob 47c6340d6459e05787f644c2447d2595f5d3a54b      simplegit.rb</code></pre>
 
-<pre><code>$ git checkout -b &#39;correctif&#39;
-Switched to a new branch &quot;correctif&quot;
-$ vim index.html
-$ git commit -a -m &quot;correction d&#39;une adresse mail incorrecte&quot;
-[correctif]: created 3a0874c: &quot;correction d&#39;une adresse mail incorrecte&quot;
- 1 files changed, 0 insertions(+), 1 deletions(-)</code></pre>
+<p>Conceptuellement, les données que Git stocke ressemblent à la figure 9-1.</p>
 
-<p><center><img src="/figures/ch3/18333fig0313-tn.png"></center><br/> Figure 3-13. Branche de correctif basée à partir de la branche master.</p>
+<p><center><img src="/figures/ch3/18333fig0901-tn.png"></center><br/> Figure 9-1. Une version simple du modèle de données Git.</p>
 
-<p>Vous pouvez lancer vos tests, vous assurer que la correction est efficace et la fusionner dans la branche master pour la déployer en production. Vous réalisez ceci au moyen de la commande <code>git merge</code> :</p>
+<p>Vous pouvez créer votre propre arbre. Git crée habituellement un arbre à partir de l&#8217;état de la zone d&#8217;attente ou de l&#8217;index. Pour créer un objet arbre, vous devez donc d&#8217;abord mettre en place un index en mettant quelques fichiers en attente. Pour créer un index contenant une entrée, la première version de votre fichier <code>test.txt</code> par exemple, utilisons la commande de plomberie <code>update-index</code>. Vous pouvez utiliser cette commande pour ajouter artificiellement une version plus ancienne à une nouvelle zone d&#8217;attente. Vous devez utiliser les options <code>--add</code> car le fichier n&#8217;existe pas encore dans votre zone d&#8217;attente (vous n&#8217;avez même pas encore mis en place une zone d&#8217;attente) et <code>--cacheinfo</code> car le fichier que vous ajoutez n&#8217;est pas dans votre répertoire, mais dans la base de données. Vous pouvez ensuite préciser le mode, SHA-1 et le nom de fichier :</p>
 
-<pre><code>$ git checkout master
-$ git merge correctif
-Updating f42c576..3a0874c
-Fast forward
- LISEZMOI |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)</code></pre>
+<pre><code>$ git update-index --add --cacheinfo 100644 \
+  83baae61804e65cc73a7201a7252750c76066a30 test.txt</code></pre>
 
-<p>Vous noterez la mention &#8220;Fast forward&#8221; qui signifie avance rapide dans cette fusion. Comme le commit pointé par la branche que vous avez fusionné était directement descendant du commit sur lequel vous vous trouvez, Git a avancé le pointeur en avant. Autrement dit, lorsque l&#8217;on cherche à fusionner un commit qui peut être joint en suivant l&#8217;historique depuis le commit d&#8217;origine, Git avance simplement le pointeur car il n&#8217;y a pas de travaux divergeant à réellement fusionner — ceci s&#8217;appelle l&#8217;avance rapide.</p>
+<p>Dans ce cas, vous précisez le mode <code>100644</code>, qui signifie que c&#8217;est un fichier normal. Les alternatives sont <code>100755</code>, qui signifie que c&#8217;est un exécutable et <code>120000</code>, qui précise que c&#8217;est un lien symbolique. Le concept de « mode » a été repris des mode UNIX, mais est beaucoup moins flexible : ces trois modes sont les seuls valides pour Git, pour les fichiers (blobs) (bien que d&#8217;autres modes soient utilisés pour les répertoires et sous-modules).</p>
 
-<p>Votre modification est maintenant dans l&#8217;instantané du commit pointé par la branche <code>master</code> et vous pouvez déployer votre modification (voir figure 3-14)</p>
+<p>Vous pouvez maintenant utiliser la commande <code>write-tree</code> pour écrire la zone d&#8217;attente dans un objet arbre. L&#8217;option&#8217; <code>-w</code> est inutile (appeler <code>write-tree</code> crée automatiquement un objet arbre à partir de l&#8217;état de l&#8217;index si cet arbre n&#8217;existe pas) :</p>
 
-<p><center><img src="/figures/ch3/18333fig0314-tn.png"></center><br/> Figure 3-14. Après la fusion, votre branche master pointe au même endroit que la correction.</p>
+<pre><code>$ git write-tree
+d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+$ git cat-file -p d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+100644 blob 83baae61804e65cc73a7201a7252750c76066a30      test.txt</code></pre>
 
-<p>Après le déploiement de votre correction super-importante, vous voilà de nouveau prêt à travailler sur votre sujet précédent l&#8217;interruption. Cependant, vous allez avant tout effacer la branche <code>correctif</code> parce que vous n&#8217;en avez plus besoin et la branche <code>master</code> pointe au même endroit. Vous pouvez l&#8217;effacer avec l&#8217;option <code>-d</code> de la commande <code>git branch</code> :</p>
+<p>Vous pouvez également vérifier que c&#8217;est un objet arbre :</p>
 
-<pre><code>$ git branch -d correctif
-Deleted branch correctif (3a0874c).</code></pre>
+<pre><code>$ git cat-file -t d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+tree</code></pre>
 
-<p>Maintenant, il est temps de basculer sur la branche &#8220;travaux en cours&#8221; sur le problème #53 et de continuer à travailler dessus (voir figure 3-15) :</p>
+<p>Vous allez créer maintenant un nouvel arbre avec la seconde version de <code>test.txt</code> et un nouveau fichier :</p>
 
-<pre><code>$ git checkout prob53
-Switched to branch &quot;prob53&quot;
-$ vim index.html
-$ git commit -a -m &#39;Nouveau pied de page terminé [problème 53]&#39;
-[prob53]: created ad82d7a: &quot;Nouveau pied de page terminé [problème 53]&quot;
+<pre><code>$ echo &#39;new file&#39; &gt; new.txt
+$ git update-index test.txt
+$ git update-index --add new.txt</code></pre>
+
+<p>Votre zone d&#8217;attente contient maintenant la nouvelle version de <code>test.txt</code> ainsi qu&#8217;un nouveau fichier <code>new.txt</code>. Enregistrez cet arbre (c&#8217;est-à-dire enregistrez l&#8217;état de la zone d&#8217;attente ou de l&#8217;index dans un objet arbre) :</p>
+
+<pre><code>$ git write-tree
+0155eb4229851634a0f03eb265b69f5a2d56f341
+$ git cat-file -p 0155eb4229851634a0f03eb265b69f5a2d56f341
+100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
+100644 blob 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a      test.txt</code></pre>
+
+<p>Remarquez que cet arbre contient des entrées pour les deux fichiers et que l&#8217;empreinte SHA de <code>test.txt</code> est l&#8217;empreinte de la « version 2 » de tout à l&#8217;heure (<code>1f7a7a</code>). Pour le plaisir, ajoutez le premier arbre à celui-ci, en tant que sous-répertoire. Vous pouvez maintenant récupérer un arbre de votre zone d&#8217;attente en exécutant <code>read-tree</code>. Dans ce cas, vous pouvez récupérer un arbre existant dans votre zone d&#8217;attente comme étant un sous-arbre en utilisant l&#8217;option <code>--prefix</code> de <code>read-tree</code> :</p>
+
+<pre><code>$ git read-tree --prefix=bak d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+$ git write-tree
+3c4e9cd789d88d8d89c1073707c3585e41b0e614
+$ git cat-file -p 3c4e9cd789d88d8d89c1073707c3585e41b0e614
+040000 tree d8329fc1cc938780ffdd9f94e0d364e0ea74f579      bak
+100644 blob fa49b077972391ad58037050f2a75f74e3671e92      new.txt
+100644 blob 1f7a7a472abf3dd9643fd615f6da379c4acb3e3a      test.txt</code></pre>
+
+<p>Si vous créez un répertoire de travail à partir du nouvel arbre que vous venez d&#8217;enregistrer, vous aurez deux fichiers à la racine du répertoire de travail, ainsi qu&#8217;un sous-répertoire appelé <code>bak</code> qui contient la première version du fichier <code>test.txt</code>. Vous pouvez vous représenter les données que Git utilise pour ces structures comme sur la figure 9-2.</p>
+
+<p><center><img src="/figures/ch3/18333fig0902-tn.png"></center><br/> Figure 9-2. Structure du contenu de vos données Git actuelles.</p>
+
+<h3 id='objets_commit'>Objets <em>Commit</em></h3>
+
+<p>Vous avez trois arbres qui définissent différents instantanés du projet que vous suivez, mais certains problèmes persistent : vous devez vous souvenir des valeurs des trois empreintes SHA-1 pour accéder aux instantanés. Vous n&#8217;avez pas non plus d&#8217;information sur qui a enregistré les instantanés, quand et pourquoi. Ce sont les informations élémentaires qu&#8217;un objet <em>commit</em> stocke pour vous.</p>
+
+<p>Pour créer un objet <em>commit</em>, il suffit d&#8217;exécuter <code>commit-tree</code>, de préciser l&#8217;empreinte SHA-1 et quel objet <em>commit</em>, s&#8217;il y en a, le précède directement. Commencez avec le premier arbre que vous avez créé :</p>
+
+<pre><code>$ echo &#39;first commit&#39; | git commit-tree d8329f
+fdf4fc3344e67ab068f836878b6c4951e3b15f3d</code></pre>
+
+<p>Vous pouvez voir votre nouvel objet <em>commit</em> avec <code>cat-file</code> :</p>
+
+<pre><code>$ git cat-file -p fdf4fc3
+tree d8329fc1cc938780ffdd9f94e0d364e0ea74f579
+author Scott Chacon &lt;schacon@gmail.com&gt; 1243040974 -0700
+committer Scott Chacon &lt;schacon@gmail.com&gt; 1243040974 -0700
+
+first commit</code></pre>
+
+<p>Le format d&#8217;un <em>commit</em> est simple : il contient l&#8217;arbre racine de l&#8217;instantané du projet à ce moment, les informations sur l&#8217;auteur et le validateur qui sont extraites des variables de configuration <code>user.name</code> et <code>user.email</code> accompagnées d&#8217;un horodatage, une ligne vide et le message de validation.</p>
+
+<p>Ensuite, vous enregistrez les deux autres objets <em>commit</em>, chacun référençant le <em>commit</em> dont il est issu :</p>
+
+<pre><code>$ echo &#39;second commit&#39; | git commit-tree 0155eb -p fdf4fc3
+cac0cab538b970a37ea1e769cbbde608743bc96d
+$ echo &#39;third commit&#39;  | git commit-tree 3c4e9c -p cac0cab
+1a410efbd13591db07496601ebc7a059dd55cfe9</code></pre>
+
+<p>Chacun des trois objets <em>commit</em> pointe sur un arbre de l&#8217;instantané que vous avez créé. Curieusement, vous disposez maintenant d&#8217;un historique Git complet que vous pouvez visualiser avec la commande <code>git log</code>, si vous la lancez sur le SHA-1 du dernier <em>commit</em> :</p>
+
+<pre><code>$ git log --stat 1a410e
+commit 1a410efbd13591db07496601ebc7a059dd55cfe9
+Author: Scott Chacon &lt;schacon@gmail.com&gt;
+Date:   Fri May 22 18:15:24 2009 -0700
+
+    third commit
+
+ bak/test.txt |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit cac0cab538b970a37ea1e769cbbde608743bc96d
+Author: Scott Chacon &lt;schacon@gmail.com&gt;
+Date:   Fri May 22 18:14:29 2009 -0700
+
+    second commit
+
+ new.txt  |    1 +
+ test.txt |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletions(-)
+
+commit fdf4fc3344e67ab068f836878b6c4951e3b15f3d
+Author: Scott Chacon &lt;schacon@gmail.com&gt;
+Date:   Fri May 22 18:09:34 2009 -0700
+
+    first commit
+
+ test.txt |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0315-tn.png"></center><br/> Figure 3-15. Votre branche prob53 peut avancer indépendamment de master.</p>
+<p>Fantastique. Vous venez d&#8217;effectuer les opérations bas niveau pour construire un historique Git sans avoir utilisé aucune des commandes haut niveau. C&#8217;est l&#8217;essence de ce que fait Git quand vous exécutez les commandes <code>git add</code> et <code>git commit</code>. Il stocke les blobs correspondant aux fichiers modifiés, met à jour l&#8217;index, écrit les arbres et ajoute les objets <em>commit</em> qui référencent les arbres racines venant juste avant eux. Ces trois objets principaux (le blob, l&#8217;arbre et le <em>commit</em>) sont initialement stockés dans des fichiers séparés du répertoire <code>.git/objects</code>. Voici tous les objets contenus dans le répertoire exemple, commentés d&#8217;après leur contenu :</p>
 
-<p>Il est utile de noter que le travail réalisé dans <code>correctif</code> n&#8217;est pas contenu dans les fichiers de la branche <code>prob53</code>. Si vous avez besoin de les y rapatrier, vous pouvez fusionner la branche <code>master</code> dans la branche <code>prob53</code> en lançant la commande <code>git merge master</code>, ou vous pouvez retarder l&#8217;intégration de ces modifications jusqu&#8217;à ce que vous décidiez plus tard de rapatrier la branche <code>prob53</code> dans <code>master</code>.</p>
+<pre><code>$ find .git/objects -type f
+.git/objects/01/55eb4229851634a0f03eb265b69f5a2d56f341 # tree 2
+.git/objects/1a/410efbd13591db07496601ebc7a059dd55cfe9 # commit 3
+.git/objects/1f/7a7a472abf3dd9643fd615f6da379c4acb3e3a # test.txt v2
+.git/objects/3c/4e9cd789d88d8d89c1073707c3585e41b0e614 # tree 3
+.git/objects/83/baae61804e65cc73a7201a7252750c76066a30 # test.txt v1
+.git/objects/ca/c0cab538b970a37ea1e769cbbde608743bc96d # commit 2
+.git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4 # &#39;test content&#39;
+.git/objects/d8/329fc1cc938780ffdd9f94e0d364e0ea74f579 # tree 1
+.git/objects/fa/49b077972391ad58037050f2a75f74e3671e92 # new.txt
+.git/objects/fd/f4fc3344e67ab068f836878b6c4951e3b15f3d # commit 1</code></pre>
 
-<h3 id='les_bases_de_la_fusion'>Les bases de la fusion</h3>
+<p>Si vous suivez les pointeurs internes de ces objets, vous obtenez un graphe comme celui de la figure 9-3.</p>
 
-<p>Supposons que vous ayez décidé que le travail sur le problème #53 est terminé et se trouve donc prêt à être fusionné dans la branche <code>master</code>. Pour ce faire, vous allez rapatrier votre branche <code>prob53</code> de la même manière que vous l&#8217;avez fait plus tôt pour la branche <code>correctif</code>. Tout ce que vous avez à faire est d&#8217;extraire la branche dans laquelle vous souhaitez fusionner et lancer la commande <code>git merge</code> :</p>
+<p><center><img src="/figures/ch3/18333fig0903-tn.png"></center><br/> Figure 9-3. Tous les objets de votre répertoire Git.</p>
 
-<pre><code>$ git checkout master
-$ git merge prob53
-Merge made by recursive.
- README |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
+<h3 id='stockage_des_objets'>Stockage des objets</h3>
 
-<p>Le comportement semble légèrement différent de celui observé pour la fusion précédente de <code>correctif</code>. Dans ce cas, l&#8217;historique de développement a divergé à un certain point. Comme le commit sur la branche sur laquelle vous vous trouvez n&#8217;est plus un ancêtre direct de la branche que vous cherchez à fusionner, Git doit travailler. Dans ce cas, Git réalise une simple fusion à trois sources, en utilisant les deux instantanés pointés par les sommets des branches et l&#8217;ancêtre commun des deux. La figure 3-16 illustre les trois instantanés que Git utilise pour réaliser la fusion dans ce cas.</p>
+<p>On a parlé plus tôt de l&#8217;en-tête présent avec le contenu. Prenons un moment pour étudier la façon dont Git stocke les objets. On verra comment stocker interactivement un objet Blob (ici, la chaîne « what is up, doc? ») avec le langage Ruby. Vous pouvez démarrer Ruby en mode interactif avec la commande <code>irb</code> :</p>
 
-<p><center><img src="/figures/ch3/18333fig0316-tn.png"></center><br/> Figure 3-16. Git identifie automatiquement la meilleure base d&#8217;ancêtre commun pour réaliser la fusion.</p>
+<pre><code>$ irb
+&gt;&gt; content = &quot;what is up, doc?&quot;
+=&gt; &quot;what is up, doc?&quot;</code></pre>
 
-<p>Au lieu de simplement d&#8217;avancer le pointeur de branche, Git crée un nouvel instantané qui résulte de la fusion à trois branches et crée automatiquement un nouveau commit qui pointe dessus (voir figure 3-17). On appelle ceci un commit de fusion, qui est spécial en ce qu&#8217;il comporte plus d&#8217;un parent.</p>
+<p>Git construit un en-tête qui commence avec le type de l&#8217;objet, ici un blob. Ensuite, il ajoute un espace suivi de taille du contenu et enfin un octet nul :</p>
 
-<p>Il est à noter que Git détermine par lui-même le meilleur ancêtre commun à utiliser comme base de fusion ; ce comportement est très différent de celui de CVS ou Subversion (antérieur à la version 1.5), où le développeur en charge de la fusion doit trouver par lui-même la meilleure base de fusion. Cela rend la fusion tellement plus facile dans Git que dans les autres systèmes.</p>
+<pre><code>&gt;&gt; header = &quot;blob #{content.length}\0&quot;
+=&gt; &quot;blob 16\000&quot;</code></pre>
 
-<p><center><img src="/figures/ch3/18333fig0317-tn.png"></center><br/> Figure 3-17. Git crée automatiquement un nouvel objet commit qui contient le travail fusionné.</p>
+<p>Git concatène l&#8217;en-tête avec le contenu original et calcule l&#8217;empreinte SHA-1 du nouveau contenu. En Ruby, vous pouvez calculer l&#8217;empreinte SHA-1 d&#8217;une chaîne, en incluant la bibliothèque « digest/SHA-1 » via la commande <code>require</code>, puis en appelant <code>Digest::SHA1.hexdigest()</code> sur la chaîne :</p>
 
-<p>A présent que votre travail a été fusionné, vous n&#8217;avez plus besoin de la branche <code>prob53</code>. Vous pouvez l&#8217;effacer et fermer manuellement le ticket dans votre outil de suivi de faits techniques :</p>
+<pre><code>&gt;&gt; store = header + content
+=&gt; &quot;blob 16\000what is up, doc?&quot;
+&gt;&gt; require &#39;digest/sha1&#39;
+=&gt; true
+&gt;&gt; sha1 = Digest::SHA1.hexdigest(store)
+=&gt; &quot;bd9dbf5aae1a3862dd1526723246b20206e5fc37&quot;</code></pre>
 
-<pre><code>$ git branch -d prob53</code></pre>
+<p>Git compresse le nouveau contenu avec zlib, ce que vous pouvez faire avec la bibliothèque zlib de Ruby. Vous devez inclure la bibliothèque et exécuter <code>Zlib::Deflate.deflate()</code> sur le contenu :</p>
 
-<h3 id='conflits_de_fusion'>Conflits de fusion</h3>
+<pre><code>&gt;&gt; require &#39;zlib&#39;
+=&gt; true
+&gt;&gt; zlib_content = Zlib::Deflate.deflate(store)
+=&gt; &quot;x\234K\312\311OR04c(\317H,Q\310,V(-\320QH\311O\266\a\000_\034\a\235&quot;</code></pre>
 
-<p>Quelques fois, le processus ci-dessus ne se passe pas sans accroc. Si vous avez modifié différemment la même partie du même fichier dans les deux branches que vous souhaitez fusionner, Git ne sera pas capable de réaliser proprement la fusion. Si votre résolution du problème #53 a modifié la même section de fichier que le <code>correctif</code>, vous obtiendrez une conflit de fusion qui ressemble à ceci :</p>
+<p>Finalement, vous enregistrerez le contenu compressé dans un objet sur le disque. Vous déterminerez le chemin de l&#8217;objet que vous voulez enregistrer (les deux premiers caractères de l&#8217;empreinte SHA-1 formeront le nom du sous-répertoires et les 38 derniers formeront le nom du fichier dans ce répertoire). En Ruby, on peut utiliser la fonction <code>FileUtils.mkdir_p()</code> pour créer un sous-répertoire s&#8217;il n&#8217;existe pas. Ensuite, ouvrez le fichier avec <code>File.open()</code> et enregistrez le contenu compressé en appelant la fonction <code>write()</code> sur la référence du fichier :</p>
 
-<pre><code>$ git merge prob53
-Auto-merging index.html
-CONFLICT (content): Merge conflict in index.html
-Automatic merge failed; fix conflicts and then commit the result.</code></pre>
+<pre><code>&gt;&gt; path = &#39;.git/objects/&#39; + sha1[0,2] + &#39;/&#39; + sha1[2,38]
+=&gt; &quot;.git/objects/bd/9dbf5aae1a3862dd1526723246b20206e5fc37&quot;
+&gt;&gt; require &#39;fileutils&#39;
+=&gt; true
+&gt;&gt; FileUtils.mkdir_p(File.dirname(path))
+=&gt; &quot;.git/objects/bd&quot;
+&gt;&gt; File.open(path, &#39;w&#39;) { |f| f.write zlib_content }
+=&gt; 32</code></pre>
 
-<p>Git n&#8217;a pas automatiquement créé le commit du fusion. Il a arrêté le processus le temps que vous résolviez le conflit. Lancez <code>git status</code> pour voir à tout moment après l&#8217;apparition du conflit de fusion quels fichiers n&#8217;ont pas été fusionnés :</p>
-
-<pre><code>[master*]$ git status
-index.html: needs merge
-# On branch master
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#   (use &quot;git checkout -- &lt;file&gt;...&quot; to discard changes in working directory)
-#
-#	unmerged:   index.html
-#</code></pre>
-
-<p>Tout ce qui comporte des conflits de fusion et n&#8217;a pas été résolu est listé comme <code>unmerged</code>. Git ajoute des marques de conflit standard dans les fichiers qui comportent des conflits, pour que vous puissiez les ouvrir et résoudre les conflits manuellement. Votre fichier contient des sections qui ressemblent à ceci :</p>
-
-<pre><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD:index.html
-&lt;div id=&quot;footer&quot;&gt;contact : email.support@github.com&lt;/div&gt;
-=======
-&lt;div id=&quot;footer&quot;&gt;
-  please contact us at support@github.com
-&lt;/div&gt;
-&gt;&gt;&gt;&gt;&gt;&gt;&gt; prob53:index.html</code></pre>
-
-<p>Cela signifie que la version dans HEAD (votre branche master, parce que c&#8217;est celle que vous aviez extraite quand vous avez lancé votre commande de fusion) est la partie supérieure de ce bloc (tout ce qui se trouve au dessus de la ligne <code>=======</code>), tandis que la version de la branche <code>prob53</code> se trouve en dessous. Pour résoudre le conflit, vous devez choisir une partie ou l&#8217;autre ou bien fusionner leurs contenus par vous-même. Par exemple, vous pourriez choisir de résoudre ce conflit en remplaçant tout le bloc par ceci :</p>
-
-<pre><code>&lt;div id=&quot;footer&quot;&gt;
-please contact us at email.support@github.com
-&lt;/div&gt;</code></pre>
-
-<p>Cette résolution comporte des parties de chaque section et les lignes <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code>, <code>=======</code> et <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code> ont été complètement effacées. Après avoir résolu chacune de ces sections dans chaque fichier comportant un conflit, lancez <code>git add</code> sur chaque fichier pour le marquer comme résolu. Préparer le fichier en zone de préparation suffit à le marquer résolu pour Git. Si vous souhaitez utiliser un outil graphique pour résoudre ces problèmes, vous pouvez lancer <code>git mergetool</code> qui démarre l&#8217;outil graphique de fusion approprié et vous permet de naviguer dans les conflits :</p>
-
-<pre><code>$ git mergetool
-merge tool candidates: kdiff3 tkdiff xxdiff meld gvimdiff opendiff emerge vimdiff
-Merging the files: index.html
-
-Normal merge conflict for &#39;index.html&#39;:
-  {local}: modified
-  {remote}: modified
-Hit return to start merge resolution tool (opendiff):</code></pre>
-
-<p>Si vous souhaitez utiliser un outil de fusion autre que celui par défaut (Git a choisi <code>opendiff</code> pour moi dans ce cas car j&#8217;utilise la commande sous Mac), vous pouvez voir tous les outils supportés après l&#8217;indication &#8220;merge tool candidates&#8221;. Tapez le nom de l&#8217;outil que vous préféreriez utiliser. Au chapitre 7, nous expliquerons comment changer cette valeur par défaut dans votre environnement.</p>
-
-<p>Après avoir quitté l&#8217;outil de fusion, Git vous demande si la fusion a été réussie. Si vous répondez par la positive à l&#8217;outil, il indexe le fichier pour le marquer comme résolu.</p>
-
-<p>Vous pouvez lancer à nouveau la commande <code>git status</code> pour vérifier que tous les conflits ont été résolus :</p>
-
-<pre><code>$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#	modified:   index.html
-#</code></pre>
-
-<p>Cela vous convient et vous avez vérifié que tout ce qui comportait un conflit a été indexé, vous pouvez taper la commande <code>git commit</code> pour finaliser le commit de fusion. Le message de validation ressemble d&#8217;habitude à ceci :</p>
-
-<pre><code>Merge branch &#39;prob53&#39;
-
-Conflicts:
-  index.html
-#
-# It looks like you may be committing a MERGE.
-# If this is not correct, please remove the file
-# .git/MERGE_HEAD
-# and try again.
-#</code></pre>
-
-<p>Vous pouvez modifier ce message pour inclure les détails sur la résolution du conflit si vous pensez que cela peut être utile lors d&#8217;une revue ultérieure — pourquoi vous avez fait ceci si ce n&#8217;est pas clair.</p>
+<p>C&#8217;est tout ! Vous venez juste de créer un objet Blob valide. Tout les objets Git sont stockés de la même façon, mais avec des types différents : l&#8217;en-tête commencera par « commit » ou « tree » au lieu de la chaîne « blob ». Bien que le contenu d&#8217;un blob puisse être presque n&#8217;importe quoi, le contenu d&#8217;un <em>commit</em> ou d&#8217;un arbre est formaté d&#8217;une façon particulière.</p>
 
 <div id='nav'>
 <a href='ch3-1.html'>prev</a> | <a href='ch3-3.html'>next</a>

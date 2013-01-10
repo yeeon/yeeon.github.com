@@ -1,110 +1,64 @@
 ---
 layout: translation
-title: Pro Git 6.3 Git Tools Stashing
+title: Pro Git 6.3 Individuální přizpůsobení systému Git Zásuvné moduly Git
 ---
-<h2 id='stashing'>Stashing</h2>
+<h2 id='zsuvn_moduly_git'>Zásuvné moduly Git</h2>
 
-<p>Often, when you’ve been working on part of your project, things are in a messy state and you want to switch branches for a bit to work on something else. The problem is, you don’t want to do a commit of half-done work just so you can get back to this point later. The answer to this issue is the <code>git stash</code> command.</p>
+<p>Stejně jako jiné systémy správy verzí přistupuje i Git k tomu, že spouští uživatelské skripty, nastane-li určitá důležitá akce. Rozlišujeme dvě skupiny těchto zásuvných modulů (háčků, angl. hooks): na straně klienta a na straně serveru. Zásuvné moduly na straně klienta jsou určeny pro operace klienta, např. zapisování revizí či slučování. Zásuvné moduly na straně serveru se týkají operací serveru Git, např. přijímání odeslaných revizí. Zásuvné moduly se dají využívat k různým účelům. V krátkosti si tu některé z nich představíme.</p>
 
-<p>Stashing takes the dirty state of your working directory — that is, your modified tracked files and staged changes — and saves it on a stack of unfinished changes that you can reapply at any time.</p>
+<h3 id='instalace_zsuvnho_modulu'>Instalace zásuvného modulu</h3>
 
-<h3 id='stashing_your_work'>Stashing Your Work</h3>
+<p>Všechny zásuvné moduly jsou uloženy v podadresáři <code>hooks</code> adresáře Git. U většiny projektů to bude konkrétně <code>.git/hooks</code>. Git do tohoto adresáře standardně ukládá několik ukázkových skriptů, které jsou často užitečné nejen samy o sobě, ale navíc dokumentují vstupní hodnoty všech skriptů. Všechny zdejší příklady jsou napsány jako shellové skripty, tu a tam obsahující Perl, avšak všechny řádně pojmenované spustitelné skripty budou fungovat správně – můžete je napsat v Ruby, Pythonu nebo jiném jazyce. U verzí systému Git vyšších než 1.6 končí tyto soubory ukázkových zásuvných modulů na .sample, budete je muset přejmenovat. U verzí systému Git před 1.6 jsou tyto ukázkové soubory pojmenovány správně, ale nejsou spustitelné.</p>
 
-<p>To demonstrate, you’ll go into your project and start working on a couple of files and possibly stage one of the changes. If you run <code>git status</code>, you can see your dirty state:</p>
+<p>Chcete-li aktivovat skript zásuvného modulu, vložte správně pojmenovaný a spustitelný soubor do podadresáře <code>hooks</code> adresáře Git. Od tohoto okamžiku by měl být skript volán. V dalších částech se budeme věnovat většině nejvýznamnějších názvů souborů zásuvných modulů.</p>
 
-<pre><code>$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#      modified:   index.html
-#
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#
-#      modified:   lib/simplegit.rb
-#</code></pre>
+<h3 id='zsuvn_moduly_na_stran_klienta'>Zásuvné moduly na straně klienta</h3>
 
-<p>Now you want to switch branches, but you don’t want to commit what you’ve been working on yet; so you’ll stash the changes. To push a new stash onto your stack, run <code>git stash</code>:</p>
+<p>Na straně klienta existuje mnoho zásuvných modulů. V této části je rozdělíme na zásuvné moduly k zapisování revizí, zásuvné moduly pro práci s e-maily a na ostatní zásuvné moduly.</p>
 
-<pre><code>$ git stash
-Saved working directory and index state \
-  &quot;WIP on master: 049d078 added the index file&quot;
-HEAD is now at 049d078 added the index file
-(To restore them type &quot;git stash apply&quot;)</code></pre>
+<h4 id='zsuvn_moduly_k_zapisovn_reviz'>Zásuvné moduly k zapisování revizí</h4>
 
-<p>Your working directory is clean:</p>
+<p>První čtyři zásuvné moduly se týkají zapisování revizí. Zásuvný modul <code>pre-commit</code> se spouští jako první, ještě než začnete psát zprávu k revizi. Slouží ke kontrole snímku, který hodláte zapsat. Může zjišťovat, zda jste na něco nezapomněli, spouštět kontrolní testy nebo prověřovat cokoli jiného, co potřebujete ve zdrojovém kódu zkontrolovat. Je-li výstup tohoto zásuvného modulu nenulový, zapisování bude přerušeno. Tomu se dá předejít zadáním příkazu <code>git commit --no-verify</code>. Můžete kontrolovat záležitosti jako styl kódu (spustit lint apod.), koncové mezery (výchozí zásuvný modul dělá právě toto) nebo správnou dokumentaci k novým metodám.</p>
 
-<pre><code>$ git status
-# On branch master
-nothing to commit (working directory clean)</code></pre>
+<p>Zásuvný modul <code>prepare-commit-msg</code> se spouští ještě předtím, než se otevře editor pro vytvoření zprávy k revizi, ale poté, co byla vytvořena výchozí zpráva. Umožňuje upravit výchozí zprávu dřív, než se zobrazí autorovi revize. Tento zásuvný modul vyžaduje některá nastavení: cestu k souboru, v němž je zpráva k revizi uložena, typ revize, a jedná-li se o doplněnou revizi, také SHA-1 revize. Tento zásuvný modul většinou není pro normální revize využitelný. Hodí se spíše pro revize, u nichž je výchozí zpráva generována automaticky, např. zprávy k revizím ze šablony, revize sloučením, komprimované revize a doplněné revize. Zásuvný modul můžete v kombinaci se šablonou revize využívat k programovému vložení informací.</p>
 
-<p>At this point, you can easily switch branches and do work elsewhere; your changes are stored on your stack. To see which stashes you’ve stored, you can use <code>git stash list</code>:</p>
+<p>Zásuvný modul <code>commit-msg</code> používá jeden parametr, jímž je cesta k dočasnému souboru obsahujícímu aktuální zprávu k revizi. Je-li návratová hodnota skriptu nenulová, Git přeruší proces zapisování. Skript tak můžete používat k validaci stavu projektu nebo zprávy k revizi, než dovolíte, aby byla revize zapsána. V poslední části této kapitoly ukážeme, jak lze pomocí tohoto zásuvného modulu zkontrolovat, že zpráva k revizi odpovídá požadovanému vzoru.</p>
 
-<pre><code>$ git stash list
-stash@{0}: WIP on master: 049d078 added the index file
-stash@{1}: WIP on master: c264051... Revert &quot;added file_size&quot;
-stash@{2}: WIP on master: 21d80a5... added number to log</code></pre>
+<p>Po dokončení celého procesu zapisování revize se spustí zásuvný modul <code>post-commit</code>. Nepoužívá žádné parametry, ale spuštěním příkazu <code>git log -1 HEAD</code> lze snadno zobrazit poslední revizi. Tento skript se tak většinou používá pro účely oznámení a podobně.</p>
 
-<p>In this case, two stashes were done previously, so you have access to three different stashed works. You can reapply the one you just stashed by using the command shown in the help output of the original stash command: <code>git stash apply</code>. If you want to apply one of the older stashes, you can specify it by naming it, like this: <code>git stash apply stash@{2}</code>. If you don’t specify a stash, Git assumes the most recent stash and tries to apply it:</p>
+<p>Skripty k zapisování revizí na straně klienta lze používat prakticky v každém pracovním postupu. Často se používají jako ujištění, že budou dodržovány stanovené standardy. Tady je však nutné upozornit, že se tyto skripty při klonování nepřenášejí. Standardy můžete kontrolovat na straně serveru a odmítnout odesílané revize, které neodpovídají požadavkům. Záleží však jen na samotném vývojáři, jestli bude tyto skripty využívat i na straně klienta. Toto jsou tedy skripty, které slouží jako pomůcka pro vývojáře. Uživatel je musí nastavit a spravovat, ale kdykoli je může také potlačit nebo upravit.</p>
 
-<pre><code>$ git stash apply
-# On branch master
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#
-#      modified:   index.html
-#      modified:   lib/simplegit.rb
-#</code></pre>
+<h4 id='zsuvn_moduly_pro_prci_s_emaily'>Zásuvné moduly pro práci s e-maily</h4>
 
-<p>You can see that Git re-modifies the files you uncommitted when you saved the stash. In this case, you had a clean working directory when you tried to apply the stash, and you tried to apply it on the same branch you saved it from; but having a clean working directory and applying it on the same branch aren’t necessary to successfully apply a stash. You can save a stash on one branch, switch to another branch later, and try to reapply the changes. You can also have modified and uncommitted files in your working directory when you apply a stash — Git gives you merge conflicts if anything no longer applies cleanly.</p>
+<p>Pro pracovní postup založený na e-mailové komunikaci lze nastavit tři zásuvné moduly na straně klienta. Všechny tři se spouštějí spolu s příkazem <code>git am</code>, takže pokud tento příkaz nepoužíváte, můžete beze všeho přeskočit rovnou na následující část. Pokud přebíráte e-mailem záplaty vytvořené příkazem <code>git format-patch</code>, mohou pro vás být tyto zásuvné moduly užitečné.</p>
 
-<p>The changes to your files were reapplied, but the file you staged before wasn’t restaged. To do that, you must run the <code>git stash apply</code> command with a <code>--index</code> option to tell the command to try to reapply the staged changes. If you had run that instead, you’d have gotten back to your original position:</p>
+<p>První zásuvným modulem, který se spouští, je <code>applypatch-msg</code>. Používá jediný parametr: název dočasného souboru s požadovaným tvarem zprávy k revizi. Je-li výstup tohoto skriptu nenulový, Git přeruší záplatu. Zásuvný modul můžete použít k ujištění, že je zpráva k revizi ve správném formátu, nebo ke standardizaci zprávy – skript může zprávu rovnou upravit.</p>
 
-<pre><code>$ git stash apply --index
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#      modified:   index.html
-#
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#
-#      modified:   lib/simplegit.rb
-#</code></pre>
+<p>Další zásuvným modulem, který se může spouštět při aplikaci záplaty příkazem <code>git am</code>, je <code>pre-applypatch</code>. Nepoužívá žádné parametry a spouští se až po aplikaci záplaty, takže ho můžete využít k ověření snímku před zapsáním revize. Tímto skriptem lze spouštět různé testy nebo jinak kontrolovat pracovní strom. Jestliže je záplata neúplná nebo neprojde prováděnými testy, bude výstup skriptu nenulový, příkaz <code>git am</code> bude přerušen a revize nebude zapsána.</p>
 
-<p>The apply option only tries to apply the stashed work — you continue to have it on your stack. To remove it, you can run <code>git stash drop</code> with the name of the stash to remove:</p>
+<p>Posledním zásuvným modulem, který je během operace <code>git am</code> spuštěn, je <code>post-applypatch</code>. Můžete ho použít k tomu, abyste skupině uživatelů nebo autorovi záplaty oznámili, že byla záplata natažena. Tímto skriptem nelze proces aplikace záplaty a zapsání revizí zastavit.</p>
 
-<pre><code>$ git stash list
-stash@{0}: WIP on master: 049d078 added the index file
-stash@{1}: WIP on master: c264051... Revert &quot;added file_size&quot;
-stash@{2}: WIP on master: 21d80a5... added number to log
-$ git stash drop stash@{0}
-Dropped stash@{0} (364e91f3f268f0900bc3ee613f9f733e82aaed43)</code></pre>
+<h4 id='ostatn_zsuvn_moduly_na_stran_klienta'>Ostatní zásuvné moduly na straně klienta</h4>
 
-<p>You can also run <code>git stash pop</code> to apply the stash and then immediately drop it from your stack.</p>
+<p>Zásuvný modul <code>pre-rebase</code> se spouští před každým přeskládáním a při nenulové hodnotě může tento proces zastavit. Zásuvný modul můžete využít i k zakázání přeskládání všech revizí, které už byly odeslány. Ukázkový zásuvný modul <code>pre-rebase</code>, který Git nainstaluje, dělá právě toto, ačkoli předpokládá, že následuje název větve, kterou publikujete. Pravděpodobně ho budete muset změnit na název stabilní, zveřejněné větve.</p>
 
-<h3 id='creating_a_branch_from_a_stash'>Creating a Branch from a Stash</h3>
+<p>Po úspěšném spuštění příkazu <code>git checkout</code> se spustí zásuvný modul <code>post-checkout</code>. Ten slouží k nastavení pracovního adresáře podle potřeb prostředí vašeho projektu. Pod tím si můžete představit například přesouvání velkých binárních souborů, jejichž zdrojový kód si nepřejete verzovat, automatické generování dokumentace apod.</p>
 
-<p>If you stash some work, leave it there for a while, and continue on the branch from which you stashed the work, you may have a problem reapplying the work. If the apply tries to modify a file that you’ve since modified, you’ll get a merge conflict and will have to try to resolve it. If you want an easier way to test the stashed changes again, you can run <code>git stash branch</code>, which creates a new branch for you, checks out the commit you were on when you stashed your work, reapplies your work there, and then drops the stash if it applies successfully:</p>
+<p>A konečně můžeme zmínit zásuvný modul <code>post-merge</code>, který se spouští po úspěšném provedení příkazu <code>merge</code>. Pomocí něj můžete obnovit data v pracovním stromě, které Git neumí sledovat, např. data oprávnění. Zásuvný modul může rovněž ověřit přítomnost souborů nezahrnutých do správy verzí systému Git, které možná budete chtít po změnách v pracovním stromě zkopírovat.</p>
 
-<pre><code>$ git stash branch testchanges
-Switched to a new branch &quot;testchanges&quot;
-# On branch testchanges
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#      modified:   index.html
-#
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#
-#      modified:   lib/simplegit.rb
-#
-Dropped refs/stash@{0} (f0dfc4d5dc332d1cee34a634182e168c4efc3359)</code></pre>
+<h3 id='zsuvn_moduly_na_stran_serveru'>Zásuvné moduly na straně serveru</h3>
 
-<p>This is a nice shortcut to recover stashed work easily and work on it in a new branch.</p>
+<p>Vedle zásuvných modulů na straně klienta můžete jako správce systému využívat také několik důležitých zásuvných modulů na straně serveru, které vám pomohou kontrolovat téměř jakýkoli typ standardů stanovených pro daný projekt. Tyto skripty se spouštějí před odesíláním revizí na server i po něm. Zásuvné moduly spouštěné před přijetím revizí mohou v případě nenulového výstupu odesílaná data kdykoli odmítnout a poslat klientovi chybové hlášení. Díky nim můžete nastavit libovolně komplexní požadavky na odesílané revize.</p>
+
+<h4 id='prereceive_a_postreceive'>pre-receive a post-receive</h4>
+
+<p>Prvním skriptem, který se při manipulaci s revizemi přijatými od klienta spustí, je <code>pre-receive</code>. Skript používá seznam referencí, které jsou odesílány ze standardního vstupu stdin. Je-li návratová hodnota nenulová, nebude ani jedna z nich přijata. Zásuvný modul můžete využít např. k ověření, že všechny aktualizované reference jsou „rychle vpřed“, nebo ke kontrole, že uživatel odesílající revize má oprávnění k vytváření, mazání nebo odesílání nebo oprávnění aktualizovat všechny soubory, které svými revizemi mění.</p>
+
+<p>Zásuvný modul <code>post-receive</code> se spouští až poté, co je celý proces dokončen. Lze ho použít k aktualizaci jiných služeb nebo odeslání oznámení jiným uživatelům. Používá stejná data ze standardního vstupu jako zásuvný modul <code>pre-receive</code>. Ukázkové skripty obsahují odeslání seznamu e-mailem, oznámení serveru průběžné integrace nebo aktualizaci systému sledování tiketů. Možné je dokonce i analyzovat zprávy k revizím a zjistit, zda je některé tikety třeba otevřít, upravit nebo zavřít. Tento skript nedokáže zastavit proces odesílání, avšak klient se neodpojí, dokud není dokončen. Buďte proto opatrní, pokud se chystáte provést akci, která může dlouho trvat.</p>
+
+<h4 id='update'>update</h4>
+
+<p>Skript update je velice podobný skriptu <code>pre-receive</code>, avšak s tím rozdílem, že se spouští zvlášť pro každou větev, kterou chce odesílatel aktualizovat. Pokud se uživatel pokouší odeslat revize do více větví, skript <code>pre-receive</code> se spustí pouze jednou, zatímco update se spustí jednou pro každou větev, již se odesílatel pokouší aktualizovat. Tento skript nenačítá data ze standardního vstupu, místo nich používá tři jiné parametry: název reference (větve), hodnotu SHA-1, na niž reference ukazovala před odesláním, a hodnotu SHA-1, kterou se uživatel pokouší odeslat. Je-li výstup skriptu update nenulový, je zamítnuta pouze tato reference, ostatní mohou být aktualizovány.</p>
 
 <div id='nav'>
 <a href='ch6-2.html'>prev</a> | <a href='ch6-4.html'>next</a>

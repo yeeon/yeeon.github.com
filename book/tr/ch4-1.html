@@ -1,0 +1,86 @@
+---
+layout: translation
+title: Pro Git 4.1 Git&#8217;te Dallanma Dal Nedir?
+---
+<h2 id='dal_nedir'>Dal Nedir?</h2>
+
+<p>Git&#8217;in dallanma ilemini nasıl yaptığını gerçekten anlayabilmek için geriye doğru bir adım atıp Git&#8217;in verilerini nasıl depoladığına bakmamız gerekiyor. 1. Bölüm&#8217;den hatırlayabileceğiniz üzere, Git verilerini bir dizi değişiklik olarak değil bir dizi bellek kopyası olarak depolar.</p>
+
+<p>Git&#8217;te bir kayıt yaptığınızda, Git, kayda hazırladığınız içeriğin bellek kopyasına işaret eden imleci, yazar ve mesaj üstverisini ve söz konusu kaydın atalarını gösteren sıfır ya da daha fazla imleci (ilk kayıt için sıfır ata, normal bir kayıt için bir ata, iki ya da daha fazla dalın birleştirilmesinden oluşan bir kayıt için birden çok ata) içeren bir kayıt nesnesini depolar.</p>
+
+<p>Bunu görselleştirmek için, üç dosyadan oluşan bir klasörünüzün olduğunu ve bu üç dosyayı da kayıt için hazırladığınızı varsayalım. Dosyaları kayda hazırlamak herbir dosyanın sınama toplamını alır (1. Bölüm&#8217;de söz ettiğimiz SHA-1 özeti), dosyanın o sürümünü Git yazılım havuzunda depolar (Git&#8217;te bunlara <em>blob</em> denir (Ç.N. <em>blob</em> Türkçeye damla ya da topak diye çevrileblir, fakat kelimeyi olduğu gibi kullanmanın daha anlaşılır olacağını düşündük.)) ve sınama toplamını hazırlık alanına ekler:</p>
+
+<pre><code>$ git add README test.rb LICENSE
+$ git commit -m &#39;initial commit of my project&#39;</code></pre>
+
+<p><code>git commit</code> komutunu çalıştırarak bir kayıt oluşturduğunuzda, Git her bir alt klasörün (bu örnekte yalnızca kök klasörün) sınama toplamını alır ve bu ağaç yapısındaki bu nesneleri yazılım havuzunda depolar. Git, daha sonra, üst veriyi ve ihtiyaç duyulduğunda bellek kopyasının yeniden yaratabilmek için ağaç yapısındaki nesneyi gösteren bir imleci içeren bir kayıt nesneyi yaratır.</p>
+
+<p>Şimdi, Git yazılım havuzunuzda beş nesne bulunuyor: üç dosyanızın herbiri için bir içerik <em>blob</em>&#8216;u, klasörün içeriğini listeleyen ve hangi dosyanın hangi <em>blob</em>&#8216;da depolandığı bilgisini içeren bir ağaç nesnesi ve o ağaç nesnesini gösteren bir imleci ve bütün kayıt üstverisini içeren bir kayıt nesnesi. Kavramsal olarak, Git yazılım havuzunuzdaki veri Figür 3-1&#8217;deki gibi görünür.</p>
+
+<p><center><img src="/figures/ch4/18333fig0301-tn.png"></center><br/> Figür 3-1. Tek kayıtlı yazılım havuzundaki veri.</p>
+
+<p>Yeniden değişiklik yapıp kaydederseniz, yeni kayıt kendisinden hemen önce gelen kaydı gösteren bir imleci de depolar. İki ya da daha fazla kaydın sonunda tarihçeniz Figür 3-2&#8217;deki gibi görünür.</p>
+
+<p><center><img src="/figures/ch4/18333fig0302-tn.png"></center><br/> Figür 3-2. Birden çok kayıt sonunda Git nesne verisi.</p>
+
+<p>Git&#8217;te bir dal, bu kayıtlardan birine işaret eden, yer değiştirebilen kıvrak bir imleçten ibarettir. Git&#8217;teki varsayılan dal adı <code>master</code>&#8216;dır. İlk kaydı yaptığınızda, son yatığınız kaydı gösteren bir <code>master</code> dalına sahip olursunuz. Her kayıt yaptığınızda dal otomatik olarak son kaydı göstermek üzere hareket eder.</p>
+
+<p><center><img src="/figures/ch4/18333fig0303-tn.png"></center><br/> Figür 3-3. Dalkayıt verisinin tarihçesini gösteriyor.</p>
+
+<p>Yeni bir dal oluşturduğunuzda ne olur? Yeni kayıtlarla ilerlemenizi sağlayan yeni bir imleç yaratılır. Söz gelimi, <code>testing</code> adında yeni bir dal oluşturalım. Bunu, <code>git branch</code> komutuyla yapabilirsiniz:</p>
+
+<pre><code>$ git branch testing</code></pre>
+
+<p>Bu, şu an bulunduğunuz kayıttan hareketle yeni bir imleç yaratır (bkz. Figür 3-4).</p>
+
+<p><center><img src="/figures/ch4/18333fig0304-tn.png"></center><br/> Figür 3-4. Birden çok dal kayıt verisinin tarihçesini gösteriyor.</p>
+
+<p>Git şu an hangi dalın üzerinde olduğunuzu nereden biliyor? <code>HEAD</code> adında özel bir imleç tutuyor. Unutmayın, buradaki <code>HEAD</code> Subversion ya da CVS gibi başka SKS&#8217;lerden alışık olduğunuz <code>HEAD</code>&#8216;den çok farklıdır. Git&#8217;te bu, üzerinde bulunduğunuz yerel dalı gösterir. Bu örnekte hâlâ <code>master</code> dalındasınız. <code>git branch</code> komutu yalnızca yeni bir dal yarattı —o dala atlamadı (bkz. Figür 3-5).</p>
+
+<p><center><img src="/figures/ch4/18333fig0305-tn.png"></center><br/> Figür 3-5. HEAD dosyası üzerinde bulunduğunuz dalı gösteriyor.</p>
+
+<p>Varolan bir dala atlamak için <code>git checkout</code> komutunu çalıştırmalısınız. Gelin, <code>testing</code> dalına atlayalım:</p>
+
+<pre><code>$ git checkout testing</code></pre>
+
+<p>Bu, <code>HEAD</code>&#8216;in <code>testing</code> dalını göstermesiyle sonuçlanır (bkz. Figür 3-6).</p>
+
+<p><center><img src="/figures/ch4/18333fig0306-tn.png"></center><br/> Figür 3-6. Dal değiştirdiğinizde HEAD üzerinde olduğunuz dalı gösterir.</p>
+
+<p>Bunun ne önemi var? Gelin bir kayıt daha yapalım:</p>
+
+<pre><code>$ vim test.rb
+$ git commit -a -m &#39;made a change&#39;</code></pre>
+
+<p>Figür 3-7 sonucu resmediyor.</p>
+
+<p><center><img src="/figures/ch4/18333fig0307-tn.png"></center><br/> Figür 3-7. HEAD&#8217;in gösterdiği dal her kayıtla ileri doğru hareket eder.</p>
+
+<p>Burada ilginç olan <code>testing</code> dalı ilerlediği halde <code>master</code> dalı hâlâ dal değiştirmek için <code>git checkout</code> komutunu çalıştırdığınız zamanki yerinde duruyor. Gelin yeniden <code>master</code> dalına dönelim.</p>
+
+<pre><code>$ git checkout master</code></pre>
+
+<p>Figür 3-8 sonucu gösteriyor.</p>
+
+<p><center><img src="/figures/ch4/18333fig0308-tn.png"></center><br/> Figür 3-8. Seçme (checkout) işlemi yapıldığında HEAD başka bir dalı gösterir.</p>
+
+<p>Örnekteki komut iki şey yaptı. <code>HEAD</code> imlecini yeniden <code>master</code> dalını gösterecek şekilde hareket ettirdi ve çalışma klasörünüzdeki dosyaları <code>master</code>&#8216;ın gösterdiği bellek kopyasındaki hallerine getirdi. Bu demek oluyor ki, bu noktada yapacağınız değişiklikler projenin daha eski bir sürümünü baz alacak. Özünde, başka bir yöne gidebilmek için <code>testing</code> dalında yaptığınız değişiklikleri geçici olarak geri almış oldunuz.</p>
+
+<p>Gelin bir değişiklik daha yapıp kaydedelim:</p>
+
+<pre><code>$ vim test.rb
+$ git commit -a -m &#39;made other changes&#39;</code></pre>
+
+<p>Şimdi proje tarihçeniz iki ayrı dala ıraksadı (bkz. Figür 3-9). Yeni bir dal yaratıp ona geçtiniz, bazı değişiklikler yaptınız; sonra ana dalınıza geri döndünüz ve başka bazı değişiklikler yaptınız. Bu iki değişiklik iki ayrı dalda birbirinden yalıtık durumdalar: iki dal arasında gidip gelebilir, hazır olduğunuzda bu iki dalı birleştirebilirsiniz. Bütün bunları yalnızca <code>branch</code> ve <code>checkout</code> komutlarını kullanarak yaptınız.</p>
+
+<p><center><img src="/figures/ch4/18333fig0309-tn.png"></center><br/> Figür 3-9. Dal tarihçeleri birbirinden ıraksadı.</p>
+
+<p>Git&#8217;te bir dal işaret ettiği kaydın 40 karakterlik SHA-1 sınama toplamını içeren basit bir dosyadan ibaret olduğu için dalları yaratmak ve yok etmek oldukça masrafsızdır. Yeni bir dal yaratmak bir dosyaya 41 karakter (40 karakter ve bir satır sonu) yazmak kadar hızlıdır.</p>
+
+<p>Bu, çoğu SKS&#8217;nin bütün proje dosyalarını yeni bir klasöre kopyalamayı gerektiren dallanma yaklaşımıyla keskin bir karşıtlık içindedir. Söz konusu yaklaşımda projenin boyutlarına bağlı olarak dallanma saniyeler, hatta dakikalar sürebilir; Git&#8217;te ise bu süreç her zaman anlıktır. Ayrıca, kayıt yaparken ata kayıtları da kaydettiğimiz için birleştirme sırasında uygun bir ortak payda bulma işi de otomatik olarak ve genellikle oldukça kolayca halledilir. Bu özellikler yazılımcıları sık sık dal yaratıp kullanmaya teşşvik eder.</p>
+
+<p>Neden böyle olması gerektiğine yaından bakalım.</p>
+
+<div id='nav'>
+<a href='ch4-0.html'>prev</a> | <a href='ch4-2.html'>next</a>
+</div>

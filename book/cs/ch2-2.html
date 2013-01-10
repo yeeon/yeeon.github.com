@@ -1,380 +1,501 @@
 ---
 layout: translation
-title: Pro Git 2.2 Základy Gitu Zaznamenávání změn do repozitáře
+title: Pro Git 2.2 Distribuovaný charakter systému Git Přispívání do projektu
 ---
-<h2 id='zaznamenvn_zmn_do_repozite'>Zaznamenávání změn do repozitáře</h2>
+<h2 id='pispvn_do_projektu'>Přispívání do projektu</h2>
 
-<p>Nyní máte připravený repozitář Gitu a checkout neboli pracovní kopii souborů projektu. Potřebujete udělat nějaké změny a ukládat commity těchto změn do repozitáře pokaždé, když projekt dospěje do stavu, který chcete zaznamenat.</p>
+<p>V tuto chvíli už znáte různé pracovní postupy a na velmi solidní úrovni byste měli ovládat základy systému Git. V této části ukážeme několik běžných schémat, podle nichž může přispívání do projektů probíhat.</p>
 
-<p>Pamatujte, že každý soubor ve vašem pracovním adresáři může být v jednom ze dvou stavů: tracked nebo untracked. První z nich jsou ty, které byly v posledním snímku. Mohou být nezměněny, změněny, nebo staged. Untracked je všechno ostatní. V posledním snímku nebyly, nejsou ve staging area a Git se o ně nestará. Když poprvé naklonujete repozitář, všechny vaše souboru budou tracked a unmodified, protože jste je právě zkopírovali z repozitáře a nic ještě neupravili.</p>
-
-<p>Když upravujete soubory, Git je prohlásí za změněné, protože se změnily vzhledem k poslednímu commitu. Vy je vložíte do staging area, vyrobíte commit ze všech těchto změn a cyklus se opakuje jako na obrázku 2-1.</p>
-
-<p><center><img src="/figures/ch2/18333fig0201-tn.png"></center><br/> Obrázek 2-1. Cyklus stavů vašich souborů</p>
-
-<h3 id='kontrola_stavu_vaich_soubor'>Kontrola stavu vašich souborů</h3>
+<p>Popsat tento proces není právě jednoduché, protože existuje obrovské množství variací, jak lze do projektů přispívat. Vzhledem k velké flexibilitě systému Git mohou uživatelé spolupracovat mnoha různými způsoby, a není proto snadné popsat, jak byste měli do projektu přispívat. Každý projekt je trochu jiný. Mezi proměnné patří v tomto procesu počet aktivních přispěvatelů, zvolený pracovní postup, vaše oprávnění pro odesílání revizí a případně i metoda externího přispívání.</p>
 
-<p>Základní nástroj, který se používá na určování, který soubor je v jakém stavu, je příkaz <code>git status</code>. Pokud ho pustíte hned po <code>git clone</code>, měli byste vidět něco jako:</p>
+<p>První proměnnou je počet aktivních přispěvatelů. Kolik uživatelů aktivně přispívá kódem do projektu a jak často? V mnoha případech budete mít dva nebo tři vývojáře přispívající několika málo revizemi denně, u projektů s nízkou prioritou možná i méně. V opravdu velkých společnostech a u velkých projektů se může počet vývojářů vyšplhat do tisíců a počet revizí se může pohybovat v desítkách i stovkách záplat denně. To je důležité zejména z toho hlediska, že s rostoucím počtem vývojářů se také zvětšují starosti s tím, aby byl kód aplikován čistě a aby ho bylo možné snadno začlenit. U změn, které postoupíte vyšší instanci, může docházet k zastarávání nebo vážnému narušení jinými daty, která byla začleněna během vaší práce nebo ve chvíli, kdy vaše změny čekaly na schválení či aplikaci. Jak lze důsledně udržovat kód aktuální a záplaty vždy platné?</p>
 
-<pre><code>$ git status
-# On branch master
-nothing to commit (working directory clean)</code></pre>
+<p>Další proměnnou je pracovní postup, který se u projektu využívá. Probíhá vývoj centralizovaně, má každý vývojář stejné oprávnění pro zápis do hlavní linie kódu? Má projekt svého správce nebo integračního manažera, který kontroluje všechny záplaty? Jsou všechny záplaty odborně posuzovány a schvalovány? Jste součástí tohoto procesu? Jsou součástí systému poručíci a musíte všechnu svou práci odesílat nejprve jim?</p>
 
-<p>To znamená, že máte čistý pracovní adresář &#8211; jinými slovy, nejsou v něm žádné soubory změněné (modified) a žádné nejsou v indexu (staged). Git také nevidí žádný přebývající (untracked) soubor, jinak by ho vypsal. A konečně vám příkaz sdělí, v jaké jste větvi. Protentokrát to bude vždy master, ten je výchozí; teď a tady se o to starat nemusíte. Větvení a reference probereme detailně v další kapitole.</p>
+<p>Další otázkou je vaše oprávnění k zapisování revizí. Pracovní postup při přispívání do projektu se velmi liší podle toho, zda máte, či nemáte oprávnění k zápisu do projektu. Pokud oprávnění k zápisu nemáte, jakou metodu projekt zvolí pro přijímání příspěvků? Má k tomu vůbec vyvinutou metodiku? Kolik práce představuje jeden váš příspěvek? A jak často přispíváte?</p>
 
-<p>Řekněme, že přidáte nový soubor do vašeho projektu, třeba jednoduché README. Pokud ten soubor dosud neexistoval a vy pustíte <code>git status</code>, uvidíte soubor ve stavu untracked:</p>
+<p>Všechny tyto otázky mohou mít vliv na efektivní přispívání do projektu a určují, jaký pracovní postup je vůbec možný a který bude upřednostněn. Všem těmto aspektům bych se teď chtěl věnovat na sérii praktických příkladů, od těch jednodušších až po složité. Z uvedených příkladů byste si pak měli být schopni odvodit vlastní pracovní postup, který budete v praxi využívat.</p>
 
-<pre><code>$ vim README
-$ git status
-# On branch master
-# Untracked files:
-#   (use &quot;git add &lt;file&gt;...&quot; to include in what will be committed)
-#
-#	README
-nothing added to commit but untracked files present (use &quot;git add&quot; to track)</code></pre>
+<h3 id='pravidla_pro_revize'>Pravidla pro revize</h3>
 
-<p>Je vidět, že vaše README je untracked, protože je pod nadpisem &#8220;Untracked files&#8221; ve výpisu stavu. To jednoduše znamená, že tento soubor Git dosud nespravoval, a také ho spravovat nebude, dokud mu to explicitně neřeknete. Dělá to proto, aby nezačal náhodou zběsile spravovat vygenerované binární soubory nebo jiné, třeba dočasné soubory, které určitě do projektu zahrnout nechcete. Toto README však chcete spravovat, nuže pojďme si ukázat, jak na to.</p>
+<p>Než se podíváme na konkrétní praktické příklady, přidávám malou poznámku o zprávách k revizím. Není od věci stanovit si a dodržovat kvalitní pravidla pro vytváření revizí. Výrazně vám mohou usnadnit práci v systému Git a spolupráci s kolegy. Projekt Git obsahuje dokument, v němž je navržena celá řada dobrých tipů pro vytváření revizí, z nichž se skládají jednotlivé záplaty. Dokument najdete ve zdrojovém kódu systému Git v souboru <code>Documentation/SubmittingPatches</code>.</p>
 
-<h3 id='spravovn_novch_soubor'>Spravování nových souborů</h3>
+<p>Především nechcete, aby revize obsahovaly chyby způsobené prázdnými znaky. Git nabízí snadný způsob, jak tyto chyby zkontrolovat. Před zapsáním revize zadejte příkaz <code>git diff --check</code>, který zkontroluje prázdné znaky a vypíše vám jejich seznam. Zde uvádím jeden příklad, v němž jsem červenou barvu terminálu nahradil znaky <code>X</code>:</p>
 
-<p>K započetí spravování nových souborů použijeme příkaz <code>git add</code>. Konkrétně v tomto případě, abychom přidali soubor README, spustíme toto:</p>
+<pre><code>$ git diff --check
+lib/simplegit.rb:5: trailing whitespace.
++    @git_dir = File.expand_path(git_dir)XX
+lib/simplegit.rb:7: trailing whitespace.
++ XXXXXXXXXXX
+lib/simplegit.rb:26: trailing whitespace.
++    def command(git_cmd)XXXX</code></pre>
 
-<pre><code>$ git add README</code></pre>
+<p>Spustíte-li tento příkaz před zapsáním revize, můžete se rozhodnout, zda chcete zapsat i problematické prázdné znaky, které mohou obtěžovat ostatní vývojáře.</p>
 
-<p>Pokud si nyní znovu zkontrolujeme stav příkazem <code>git status</code>, můžeme vidět, že naše README je nyní tracked a staged:</p>
+<p>Dále se snažte provádět každou revizi jako logicky samostatný soubor změn. Pokud je to možné, snažte se provádět stravitelné změny. Není právě ideální pracovat celý víkend na pěti různých problémech a v pondělí je všechny najednou odeslat v jedné velké revizi. I pokud nebudete během víkendu zapisovat revize, využijte v pondělí oblasti připravených změn a rozdělte svou práci alespoň do stejného počtu revizí, kolik je řešených problémů, a přidejte k nim vysvětlující zprávy. Pokud některé změny modifikují tentýž soubor, zkuste použít příkaz <code>git add --patch</code> a připravit soubory k zapsání po částech (podrobnosti v kapitole 6). Snímek projektu na vrcholu větve bude stejný, ať zapíšete jednu revizi, nebo pět (za předpokladu, že vložíte všechny změny). Snažte se proto usnadnit práci svým kolegům, kteří – možná – budou vaše změny kontrolovat. Díky tomuto přístupu také později snáze vyjmete nebo vrátíte některou z provedených změn, bude-li to třeba. Kapitola 6 popisuje několik užitečných triků, jak v systému Git přepsat historii a jak interaktivně připravovat soubory k zapsání. Používejte tyto nástroje k udržení čisté a srozumitelné historie.</p>
 
-<pre><code>$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#	new file:   README
-#</code></pre>
+<p>Poslední věcí, na niž se vyplatí soustředit pozornost, jsou zprávy k revizím. Pokud si zvyknete vytvářet k revizím kvalitní zprávy, bude pro vás práce a kooperace v systému Git mnohem jednodušší. Zpráva by měla obvykle začínat samostatným řádkem o maximálně 50 znacích, v níž stručně popíšete soubor provedených změn. Za ním by měl následovat prázdný řádek a za ním podrobnější popis revize. Projekt Git vyžaduje, aby podrobnější popis revize obsahoval vaši motivaci ke změnám a vymezil jejich implementaci na pozadí předchozích kroků. Tuto zásadu je dobré dodržovat. Vytváříte-li zprávy k revizím v angličtině, často se také doporučuje používat rozkazovací způsob, tj. příkazy. Místo „I added tests for“ nebo „Adding tests for“ používejte raději „Add tests for“. Zde uvádíme vzor, jehož autorem je Tim Pope a v originále je k nalezení na stránkách tpope.net:</p>
 
-<p>Staged je proto, že je pod nadpisem &#8220;Changes to be committed&#8221;. Pokud uděláte commit v tuto chvíli, bude verze souboru ve chvíli, kdy jste udělali <code>git add</code>, vložena do snímku a uložena. Můžete si také vzpomenout, že když jste dříve pouštěli <code>git init</code>, museli jste pak pustit i <code>git add</code> &#8211; to byl počátek správy souborů ve vašem adresáři. Příkaz <code>git add</code> přebírá cestu buďto k souboru nebo k adresáři; pokud je to adresář, uloží příkaz všechny soubory v onom adresáři. Rekurzivně.</p>
+<pre><code>Krátké (do 50 znaků) shrnutí změn
 
-<h3 id='vkldn_upravench_soubor_do_indexu'> Vkládání upravených souborů do indexu</h3>
+Podrobnější popis revize, je-li třeba. Snažte se nepřesáhnout
+zhruba 72 znaků. V některých kontextech	je první řádek koncipován
+jako předmět e-mailu a zbytek textu jako jeho tělo. Prázdný řádek
+oddělující shrnutí od těla zprávy je nezbytně nutný (pokud
+nehodláte vypustit celé tělo). Spojení obou částí může zmást
+některé nástroje, např. přeskládání.
 
-<p>Nyní změníme soubor, který už spravujeme. Když změníte spravovaný soubor, pro příklad nechť se jmenuje <code>benchmarks.rb</code>, a pak pustíte <code>git status</code> znovu, dostanete něco, co bude vypadat zhruba takto:</p>
+Další odstavce následují za prázdným řádkem.
 
-<pre><code>$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#	new file:   README
-#
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#
-#	modified:   benchmarks.rb
-#</code></pre>
+ - Můžete používat i odrážky.
 
-<p>Soubor <code>benchmarks.rb</code> se objevil v sekci nazvané &#8220;Changed but not updated&#8221; &#8211; to znamená, že soubor, který je spravován, byl upraven v pracovním adresáři, ale ještě nebyl vložen do indexu. K vložení do indexu použijeme příkaz <code>git add</code> (má mnoho funkcí &#8211; je používán k započetí správy nových souborů, ke vkládání do indexu a i k jiným operacím, např. k označování souborů postižených merge-conflictem jako vyřešených). Vložme tedy <code>benchmarks.rb</code> do indexu a pak si znovu zobrazme status:</p>
+ - Jako odrážka se nejčastěji používá pomlčka nebo hvězdička, před ně se vkládá
+   jedna mezera, mezi body výčtu prázdný řádek, avšak úzus tu není jednotný.</code></pre>
 
-<pre><code>$ git add benchmarks.rb
-$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#	new file:   README
-#	modified:   benchmarks.rb
-#</code></pre>
+<p>Budou-li takto vypadat všechny vaše zprávy k revizím, usnadníte tím práci sobě i svým spolupracovníkům. Projekt Git obsahuje kvalitně naformátované zprávy k revizím. Mohu vám doporučit, abyste v něm zkusili zadat příkaz <code>git log --no-merges</code> a podívali se, jak vypadá pěkně naformátovaná historie revizí projektu.</p>
 
-<p>Oba soubory jsou v indexu a půjdou do nejbližšího commitu. V tuto chvíli jste si ale uvědomili, že v souboru <code>benchmarks.rb</code> je potřeba udělat ještě jednu malou změnu, než ho uložíte do commitu. Otevřete ho tedy znovu, uložíte a jste připraveni vytvořit commit. Tak se ještě jednou podíváme na status:</p>
+<p>Já v následujících příkladech stejně jako ve většině případů v této knize v rámci zestručnění neformátuji zprávy podle uvedených zásad, naopak používám parametr <code>-m</code> za příkazem <code>git commit</code>. Řiďte se, prosím, podle toho, co říkám, ne podle toho, co dělám.</p>
 
-<pre><code>$ vim benchmarks.rb 
-$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#	new file:   README
-#	modified:   benchmarks.rb
-#
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#
-#	modified:   benchmarks.rb
-#</code></pre>
-
-<p>Co to má znamenat? Teď je soubor <code>benchmarks.rb</code> označen jako staged i jako unstaged. Jak je to možné? Git vloží soubor do indexu právě takový, jaký byl, když jste na něj naposled použil <code>git add</code>. Pokud vytvoříte commit teď, bude do něj uložena ta verze, která je v indexu, tedy ta, která byla v adresáři ve chvíli, kdy byl naposled použit příkaz <code>git add</code>. Takže pokud chcete uložit i následující změny, musíte pustit <code>git add</code> znovu:</p>
-
-<pre><code>$ git add benchmarks.rb
-$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#	new file:   README
-#	modified:   benchmarks.rb
-#</code></pre>
-
-<h3 id='ignoring_files'>Ignoring Files</h3>
-
-<p>Often, you’ll have a class of files that you don’t want Git to automatically add or even show you as being untracked. These are generally automatically generated files such as log files or files produced by your build system. In such cases, you can create a file listing patterns to match them named .gitignore. Here is an example .gitignore file:</p>
-
-<pre><code>$ cat .gitignore
-*.[oa]
-*~</code></pre>
-
-<p>The first line tells Git to ignore any files ending in .o or .a — object and archive files that may be the product of building your code. The second line tells Git to ignore all files that end with a tilde (<code>~</code>), which is used by many text editors such as Emacs to mark temporary files. You may also include a log, tmp, or pid directory; automatically generated documentation; and so on. Setting up a .gitignore file before you get going is generally a good idea so you don’t accidentally commit files that you really don’t want in your Git repository.</p>
-
-<p>The rules for the patterns you can put in the .gitignore file are as follows:</p>
-
-<ul>
-<li>Blank lines or lines starting with # are ignored.</li>
-
-<li>Standard glob patterns work.</li>
-
-<li>You can end patterns with a forward slash (<code>/</code>) to specify a directory.</li>
-
-<li>You can negate a pattern by starting it with an exclamation point (<code>!</code>).</li>
-</ul>
-
-<p>Glob patterns are like simplified regular expressions that shells use. An asterisk (<code>*</code>) matches zero or more characters; <code>[abc]</code> matches any character inside the brackets (in this case a, b, or c); a question mark (<code>?</code>) matches a single character; and brackets enclosing characters separated by a hyphen(<code>[0-9]</code>) matches any character between them (in this case 0 through 9) .</p>
-
-<p>Here is another example .gitignore file:</p>
-
-<pre><code># a comment – this is ignored
-*.a       # no .a files
-!lib.a    # but do track lib.a, even though you&#39;re ignoring .a files above
-/TODO     # only ignore the root TODO file, not subdir/TODO
-build/    # ignore all files in the build/ directory
-doc/*.txt # ignore doc/notes.txt, but not doc/server/arch.txt</code></pre>
-
-<h3 id='viewing_your_staged_and_unstaged_changes'>Viewing Your Staged and Unstaged Changes</h3>
-
-<p>If the <code>git status</code> command is too vague for you — you want to know exactly what you changed, not just which files were changed — you can use the <code>git diff</code> command. We’ll cover <code>git diff</code> in more detail later; but you’ll probably use it most often to answer these two questions: What have you changed but not yet staged? And what have you staged that you are about to commit? Although <code>git status</code> answers those questions very generally, <code>git diff</code> shows you the exact lines added and removed — the patch, as it were.</p>
-
-<p>Let’s say you edit and stage the README file again and then edit the benchmarks.rb file without staging it. If you run your <code>status</code> command, you once again see something like this:</p>
-
-<pre><code>$ git status
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#	new file:   README
-#
-# Changed but not updated:
-#   (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
-#
-#	modified:   benchmarks.rb
-#</code></pre>
-
-<p>To see what you’ve changed but not yet staged, type <code>git diff</code> with no other arguments:</p>
-
-<pre><code>$ git diff
-diff --git a/benchmarks.rb b/benchmarks.rb
-index 3cb747f..da65585 100644
---- a/benchmarks.rb
-+++ b/benchmarks.rb
-@@ -36,6 +36,10 @@ def main
-           @commit.parents[0].parents[0].parents[0]
-         end
-
-+        run_code(x, &#39;commits 1&#39;) do
-+          git.commits.size
-+        end
-+
-         run_code(x, &#39;commits 2&#39;) do
-           log = git.commits(&#39;master&#39;, 15)
-           log.size</code></pre>
-
-<p>That command compares what is in your working directory with what is in your staging area. The result tells you the changes you’ve made that you haven’t yet staged.</p>
-
-<p>If you want to see what you’ve staged that will go into your next commit, you can use <code>git diff –-cached</code>. (In Git versions 1.6.1 and later, you can also use <code>git diff –-staged</code>, which may be easier to remember.) This command compares your staged changes to your last commit:</p>
-
-<pre><code>$ git diff --cached
-diff --git a/README b/README
-new file mode 100644
-index 0000000..03902a1
---- /dev/null
-+++ b/README2
-@@ -0,0 +1,5 @@
-+grit
-+ by Tom Preston-Werner, Chris Wanstrath
-+ http://github.com/mojombo/grit
-+
-+Grit is a Ruby library for extracting information from a Git repository</code></pre>
-
-<p>It’s important to note that <code>git diff</code> by itself doesn’t show all changes made since your last commit — only changes that are still unstaged. This can be confusing, because if you’ve staged all of your changes, <code>git diff</code> will give you no output.</p>
-
-<p>For another example, if you stage the benchmarks.rb file and then edit it, you can use <code>git diff</code> to see the changes in the file that are staged and the changes that are unstaged:</p>
-
-<pre><code>$ git add benchmarks.rb
-$ echo &#39;# test line&#39; &gt;&gt; benchmarks.rb
-$ git status
-# On branch master
-#
-# Changes to be committed:
-#
-#	modified:   benchmarks.rb
-#
-# Changed but not updated:
-#
-#	modified:   benchmarks.rb
-#</code></pre>
-
-<p>Now you can use <code>git diff</code> to see what is still unstaged</p>
-
-<pre><code>$ git diff 
-diff --git a/benchmarks.rb b/benchmarks.rb
-index e445e28..86b2f7c 100644
---- a/benchmarks.rb
-+++ b/benchmarks.rb
-@@ -127,3 +127,4 @@ end
- main()
-
- ##pp Grit::GitRuby.cache_client.stats 
-+# test line</code></pre>
-
-<p>and <code>git diff --cached</code> to see what you’ve staged so far:</p>
-
-<pre><code>$ git diff --cached
-diff --git a/benchmarks.rb b/benchmarks.rb
-index 3cb747f..e445e28 100644
---- a/benchmarks.rb
-+++ b/benchmarks.rb
-@@ -36,6 +36,10 @@ def main
-          @commit.parents[0].parents[0].parents[0]
-        end
-
-+        run_code(x, &#39;commits 1&#39;) do
-+          git.commits.size
-+        end
-+              
-        run_code(x, &#39;commits 2&#39;) do
-          log = git.commits(&#39;master&#39;, 15)
-          log.size</code></pre>
-
-<h3 id='committing_your_changes'>Committing Your Changes</h3>
-
-<p>Now that your staging area is set up the way you want it, you can commit your changes. Remember that anything that is still unstaged — any files you have created or modified that you haven’t run <code>git add</code> on since you edited them — won’t go into this commit. They will stay as modified files on your disk. In this case, the last time you ran <code>git status</code>, you saw that everything was staged, so you’re ready to commit your changes. The simplest way to commit is to type <code>git commit</code>:</p>
-
-<pre><code>$ git commit</code></pre>
-
-<p>Doing so launches your editor of choice. (This is set by your shell’s <code>$EDITOR</code> environment variable — usually vim or emacs, although you can configure it with whatever you want using the <code>git config --global core.editor</code> command as you saw in Chapter 1).</p>
-
-<p>The editor displays the following text (this example is a Vim screen):</p>
-
-<pre><code># Please enter the commit message for your changes. Lines starting
-# with &#39;#&#39; will be ignored, and an empty message aborts the commit.
-# On branch master
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#       new file:   README
-#       modified:   benchmarks.rb 
-~
-~
-~
-&quot;.git/COMMIT_EDITMSG&quot; 10L, 283C</code></pre>
-
-<p>You can see that the default commit message contains the latest output of the <code>git status</code> command commented out and one empty line on top. You can remove these comments and type your commit message, or you can leave them there to help you remember what you’re committing. (For an even more explicit reminder of what you’ve modified, you can pass the <code>-v</code> option to <code>git commit</code>. Doing so also puts the diff of your change in the editor so you can see exactly what you did.) When you exit the editor, Git creates your commit with that commit message (with the comments and diff stripped out).</p>
-
-<p>Alternatively, you can type your commit message inline with the <code>commit</code> command by specifying it after a -m flag, like this:</p>
-
-<pre><code>$ git commit -m &quot;Story 182: Fix benchmarks for speed&quot;
-[master]: created 463dc4f: &quot;Fix benchmarks for speed&quot;
- 2 files changed, 3 insertions(+), 0 deletions(-)
- create mode 100644 README</code></pre>
-
-<p>Now you’ve created your first commit! You can see that the commit has given you some output about itself: which branch you committed to (master), what SHA-1 checksum the commit has (<code>463dc4f</code>), how many files were changed, and statistics about lines added and removed in the commit.</p>
-
-<p>Remember that the commit records the snapshot you set up in your staging area. Anything you didn’t stage is still sitting there modified; you can do another commit to add it to your history. Every time you perform a commit, you’re recording a snapshot of your project that you can revert to or compare to later.</p>
-
-<h3 id='skipping_the_staging_area'>Skipping the Staging Area</h3>
-
-<p>Although it can be amazingly useful for crafting commits exactly how you want them, the staging area is sometimes a bit more complex than you need in your workflow. If you want to skip the staging area, Git provides a simple shortcut. Providing the <code>-a</code> option to the <code>git commit</code> command makes Git automatically stage every file that is already tracked before doing the commit, letting you skip the <code>git add</code> part:</p>
-
-<pre><code>$ git status
-# On branch master
-#
-# Changed but not updated:
-#
-#	modified:   benchmarks.rb
-#
-$ git commit -a -m &#39;added new benchmarks&#39;
-[master 83e38c7] added new benchmarks
+<h3 id='mal_soukrom_tm'>Malý soukromý tým</h3>
+
+<p>Nejjednodušší sestavou, s níž se pravděpodobně setkáte, je soukromý projekt, na němž kromě vás pracují ještě jeden nebo dva vývojáři. Soukromým projektem myslím uzavřený zdrojový kód – okolní svět k němu nemá oprávnění pro čtení. Vy a vaši ostatní vývojáři máte všichni oprávnění odesílat změny do repozitáře.</p>
+
+<p>V takovém prostředí můžete uplatnit podobný pracovní postup, na jaký jste možná zvyklí ze systému Subversion nebo jiného centralizovaného systému. Se systémem Git ale budete stále ještě ve výhodě v takových ohledech, jako je zapisování revizí offline a podstatně snazší větvení a slučování. Pracovní postup však bude velmi podobný. Hlavním rozdílem je to, že slučování probíhá na straně klienta, ne během zapisování revize na straně serveru. Podívejme se, jak to může vypadat, když dva vývojáři začnou spolupracovat na projektu se sdíleným repozitářem. První vývojář, John, naklonuje repozitář, provede změny a zapíše lokální revizi. (V následujících příkladech nahrazuji zprávy protokolů třemi tečkami, abych je trochu zkrátil.)</p>
+
+<pre><code># John&#39;s Machine
+$ git clone john@githost:simplegit.git
+Initialized empty Git repository in /home/john/simplegit/.git/
+...
+$ cd simplegit/
+$ vim lib/simplegit.rb
+$ git commit -am &#39;removed invalid default value&#39;
+[master 738ee87] removed invalid default value
+ 1 files changed, 1 insertions(+), 1 deletions(-)</code></pre>
+
+<p>Druhý vývojář, Jessica, učiní totéž – naklonuje repozitář a zapíše provedené změny:</p>
+
+<pre><code># Jessica&#39;s Machine
+$ git clone jessica@githost:simplegit.git
+Initialized empty Git repository in /home/jessica/simplegit/.git/
+...
+$ cd simplegit/
+$ vim TODO
+$ git commit -am &#39;add reset task&#39;
+[master fbff5bc] add reset task
+ 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
+
+<p>Jessica nyní odešle svou práci na server:</p>
+
+<pre><code># Jessica&#39;s Machine
+$ git push origin master
+...
+To jessica@githost:simplegit.git
+   1edee6b..fbff5bc  master -&gt; master</code></pre>
+
+<p>Také John se pokusí odeslat své změny na server:</p>
+
+<pre><code># John&#39;s Machine
+$ git push origin master
+To john@githost:simplegit.git
+ ! [rejected]        master -&gt; master (non-fast forward)
+error: failed to push some refs to &#39;john@githost:simplegit.git&#39;</code></pre>
+
+<p>John nyní nesmí odeslat revize, protože mezitím odeslala své změny Jessica. To je třeba si uvědomit, zejména pokud jste zvyklí na systém Subversion. Oba vývojáři totiž neupravovali stejný soubor. Přestože Subversion provádí takové sloučení na serveru automaticky, pokud byly upraveny různé soubory, v systému Git musíte provést sloučení lokálně. John musí vyzvednout změny, které provedla Jessica, a začlenit je do své práce, než ji bude moci odeslat:</p>
+
+<pre><code>$ git fetch origin
+...
+From john@githost:simplegit
+ + 049d078...fbff5bc master     -&gt; origin/master</code></pre>
+
+<p>V tomto okamžiku vypadá Johnův lokální repozitář jako na obrázku 5-4.</p>
+
+<p><center><img src="/figures/ch2/18333fig0504-tn.png"></center><br/> Figure 5-4. Johnův výchozí repozitář</p>
+
+<p>John má referenci ke změnám, které odeslala Jessica, ale než bude moci sám odeslat svá data, bude muset začlenit její práci:</p>
+
+<pre><code>$ git merge origin/master
+Merge made by recursive.
+ TODO |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)</code></pre>
+
+<p>Sloučení probíhá hladce, Johnova historie revizí teď vypadá jako na obrázku 5-5.</p>
+
+<p><center><img src="/figures/ch2/18333fig0505-tn.png"></center><br/> Figure 5-5. Johnův repozitář po začlenění větve origin/master</p>
+
+<p>John nyní může otestovat svůj kód, aby se ujistil, že stále pracuje správně, a pak může odeslat svou novou sloučenou práci na server:</p>
+
+<pre><code>$ git push origin master
+...
+To john@githost:simplegit.git
+   fbff5bc..72bbc59  master -&gt; master</code></pre>
+
+<p>Johnova historie revizí bude nakonec vypadat jako na obrázku 5-6.</p>
+
+<p><center><img src="/figures/ch2/18333fig0506-tn.png"></center><br/> Figure 5-6. Johnova historie po odeslání revize na server origin</p>
+
+<p>Jessica mezitím pracovala na tematické větvi. Vytvořila tematickou větev s názvem <code>issue54</code> a zapsala do ní tři revize. Zatím ještě nevyzvedla Johnovy změny, a proto její historie revizí vypadá jako na obrázku 5-7.</p>
+
+<p><center><img src="/figures/ch2/18333fig0507-tn.png"></center><br/> Figure 5-7. Výchozí historie revizí – Jessica</p>
+
+<p>Jessica chce synchronizovat svou práci s Johnem, a proto vyzvedne jeho data:</p>
+
+<pre><code># Jessica&#39;s Machine
+$ git fetch origin
+...
+From jessica@githost:simplegit
+   fbff5bc..72bbc59  master     -&gt; origin/master</code></pre>
+
+<p>Tím stáhne práci, kterou mezitím odeslal John. Historie revizí Jessicy teď vypadá jako na obrázku 5-8.</p>
+
+<p><center><img src="/figures/ch2/18333fig0508-tn.png"></center><br/> Figure 5-8. Historie Jessicy po vyzvednutí Johnových změn</p>
+
+<p>Jessica považuje svou tematickou větev za dokončenou, ale chce vědět, do čeho má svou práci začlenit, aby mohla změny odeslat. Spustí proto příkaz <code>git log</code>:</p>
+
+<pre><code>$ git log --no-merges origin/master ^issue54
+commit 738ee872852dfaa9d6634e0dea7a324040193016
+Author: John Smith &lt;jsmith@example.com&gt;
+Date:   Fri May 29 16:01:27 2009 -0700
+
+    removed invalid default value</code></pre>
+
+<p>Jessica nyní může začlenit tematickou větev do své hlavní větve, tamtéž začlenit i Johnovu práci (<code>origin/master</code>) do své větve <code>master</code> a vše odeslat zpět na server. Nejprve se přepne zpět na svou hlavní větev, aby do ní mohla vše integrovat:</p>
+
+<pre><code>$ git checkout master
+Switched to branch &quot;master&quot;
+Your branch is behind &#39;origin/master&#39; by 2 commits, and can be fast-forwarded.</code></pre>
+
+<p>Jako první může začlenit buď větev <code>origin/master</code> nebo <code>issue54</code>. Obě směřují vpřed, a tak jejich pořadí nehraje žádnou roli. Konečný snímek bude stejný, ať zvolí jakékoli pořadí, mírně se bude lišit jen historie revizí. Jessica se rozhodne začlenit jako první větev <code>issue54</code>:</p>
+
+<pre><code>$ git merge issue54
+Updating fbff5bc..4af4298
+Fast forward
+ README           |    1 +
+ lib/simplegit.rb |    6 +++++-
+ 2 files changed, 6 insertions(+), 1 deletions(-)</code></pre>
+
+<p>Tento postup je bezproblémový. Jak vidíte, šlo o jednoduchý posun „rychle vpřed“. Nyní Jessica začlení Johnovu práci (<code>origin/master</code>):</p>
+
+<pre><code>$ git merge origin/master
+Auto-merging lib/simplegit.rb
+Merge made by recursive.
+ lib/simplegit.rb |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)</code></pre>
+
+<p>Začlenění proběhne čistě a historie Jessicy bude vypadat jako na obrázku 5-9.</p>
+
+<p><center><img src="/figures/ch2/18333fig0509-tn.png"></center><br/> Figure 5-9. Historie Jessicy po začlenění Johnových změn</p>
+
+<p>Větev <code>origin/master</code> teď má Jessica dostupnou ze své větve <code>master</code>, takže může svou práci úspěšně odeslat (za předpokladu, že John mezitím neodeslal další revize):</p>
+
+<pre><code>$ git push origin master
+...
+To jessica@githost:simplegit.git
+   72bbc59..8059c15  master -&gt; master</code></pre>
+
+<p>Všichni vývojáři zapsali několik revizí a úspěšně začlenili práci ostatních do své – viz obrázek 5-10.</p>
+
+<p><center><img src="/figures/ch2/18333fig0510-tn.png"></center><br/> Figure 5-10. Historie Jessicy po odeslání všech změn zpět na server</p>
+
+<p>Toto je jeden z nejjednodušších pracovních postupů. Po určitou dobu pracujete, obvykle na nějaké tematické větvi, a když je připravena k integraci, začleníte ji do hlavní větve. Chcete-li tuto práci sdílet, začleníte ji do své hlavní větve. Poté vyzvednete a začleníte větev <code>origin/master</code>, jestliže se změnila. Nakonec odešlete všechna data do větve <code>master</code> na serveru. Obecná posloupnost kroků je naznačena na obrázku 5-11.</p>
+
+<p><center><img src="/figures/ch2/18333fig0511-tn.png"></center><br/> Figure 5-11. Obecná posloupnost kroků u jednoduchého pracovního postupu s více vývojáři v systému Git</p>
+
+<h3 id='soukrom_zen_tm'>Soukromý řízený tým</h3>
+
+<p>V následujícím scénáři se podíváme na role přispěvatelů ve větší soukromé skupině. Naučíte se, jak pracovat v prostředí, v němž na jednotlivých úkolech spolupracují malé skupiny a tyto týmové příspěvky jsou poté integrovány druhou stranou.</p>
+
+<p>Řekněme, že John a Jessica spolupracují na jednom úkolu a Jessica a Josie spolupracují na jiném. Společnost v tomto případě používá typ pracovního postupu s integračním manažerem, kdy práci jednotlivých skupin integrují pouze někteří technici a větev <code>master</code> hlavního repozitáře mohou aktualizovat pouze oni. V tomto scénáři se veškerá práce provádí ve větvích jednotlivých týmů a později je spojována zprostředkovateli integrace.</p>
+
+<p>Sledujme pracovní postup Jessicy pracující na dvou úkolech a spolupracující v tomto prostředí paralelně s dvěma různými vývojáři. Protože už má naklonovaný repozitář, rozhodne se pracovat nejprve na úkolu A – <code>featureA</code>. Vytvoří si pro něj novou větev a udělá v ní určité penzum práce.</p>
+
+<pre><code># Jessica&#39;s Machine
+$ git checkout -b featureA
+Switched to a new branch &quot;featureA&quot;
+$ vim lib/simplegit.rb
+$ git commit -am &#39;add limit to log function&#39;
+[featureA 3300904] add limit to log function
+ 1 files changed, 1 insertions(+), 1 deletions(-)</code></pre>
+
+<p>V tomto okamžiku potřebuje sdílet svou práci s Johnem, a tak odešle revize své větve <code>featureA</code> na server. Jessica nemá oprávnění pro odesílání dat do větve <code>master</code> (ten mají pouze zprostředkovatelé integrace), a proto musí své revize odeslat do jiné větve, aby mohla s Johnem spolupracovat:</p>
+
+<pre><code>$ git push origin featureA
+...
+To jessica@githost:simplegit.git
+ * [new branch]      featureA -&gt; featureA</code></pre>
+
+<p>Jessica pošle Johnovi e-mail s informací, že odeslala svou práci do větve pojmenované <code>featureA</code> a že se na ni může podívat. Zatímco čeká na zpětnou vazbu od Johna, rozhodne se, že začne pracovat spolu s Josie na úkolu <code>featureB</code>. Začne tím, že založí novou větev, která bude založena na větvi <code>master</code> ze serveru:</p>
+
+<pre><code># Jessica&#39;s Machine
+$ git fetch origin
+$ git checkout -b featureB origin/master
+Switched to a new branch &quot;featureB&quot;</code></pre>
+
+<p>Jessica nyní vytvoří několik revizí ve větvi <code>featureB</code>:</p>
+
+<pre><code>$ vim lib/simplegit.rb
+$ git commit -am &#39;made the ls-tree function recursive&#39;
+[featureB e5b0fdc] made the ls-tree function recursive
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+$ vim lib/simplegit.rb
+$ git commit -am &#39;add ls-files&#39;
+[featureB 8512791] add ls-files
  1 files changed, 5 insertions(+), 0 deletions(-)</code></pre>
 
-<p>Notice how you don’t have to run <code>git add</code> on the benchmarks.rb file in this case before you commit.</p>
+<p>Repozitář Jessicy vypadá jako na obrázku 5-12.</p>
 
-<h3 id='removing_files'>Removing Files</h3>
+<p><center><img src="/figures/ch2/18333fig0512-tn.png"></center><br/> Figure 5-12. Výchozí historie revizí – Jessica</p>
 
-<p>To remove a file from Git, you have to remove it from your tracked files (more accurately, remove it from your staging area) and then commit. The <code>git rm</code> command does that and also removes the file from your working directory so you don’t see it as an untracked file next time around.</p>
+<p>Jessica je připravena odeslat svou práci, ale dostane e-mail od Josie, že již na server odeslala větev <code>featureBee</code>, v níž už je část práce hotová. Než bude Jessica moci odeslat svou práci na server, bude do ní nejprve muset začlenit práci Josie. Změny, které Josie provedla, vyzvedne příkazem <code>git fetch</code>:</p>
 
-<p>If you simply remove the file from your working directory, it shows up under the “Changed but not updated” (that is, <em>unstaged</em>) area of your <code>git status</code> output:</p>
+<pre><code>$ git fetch origin
+...
+From jessica@githost:simplegit
+ * [new branch]      featureBee -&gt; origin/featureBee</code></pre>
 
-<pre><code>$ rm grit.gemspec
-$ git status
-# On branch master
-#
-# Changed but not updated:
-#   (use &quot;git add/rm &lt;file&gt;...&quot; to update what will be committed)
-#
-#       deleted:    grit.gemspec
-#</code></pre>
+<p>Nyní může Jessica začlenit tyto změny do své práce pomocí příkazu <code>git merge</code>:</p>
 
-<p>Then, if you run <code>git rm</code>, it stages the file’s removal:</p>
+<pre><code>$ git merge origin/featureBee
+Auto-merging lib/simplegit.rb
+Merge made by recursive.
+ lib/simplegit.rb |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)</code></pre>
 
-<pre><code>$ git rm grit.gemspec
-rm &#39;grit.gemspec&#39;
-$ git status
-# On branch master
-#
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#       deleted:    grit.gemspec
-#</code></pre>
+<p>Tady nastává určitý problém. Musí odeslat práci začleněnou ve své větvi <code>featureB</code> do větve <code>featureBee</code> na serveru. Může tak učinit příkazem <code>git push</code> s určením lokální větve, za níž bude následovat dvojtečka (:) a za ní vzdálená větev:</p>
 
-<p>The next time you commit, the file will be gone and no longer tracked. If you modified the file and added it to the index already, you must force the removal with the <code>-f</code> option. This is a safety feature to prevent accidental removal of data that hasn’t yet been recorded in a snapshot and that can’t be recovered from Git.</p>
+<pre><code>$ git push origin featureB:featureBee
+...
+To jessica@githost:simplegit.git
+   fba9af8..cd685d1  featureB -&gt; featureBee</code></pre>
 
-<p>Another useful thing you may want to do is to keep the file in your working tree but remove it from your staging area. In other words, you may want to keep the file on your hard drive but not have Git track it anymore. This is particularly useful if you forgot to add something to your <code>.gitignore</code> file and accidentally added it, like a large log file or a bunch of <code>.a</code> compiled files. To do this, use the <code>--cached</code> option:</p>
+<p>Říká se tomu refspec. Více o vzorcích refspec systému Git a různých možnostech, k nimž je lze využít, najdete v kapitole 9.</p>
 
-<pre><code>$ git rm --cached readme.txt</code></pre>
+<p>Poté pošle John Jessice e-mail, že odeslal několik změn do větve <code>featureA</code>, a poprosí ji, aby je ověřila. Jessica spustí příkaz <code>git fetch</code>, jímž tyto změny stáhne.</p>
 
-<p>You can pass files, directories, and file-glob patterns to the <code>git rm</code> command. That means you can do things such as</p>
+<pre><code>$ git fetch origin
+...
+From jessica@githost:simplegit
+   3300904..aad881d  featureA   -&gt; origin/featureA</code></pre>
 
-<pre><code>$ git rm log/\*.log</code></pre>
+<p>Poté si může příkazem <code>git log</code> prohlédnout, co všechno bylo změněno:</p>
 
-<p>Note the backslash (<code>\</code>) in front of the <code>*</code>. This is necessary because Git does its own filename expansion in addition to your shell’s filename expansion. This command removes all files that have the <code>.log</code> extension in the <code>log/</code> directory. Or, you can do something like this:</p>
+<pre><code>$ git log origin/featureA ^featureA
+commit aad881d154acdaeb2b6b18ea0e827ed8a6d671e6
+Author: John Smith &lt;jsmith@example.com&gt;
+Date:   Fri May 29 19:57:33 2009 -0700
 
-<pre><code>$ git rm \*~</code></pre>
+    changed log output to 30 from 25</code></pre>
 
-<p>This command removes all files that end with <code>~</code>.</p>
+<p>Nakonec začlení Johnovu práci do své vlastní větve <code>featureA</code>:</p>
 
-<h3 id='moving_files'>Moving Files</h3>
+<pre><code>$ git checkout featureA
+Switched to branch &quot;featureA&quot;
+$ git merge origin/featureA
+Updating 3300904..aad881d
+Fast forward
+ lib/simplegit.rb |   10 +++++++++-
+1 files changed, 9 insertions(+), 1 deletions(-)</code></pre>
 
-<p>Unlike many other VCS systems, Git doesn’t explicitly track file movement. If you rename a file in Git, no metadata is stored in Git that tells it you renamed the file. However, Git is pretty smart about figuring that out after the fact — we’ll deal with detecting file movement a bit later.</p>
+<p>Jessica by ráda něco vylepšila, a proto vytvoří novou revizi a odešle ji zpět na server:</p>
 
-<p>Thus it’s a bit confusing that Git has a <code>mv</code> command. If you want to rename a file in Git, you can run something like</p>
+<pre><code>$ git commit -am &#39;small tweak&#39;
+[featureA 774b3ed] small tweak
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+$ git push origin featureA
+...
+To jessica@githost:simplegit.git
+   3300904..774b3ed  featureA -&gt; featureA</code></pre>
 
-<pre><code>$ git mv file_from file_to</code></pre>
+<p>Historie revizí Jessicy bude nyní vypadat jako na obrázku 5-13.</p>
 
-<p>and it works fine. In fact, if you run something like this and look at the status, you’ll see that Git considers it a renamed file:</p>
+<p><center><img src="/figures/ch2/18333fig0513-tn.png"></center><br/> Figure 5-13. Historie Jessicy po zapsání revizí do větve s úkolem</p>
 
-<pre><code>$ git mv README.txt README
-$ git status
-# On branch master
-# Your branch is ahead of &#39;origin/master&#39; by 1 commit.
-#
-# Changes to be committed:
-#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
-#
-#       renamed:    README.txt -&gt; README
-#</code></pre>
+<p>Jessica, Josie a John pošlou zprávu zprostředkovatelům integrace, že větve <code>featureA</code> a <code>featureBee</code> jsou na serveru připraveny k integraci do hlavní linie. Poté, co budou tyto větve do hlavní linie integrovány, vyzvednutím dat bude možné stáhnout nové revize vzniklé začleněním změn a historie revizí bude vypadat jako na obrázku 5-14.</p>
 
-<p>However, this is equivalent to running something like this:</p>
+<p><center><img src="/figures/ch2/18333fig0514-tn.png"></center><br/> Figure 5-14. Historie Jessicy po začlenění obou jejích tematických větví</p>
 
-<pre><code>$ mv README.txt README
-$ git rm README.txt
-$ git add README</code></pre>
+<p>Mnoho skupin přechází na systém Git právě kvůli této možnosti paralelní spolupráce několika týmů a následného slučování různých linií práce. Možnost, aby několik menších podskupin jednoho týmu spolupracovalo prostřednictvím vzdálených větví a aby si práce nevyžádala účast celého týmu nebo nebránila ostatním v jiné práci, je velkou devízou systému Git. Posloupnost kroků vypadá v případě pracovního postupu, který jsme si právě ukázali, jako na obrázku 5-15.</p>
 
-<p>Git figures out that it’s a rename implicitly, so it doesn’t matter if you rename a file that way or with the <code>mv</code> command. The only real difference is that <code>mv</code> is one command instead of three — it’s a convenience function. More important, you can use any tool you like to rename a file, and address the add/rm later, before you commit.</p>
+<p><center><img src="/figures/ch2/18333fig0515-tn.png"></center><br/> Figure 5-15. Základní posloupnost kroků u pracovního postupu v řízeném týmu</p>
+
+<h3 id='mal_veejn_projekt'>Malý veřejný projekt</h3>
+
+<p>Přispívání do veřejných projektů se poněkud liší. Protože nemáte oprávnění aktualizovat větve projektu přímo, musíte svou práci doručit správcům jinak. První příklad popisuje, jak se přispívá s využitím rozštěpení na hostitelských serverech Git, které podporují snadné štěpení. Jak server repo.or.cz, tak místa pro hostování podporují štěpení a mnoho správců projektů tento styl přispívání vyžaduje. Další část se pak zabývá projekty, u nichž je upřednostňováno doručování záplat e-mailem.</p>
+
+<p>Nejprve patrně bude nutné, abyste naklonovali hlavní repozitář, vytvořili tematickou větev pro záplatu nebo sérii záplat, které hodláte vytvořit, a udělali v nich zamýšlenou práci. Posloupnost příkazů bude tedy následující:</p>
+
+<pre><code>$ git clone (url)
+$ cd project
+$ git checkout -b featureA
+$ (work)
+$ git commit
+$ (work)
+$ git commit</code></pre>
+
+<p>Možná budete chtít využít příkaz <code>rebase -i</code> a zkomprimovat svou práci do jediné revize nebo přeorganizovat práci v revizích tak, aby byla kontrola záplaty pro správce jednodušší – další informace o interaktivním přeskládání najdete v kapitole 6.</p>
+
+<p>Až budete s prací ve větvi hotovi a budete ji chtít poslat zpět správcům, přejděte na původní stránku projektu a klikněte na tlačítko „Fork“, jímž vytvoříte vlastní odštěpenou větev projektu, do níž budete moci zapisovat. Poté bude třeba, abyste tuto novou adresu URL repozitáře přidali jako druhý vzdálený repozitář, v tomto případě pojmenovaný <code>myfork</code>:</p>
+
+<pre><code>$ git remote add myfork (url)</code></pre>
+
+<p>Do něj teď musíte odeslat svou práci. Lepším řešením bude odeslat vzdálenou větev, na níž pracujete, do svého repozitáře, než ji začlenit do hlavní větve a tu pak celou odeslat. Důvod je prostý: pokud nebude vaše práce přijata nebo bude převzata částečně, nebudete muset vracet změny začleněné do vaší hlavní větve. Pokud správci začlení či přeskládají vaši práci (nebo její část), získáte ji zpět stažením z repozitáře:</p>
+
+<pre><code>$ git push myfork featureA</code></pre>
+
+<p>Až svou práci odešlete do odštěpené větve, budete na ni muset upozornit správce. Tomu se říká „žádost o natažení“ (angl. pull request). Můžete ji vygenerovat buď na webové stránce – server GitHub má tlačítko „pull request“, které automaticky odešle správci upozornění – nebo můžete zadat příkaz <code>git request-pull</code> a jeho výstup e-mailem ručně odeslat správci projektu.</p>
+
+<p>Příkaz <code>request-pull</code> vezme základní větev (základnu), do níž chcete natáhnout svou tematickou větev, a adresu URL repozitáře Git, z nějž chcete práci natáhnout, a vytvoří shrnutí všech změn, které by měl správce podle vaší žádosti natáhnout. Pokud chce například Jessica poslat Johnovi žádost o natažení a vytvořila předtím dvě revize v tematické větvi, kterou právě odeslala, může zadat tento příkaz:</p>
+
+<pre><code>$ git request-pull origin/master myfork
+The following changes since commit 1edee6b1d61823a2de3b09c160d7080b8d1b3a40:
+  John Smith (1):
+        added a new function
+
+are available in the git repository at:
+
+  git://githost/simplegit.git featureA
+
+Jessica Smith (2):
+      add limit to log function
+      change log output to 30 from 25
+
+ lib/simplegit.rb |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)</code></pre>
+
+<p>Výstup příkazu lze odeslat správci. Sdělí mu, odkud daná větev pochází, podá mu přehled o revizích a řekne mu, odkud lze práci stáhnout.</p>
+
+<p>U projektů, u nichž nejste v roli správce, je většinou jednodušší, aby vaše větev <code>master</code> stále sledovala větev <code>origin/master</code> a abyste práci prováděli v tematických větvích, jichž se můžete beze všeho vzdát v případě, že budou odmítnuty. Jednotlivé úkoly izolované v tematických větvích mají také tu výhodu, že snáze přeskládáte svou práci, jestliže se průběžně posouvá konec hlavního repozitáře a vaše revize už nelze aplikovat čistě. Pokud například chcete do projektu přispět druhým tématem, nerozvíjejte svou práci v tematické větvi, kterou jste právě odeslali. Začněte znovu od začátku z větve <code>master</code> hlavního repozitáře:</p>
+
+<pre><code>$ git checkout -b featureB origin/master
+$ (work)
+$ git commit
+$ git push myfork featureB
+$ (email maintainer)
+$ git fetch origin</code></pre>
+
+<p>Nyní mají obě vaše témata samostatný zásobník – podobně jako řada záplat – které můžete přepsat, přeskládat a upravit, aniž by se tím obě témata navzájem ovlivňovala nebo omezovala (viz obrázek 5-16).</p>
+
+<p><center><img src="/figures/ch2/18333fig0516-tn.png"></center><br/> Figure 5-16. Výchozí historie revizí s větví featureB</p>
+
+<p>Řekněme, že správce projektu natáhl do projektu několik jiných záplat a nyní vyzkoušel vaši první větev, jenže tu už nelze čistě začlenit. V takovém případě můžete zkusit přeskládat tuto větev na vrcholu větve <code>origin/master</code>, vyřešit za správce vzniklé konflikty a poté své změny ještě jednou odeslat:</p>
+
+<pre><code>$ git checkout featureA
+$ git rebase origin/master
+$ git push -f myfork featureA</code></pre>
+
+<p>Tím přepíšete svou historii, která teď bude vypadat jako na obrázku 5-17.</p>
+
+<p><center><img src="/figures/ch2/18333fig0517-tn.png"></center><br/> Figure 5-17. Historie revizí s větví featureA</p>
+
+<p>Protože jste větev přeskládali, musíte k příkazu git push přidat parametr <code>-f</code>, abyste mohli větev <code>featureA</code> na serveru nahradit revizí, která není jejím potomkem. Druhou možností je odeslat tuto novou práci do jiné větve na serveru (nazvané např. <code>featureAv2</code>).</p>
+
+<p>Podívejme se ještě na jeden pravděpodobnější scénář: Správce se podíval na práci ve vaší druhé větvi, váš koncept se mu líbí, ale rád by, abyste změnili jeden implementační detail. Vy tuto příležitost využijete zároveň k tomu, abyste práci přesunuli tak, aby byla založena na aktuálním stavu projektu ve větvi <code>master</code>. Začnete vytvořením nové větve z aktuální větve <code>origin/master</code>, zkomprimujete do ní změny z větve <code>featureB</code>, vyřešíte všechny konflikty, provedete změnu v implementaci a to vše odešlete jako novou větev:</p>
+
+<pre><code>$ git checkout -b featureBv2 origin/master
+$ git merge --no-commit --squash featureB
+$ (change implementation)
+$ git commit
+$ git push myfork featureBv2</code></pre>
+
+<p>Parametr <code>--squash</code> (komprimovat) vezme všechnu vaši práci v začleněné větvi a zkomprimuje ji do jedné revize, která nevznikla jako výsledek sloučení a leží na vrcholu větve, na níž se právě nacházíte. Parametr <code>--no-commit</code> říká systému Git, aby revizi automaticky nezaznamenával. To vám umožní provést všechny změny z jiné větve a poté udělat více změn, než zaznamenáte novou revizi.</p>
+
+<p>Nyní můžete správci oznámit, že jste provedli požadované změny a že je najde ve vaší větvi <code>featureBv2</code> (viz obrázek 5-18).</p>
+
+<p><center><img src="/figures/ch2/18333fig0518-tn.png"></center><br/> Figure 5-18. Historie revizí s větví featureBv2</p>
+
+<h3 id='velk_veejn_projekt'>Velký veřejný projekt</h3>
+
+<p>Mnoho větších projektů si vytvořilo vlastní, odlišné procedury k doručování záplat. U každého projektu se tak budete muset informovat o konkrétních pravidlech. U mnoha větších veřejných projektů se však záplaty doručují na základě poštovní konference vývojářů, a proto se teď zaměřím na tento případ.</p>
+
+<p>Pracovní postup je podobný jako v předchozím případě. Pro každou sérii záplat, na níž pracujete, vytvoříte samostatnou tematickou větev. Liší se to, jak je budete doručovat do projektu. Místo toho, abyste rozštěpili projekt a odeslali své změny do vlastní zapisovatelné verze, vygenerujete e-mailovou verzi každé série revizí a pošlete je e-mailem do poštovní konference vývojářů:</p>
+
+<pre><code>$ git checkout -b topicA
+$ (work)
+$ git commit
+$ (work)
+$ git commit</code></pre>
+
+<p>Nyní máte dvě revize, které chcete odeslat do poštovní konference. Pro vygenerování emailových zpráv ve formátu mbox použijte příkaz <code>git format-patch</code>. Každá revize se přetransformuje na e-mailovou zprávu, jejíž předmět bude tvořit první řádek zprávy k revizi a tělo e-mailu bude tvořeno zbytkem zprávy a samotnou záplatou. Výhodou tohoto postupu je, že aplikace záplaty z e-mailu, který byl vygenerován příkazem <code>format-patch</code>, v pořádku uchová všechny informace o revizi. Podrobněji si to ukážeme v následující části, až budeme aplikovat tyto revize:</p>
+
+<pre><code>$ git format-patch -M origin/master
+0001-add-limit-to-log-function.patch
+0002-changed-log-output-to-30-from-25.patch</code></pre>
+
+<p>Příkaz <code>format-patch</code> vypíše názvy souborů záplaty, kterou vytváří. Přepínač <code>-M</code> řekne systému Git, aby zkontroloval případné přejmenování. Soubory nakonec vypadají takto:</p>
+
+<pre><code>$ cat 0001-add-limit-to-log-function.patch
+From 330090432754092d704da8e76ca5c05c198e71a8 Mon Sep 17 00:00:00 2001
+From: Jessica Smith &lt;jessica@example.com&gt;
+Date: Sun, 6 Apr 2008 10:17:23 -0700
+Subject: [PATCH 1/2] add limit to log function
+
+Limit log functionality to the first 20
+
+---
+ lib/simplegit.rb |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/lib/simplegit.rb b/lib/simplegit.rb
+index 76f47bc..f9815f1 100644
+--- a/lib/simplegit.rb
++++ b/lib/simplegit.rb
+@@ -14,7 +14,7 @@ class SimpleGit
+   end
+
+   def log(treeish = &#39;master&#39;)
+-    command(&quot;git log #{treeish}&quot;)
++    command(&quot;git log -n 20 #{treeish}&quot;)
+   end
+
+   def ls_tree(treeish = &#39;master&#39;)
+--
+1.6.2.rc1.20.g8c5b.dirty</code></pre>
+
+<p>Tyto soubory záplaty můžete také upravit a přidat k nim další informace určené pro seznam příjemců e-mailu, u nichž nechcete, aby byly obsaženy ve zprávě k revizi. Přidáte-li text mezi řádek <code>--</code> a začátek záplaty (řádek <code>lib/simplegit.rb</code>), vývojářům se zobrazí, ale aplikace záplaty ho obsahovat nebude.</p>
+
+<p>Chcete-li e-mail odeslat do poštovní konference, můžete soubor buď vložit do svého e-mailového programu, nebo ho odeslat pomocí příkazového řádku. Vložení textu může často způsobovat problémy s formátováním, zvlášť v případě některých „chytřejších“ klientů, kteří správně nezachovávají nové řádky a jiné prázdné znaky. Git naštěstí nabízí nástroj, který vám pomůže odeslat správně formátované patche pomocí protokolu IMAP. Já budu dokumentovat odeslání záplaty na příkladu Gmailu, který používám jako svého e-mailového agenta. Podrobné instrukce pro celou řadu poštovních programů najdete na konci již dříve zmíněného souboru <code>Documentation/SubmittingPatches</code> ve zdrojovém kódu systému Git.</p>
+
+<p>Nejprve je třeba nastavit sekci „imap“ v souboru <code>~/.gitconfig</code>. Každou hodnotu můžete nastavit zvlášť pomocí série příkazů <code>git config</code> nebo můžete vložit hodnoty ručně. Na konci by ale měl váš soubor config vypadat přibližně takto:</p>
+
+<pre><code>[imap]
+  folder = &quot;[Gmail]/Drafts&quot;
+  host = imaps://imap.gmail.com
+  user = user@gmail.com
+  pass = p4ssw0rd
+  port = 993
+  sslverify = false</code></pre>
+
+<p>Pokud váš server IMAP nepoužívá SSL, dva poslední řádky zřejmě nebudou vůbec třeba a hodnota hostitele bude <code>imap://</code>, a nikoli <code>imaps://</code>. Až toto nastavení dokončíte, můžete použít příkaz <code>git send-email</code>, jímž umístíte sérii patchů do složky Koncepty (Drafts) zadaného serveru IMAP:</p>
+
+<pre><code>$ git send-email *.patch
+0001-added-limit-to-log-function.patch
+0002-changed-log-output-to-30-from-25.patch
+Who should the emails appear to be from? [Jessica Smith &lt;jessica@example.com&gt;]
+Emails will be sent from: Jessica Smith &lt;jessica@example.com&gt;
+Who should the emails be sent to? jessica@example.com
+Message-ID to be used as In-Reply-To for the first email? y</code></pre>
+
+<p>Git poté vytvoří log s určitými informacemi, který bude pro každou záplatu, kterou posíláte, vypadat asi takto:</p>
+
+<pre><code>(mbox) Adding cc: Jessica Smith &lt;jessica@example.com&gt; from
+  \line &#39;From: Jessica Smith &lt;jessica@example.com&gt;&#39;
+OK. Log says:
+Sendmail: /usr/sbin/sendmail -i jessica@example.com
+From: Jessica Smith &lt;jessica@example.com&gt;
+To: jessica@example.com
+Subject: [PATCH 1/2] added limit to log function
+Date: Sat, 30 May 2009 13:29:15 -0700
+Message-Id: &lt;1243715356-61726-1-git-send-email-jessica@example.com&gt;
+X-Mailer: git-send-email 1.6.2.rc1.20.g8c5b.dirty
+In-Reply-To: &lt;y&gt;
+References: &lt;y&gt;
+
+Result: OK</code></pre>
+
+<p>V tomto okamžiku můžete přejít do své složky Koncepty, změnit pole Komu na adresáty z poštovní konference, jimž chcete záplatu odeslat, případně přidat kopii na správce nebo osobu odpovědnou za tuto část a e-mail odeslat.</p>
+
+<h3 id='shrnut'>Shrnutí</h3>
+
+<p>V této části jsme popsali několik obvyklých pracovních postupů při přispívání do velmi odlišných typů projektů Git, s nimiž se můžete setkat. Představili jsme k nim také nové nástroje, které vám mohou v těchto procesech pomoci. V další části se na projekty podíváme z té druhé strany – ukážeme, jak může vypadat jejich správa. Dozvíte se, jak být benevolentním diktátorem nebo integračním manažerem.</p>
 
 <div id='nav'>
 <a href='ch2-1.html'>prev</a> | <a href='ch2-3.html'>next</a>

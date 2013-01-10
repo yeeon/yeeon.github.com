@@ -21,7 +21,8 @@ selse = Someo Nelse &lt;selse@geemail.com&gt;</code></pre>
 
 <p>To get a list of the author names that SVN uses, you can run this:</p>
 
-<pre><code>$ svn log --xml | grep author | sort -u | perl -pe &#39;s/.&gt;(.?)&lt;./$1 = /&#39;</code></pre>
+<pre><code>$ svn log --xml | grep -P &quot;^&lt;author&quot; | sort -u | \
+      perl -pe &#39;s/&lt;author&gt;(.*?)&lt;\/author&gt;/$1 = /&#39;</code></pre>
 
 <p>That gives you the log output in XML format — you can look for the authors, create a unique list, and then strip out the XML. (Obviously this only works on a machine with <code>grep</code>, <code>sort</code>, and <code>perl</code> installed.) Then, redirect that output into your users.txt file so you can add the equivalent Git user data next to each entry.</p>
 
@@ -55,15 +56,13 @@ Date:   Sun May 3 00:12:22 2009 +0000
 
 <p>To move the tags to be proper Git tags, run</p>
 
-<pre><code>$ cp -Rf .git/refs/remotes/tags/* .git/refs/tags/
-$ rm -Rf .git/refs/remotes/tags</code></pre>
+<pre><code>$ git for-each-ref refs/remotes/tags | cut -d / -f 4- | grep -v @ | while read tagname; do git tag &quot;$tagname&quot; &quot;tags/$tagname&quot;; git branch -r -d &quot;tags/$tagname&quot;; done</code></pre>
 
 <p>This takes the references that were remote branches that started with <code>tag/</code> and makes them real (lightweight) tags.</p>
 
 <p>Next, move the rest of the references under <code>refs/remotes</code> to be local branches:</p>
 
-<pre><code>$ cp -Rf .git/refs/remotes/* .git/refs/heads/
-$ rm -Rf .git/refs/remotes</code></pre>
+<pre><code>$ git for-each-ref refs/remotes | cut -d / -f 3- | grep -v @ | while read branchname; do git branch &quot;$branchname&quot; &quot;refs/remotes/$branchname&quot;; git branch -r -d &quot;$branchname&quot;; done</code></pre>
 
 <p>Now all the old branches are real Git branches and all the old tags are real Git tags. The last thing to do is add your new Git server as a remote and push to it. Here is an example of adding your server as a remote:</p>
 
@@ -71,13 +70,14 @@ $ rm -Rf .git/refs/remotes</code></pre>
 
 <p>Because you want all your branches and tags to go up, you can now run this:</p>
 
-<pre><code>$ git push origin --all</code></pre>
+<pre><code>$ git push origin --all
+$ git push origin --tags</code></pre>
 
 <p>All your branches and tags should be on your new Git server in a nice, clean import.</p>
 
 <h3 id='perforce'>Perforce</h3>
 
-<p>The next system you’ll look at importing from is Perforce. A Perforce importer is also distributed with Git, but only in the <code>contrib</code> section of the source code — it isn’t available by default like <code>git svn</code>. To run it, you must get the Git source code, which you can download from git.kernel.org:</p>
+<p>The next system you’ll look at importing from is Perforce. A Perforce importer is also distributed with Git. If you have a version of Git earlier than 1.7.11, then the importer is only available in the <code>contrib</code> section of the source code. In that case you must get the Git source code, which you can download from git.kernel.org:</p>
 
 <pre><code>$ git clone git://git.kernel.org/pub/scm/git/git.git
 $ cd git/contrib/fast-import</code></pre>
@@ -159,7 +159,7 @@ current</code></pre>
 
 <p>In order to import a Git directory, you need to review how Git stores its data. As you may remember, Git is fundamentally a linked list of commit objects that point to a snapshot of content. All you have to do is tell <code>fast-import</code> what the content snapshots are, what commit data points to them, and the order they go in. Your strategy will be to go through the snapshots one at a time and create commits with the contents of each directory, linking each commit back to the previous one.</p>
 
-<p>As you did in the &#8220;An Example Git Enforced Policy&#8221; section of Chapter 7, we’ll write this in Ruby, because it’s what I generally work with and it tends to be easy to read. You can write this example pretty easily in anything you’re familiar with — it just needs to print the appropriate information to stdout. And, if you are running on Windows, this means you&#8217;ll need to take special care to not introduce carriage returns at the end your lines — git fast-import is very particular about just wanting line feeds (LF) not the carriage return line feeds (CRLF) that Windows uses.</p>
+<p>As you did in the &#8220;An Example Git Enforced Policy&#8221; section of Chapter 7, we’ll write this in Ruby, because it’s what I generally work with and it tends to be easy to read. You can write this example pretty easily in anything you’re familiar with — it just needs to print the appropriate information to stdout. And, if you are running on Windows, this means you’ll need to take special care to not introduce carriage returns at the end your lines — git fast-import is very particular about just wanting line feeds (LF) not the carriage return line feeds (CRLF) that Windows uses.</p>
 
 <p>To begin, you’ll change into the target directory and identify every subdirectory, each of which is a snapshot that you want to import as a commit. You’ll change into each subdirectory and print the commands necessary to export it. Your basic main loop looks like this:</p>
 
@@ -171,7 +171,7 @@ Dir.chdir(ARGV[0]) do
     next if File.file?(dir)
 
     # move into the target directory
-    Dir.chdir(dir) do 
+    Dir.chdir(dir) do
       last_mark = print_export(dir, last_mark)
     end
   end
@@ -260,13 +260,13 @@ end</code></pre>
 
 <pre><code>return mark</code></pre>
 
-<p>NOTE: If you are running on Windows you&#8217;ll need to make sure that you add one extra step. As metioned before, Windows uses CRLF for new line characters while git fast-import expects only LF. To get around this problem and make git fast-import happy, you need to tell ruby to use LF instead of CRLF:</p>
+<p>NOTE: If you are running on Windows you’ll need to make sure that you add one extra step. As metioned before, Windows uses CRLF for new line characters while git fast-import expects only LF. To get around this problem and make git fast-import happy, you need to tell ruby to use LF instead of CRLF:</p>
 
 <pre><code>$stdout.binmode</code></pre>
 
 <p>That’s it. If you run this script, you’ll get content that looks something like this:</p>
 
-<pre><code>$ ruby import.rb /opt/import_from 
+<pre><code>$ ruby import.rb /opt/import_from
 commit refs/heads/master
 mark :1
 committer Scott Chacon &lt;schacon@geemail.com&gt; 1230883200 -0700
@@ -289,7 +289,7 @@ data 16
 new version one
 (...)</code></pre>
 
-<p>To run the importer, pipe this output through <code>git fast-import</code> while in the Git directory you want to import into. You can create a new directory and then run <code>git init</code> in it for a starting point, and then run your script:</p>
+<p>To run the importer, pipe this output through <code>git fast-import</code> while in the Git repository you want to import into. You can create a new directory and then run <code>git init</code> in it for a starting point, and then run your script:</p>
 
 <pre><code>$ git init
 Initialized empty Git repository in /opt/import_to/.git/

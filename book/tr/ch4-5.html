@@ -1,0 +1,97 @@
+---
+layout: translation
+title: Pro Git 4.5 Git&#8217;te Dallanma Uzak Uçbirim Dalları
+---
+<h2 id='uzak_ubirim_dallar'>Uzak Uçbirim Dalları</h2>
+
+<p>Yerel yazılım havuzunuzdaki uzak uçbirim dalları, uzak uçbirimlerdeki yazılım havuzlarınızın durumlarını gösteren imleçlerdir. Bunlar, hareket ettiremediğiniz yerel dallardır; yalnızca sunucuyla iletişim kurduğunuzda hareket ederler. Bu dallar, son bağlandığınızda sunucudaki yazılım havuzunun ne durumda olduğunu hatırlatan işaretçilerdir.</p>
+
+<p><code>(remote)</code>/<code>(dal)</code> biçimindedirler. Örneğin, sunucuya son bağlandığınızda <code>origin</code> uzak uçbirimindeki <code>master</code> dalının nasıl olduğunu görmek isterseniz, <code>origin/master</code> dalına bakmalısınız. Bir hatayı bir işortağıyla birlikte çözüyorsanız ve onlar <code>iss53</code> adında bir dalı sunucuya itmişlerse, sizin yerel dalınızın adı <code>iss53</code> iken, sunucuya itilmiş olan dalın adı <code>origin/iss53</code> olacaktır.</p>
+
+<p>Bu biraz kafa karıştırıcı olabilir, gelin bir örnekle açıklayalım. Diyelim ki <code>git.ourcompany.com</code> adresinde bir Git sunucunuz var. Buradan klonlama yaparsanız, Git bu yazılım havuzunu otomatik olarak <code>origin</code> olarak adlandıracak, bütün veriyi indirecek, onun <code>master</code> dalının gösterdiği kaydı gösteren <code>origin/master</code> adında hareket ettiremeyeceğiniz bir yerel dal oluşturacaktır. Git ayrıca, üzerinde çalışabilmeniz için <code>origin</code>in <code>master</code> dalının olduğu yeri gösteren <code>master</code> adında yerel bir dal da oluşturacaktır (bkz. Figür 3-22).</p>
+
+<p><center><img src="/figures/ch4/18333fig0322-tn.png"></center><br/> Figür 3-22. Bir Git klonladığınızda hem yerel bir master dalınız hem de origin&#8217;in master dalını gösteren origin/master adında bir dalınız olur.</p>
+
+<p>Eğer siz kendi master dalınızda çalışırken biir başkası <code>git.ourcompany.com</code>&#8216;a itme yapıp <code>master</code> dalını güncellerse, tarihçeleriniz birbiirinden farklılaşacaktır. Üstelik, <code>origin</code> sunucusuyla iletişime geçmediğiniz sürece sizin <code>origin/master</code> dalınız hareket etmeyecektir (bkz. Figür 3-23).</p>
+
+<p><center><img src="/figures/ch4/18333fig0323-tn.png"></center><br/> Figür 3-23. Siz yerelde çalışıyorken bir başkası sunucuya itme yaparsa, tarihçeleriniz birbirinden farklı hareket etmeye başlar.</p>
+
+<p>Çalışmalarınızı senkronize etmek için <code>git fetch origin</code> komutunu çalıştırabilirsiniz. Bu komut <code>origin</code>sunucusunun hangisi olduğuna bakar (bu örnekte <code>git.ourcompany.com</code>), orada bulunup da sizde olmayan her türlü veriyi indirir, yerel veritabanınızı güncelleyip yerelinizdeki <code>origin/master</code> dalını yeni, güncel konumuna taşır (bkz. Figür 3-24).</p>
+
+<p><center><img src="/figures/ch4/18333fig0324-tn.png"></center><br/> Figür 3-24. git fetch komutu uzak uçbirim imleçlerinizi günceller.</p>
+
+<p>Birden çok uzak uçbirime sahip bir projede uzak uçbirim imleçlerinin nasıl görüneceğini incelemek için, Scrum takımlarınızdan birisi tarafından kullanılan başka bir sunucunuzun daha olduğunu varsayalım. Bu sunucunun adresi <code>git.team1.ourcompany.com</code> olsun. 2. Bölüm&#8217;de incelediğimiz gibi, bu sunucuyu projenize uzak uçbirim olarak eklemek için <code>git remote add</code> komutunu kullanabilirsiniz. Bu uçbirimin adı <code>teamone</code> olsun, ki bu adı daha sonra bütün URL yerine kısaltma olarak kullanacaksınız (bkz. Figür 3-25).</p>
+
+<p><center><img src="/figures/ch4/18333fig0325-tn.png"></center><br/> Figür 3-25. Başka bir sunucuyu uzak uçbirim olarak eklemek.</p>
+
+<p><code>teamone</code> uzak uçbiriminde bulunup da sizde bulunmayan şeyleri getirmek için <code>git fetch teamone</code> komutunu çalıştırabilirsiniz. O sunucuda bulunan veriler <code>origin</code> sunucusunda bulunanların alt kümesi olduğundan, Git herhangi bir veri çekmez, ama <code>teamone/master</code> adında, <code>teamone</code> sunucusunun <code>master</code> dalının gösterdiği kaydı gösteren bir uzak uçbirim dalı oluşturur (bkz. Figür 3-26).</p>
+
+<p><center><img src="/figures/ch4/18333fig0326-tn.png"></center><br/> Figür 3-26. teamone&#8217;nin master dalının pozisyonunu gösteren bir yerel imleciniz oluyor.</p>
+
+<h3 id='tme_lemi'>İtme İşlemi</h3>
+
+<p>Bir daldaki çalışmalarınızı başkalarıyla paylaşmak istediğinizde, onu yazma yetkinizin olduğu bir uzak uçbirime itmelisiniz (_push_). yerel dallarınız otomatik kolarak sunucuyla senkronize edilmez —paylaşmak istediğiniz dalları açık şekilde itmelisiniz. Böylece, paylaşmak istemediğiniz dallar için özel yerel dallar kullanıp, yalnızca paylaşmak istediğiniz işlev dallarını iteblirsiniz.</p>
+
+<p>Başkalarıyla ortaklaşa çalışmak istediğiniz <code>serverfix</code> adında bir dalınız varsa, onu da ilk dalınızı ittiğiniz gibi itebilirsiniz. <code>git push (remote) (branch)</code> komutunu çalıştırın.</p>
+
+<pre><code>$ git push origin serverfix
+Counting objects: 20, done.
+Compressing objects: 100% (14/14), done.
+Writing objects: 100% (15/15), 1.74 KiB, done.
+Total 15 (delta 5), reused 0 (delta 0)
+To git@github.com:schacon/simplegit.git
+ * [new branch]      serverfix -&gt; serverfix</code></pre>
+
+<p>Bu bir tür kısayol sayılabilir. Git <code>serverfix</code> dal adını otomatik olarak <code>refs/heads/serverfix:refs/heads/serverfix</code> biçiminde açımlar, bu şu demektir: “yerel <code>serverfix</code> dalımı alıp uzak uçbirimin <code>serverfix</code> dalını güncellemek için kullan.” <code>refs/heads/</code> kısmınz 9. Bölüm&#8217;de ayrıntısıyla değineceğiz, ama genellikle bu kısmı kullanmasanız da olur. Aynı amaçla <code>git push origin serverfix:serverfix</code> komutunu da çalıştırabilirsiniz —bu da şu demektir: “Yereldeki serverfix&#8217;i al, bunu uzak uçbirimin serverfix&#8217;i yap.” Bu biçimi, yeredeki dal adıyla uzak uçbirimdeki dal adı farklı ise kullanabilirsiniz. Dal adının uzak uçbirimde <code>serferfix</code> olmasını istemezseniz <code>git push origin serverfix:awesomebranch</code> komutunu çalıştırarak yereldeki <code>serverfix</code> dalını uzak uçbirimdeki <code>awesomebranch</code> dalına itebilirsiniz.</p>
+
+<p>Birlikte çalıştığınız insanlar sunucudan getirme işlemi (_fetch_) yaptıklarında, sunucudaki <code>serverfix</code> sürümünün bulunduğu yeri gösteren <code>origin/serverfix</code> adında bir imlece sahip olacaklar.</p>
+
+<pre><code>$ git fetch origin
+remote: Counting objects: 20, done.
+remote: Compressing objects: 100% (14/14), done.
+remote: Total 15 (delta 5), reused 0 (delta 0)
+Unpacking objects: 100% (15/15), done.
+From git@github.com:schacon/simplegit
+ * [new branch]      serverfix    -&gt; origin/serverfix</code></pre>
+
+<p>Unutmayın, getirme (_fetch_) komutuyla yeni uzak uçbirim dallarını indirdiğinizde, yerelde otomatik olarak değiştirilebilir dallar oluşturulmaz. Başka bir deyişle, bu örnekte, <code>serverfix</code> adında bir dalınız olmaz, değiştiremeyeceğiniz <code>origin/serverfix</code> adında bir imleciniz olur.</p>
+
+<p>Oradaki değişiklikleri üzerinde çalışmakta olduğunuz dala birleştirmek isterseniz, <code>git merge origin/serverfix</code> komutunu çalıştırabilirsiniz. Üzerinde çalışmak üzere kendinize ait bir <code>serverfix</code> dalınız olmasını isterseniz, uzak uçbirim dalını temel alabilirsiniz:</p>
+
+<pre><code>$ git checkout -b serverfix origin/serverfix
+Branch serverfix set up to track remote branch refs/remotes/origin/serverfix.
+Switched to a new branch &quot;serverfix&quot;</code></pre>
+
+<p>Bu, üzerinde çalışabileceğiniz ve <code>origin/serverfix</code>in gösterdiği yerden başlayan bir yerel dal yaratır.</p>
+
+<h3 id='zleme_dallar'>İzleme Dalları</h3>
+
+<p>Bir uzak uçbirim dalından yerel bir dal seçtğinizde (_checkout_), bu işlem otomatik olarak bir <em>izleme dalı</em> (_tracking branch_) oluşturur. İzleme dalları, uzak uçbirim dallarıyla doğrudan ilişkileri bulunan yerel dallardır. Bir izleme dalından <code>git push</code> komutunu çalıştırdığınızda , Git hangi sunucudaki hangi dala itme işlemi yapması gerektiğini bilir. Ayrıca, bu dallardan biirinden <code>git pull</code> komutunu çalıştırdığınızda, bütün imleçler indirileceği gibi, bu izleme dalına karşılık gelen uzak uçbirim dalı da otomatik olarak bu dalla birleştirilir.</p>
+
+<p>Bir yazılım havunuzu klonladığınızda, genellikle <code>origin/master</code> dalını izleyen bir <code>master</code> dalı yaratılır. Bu nedenle <code>git push</code> ve <code>git pull</code> komutları bu durumlarda ek argümanlara gerek kalmadan çalışırlar. Öte yandan, isterseniz başka izleme dalları da —<code>origin</code>&#8216;i ya da <code>master</code> dalınız izlemeyen dallar— oluşturabilirsiniz. Yukarıda basit bir örneğini gördük: <code>git checkout -b [dal] [uzak_ucbirim]/[dal]</code>. Git&#8217;in 1.6.2&#8217;den itibaren olan sürümlerinde <code>--track</code> kısayolunu da kullanabilirsiniz:</p>
+
+<pre><code>$ git checkout --track origin/serverfix
+Branch serverfix set up to track remote branch refs/remotes/origin/serverfix.
+Switched to a new branch &quot;serverfix&quot;</code></pre>
+
+<p>Uzak uçbirim dalının adından başka bir adla yerel dal oluşturmak isterseniz, yukarıdaki komutu farklı bir yerel dal adıyla kullanabilirsiniz:</p>
+
+<pre><code>$ git checkout -b sf origin/serverfix
+Branch sf set up to track remote branch refs/remotes/origin/serverfix.
+Switched to a new branch &quot;sf&quot;</code></pre>
+
+<p>Şimdi, yereldeki sf dalı, otomatik olarak <code>origin/serverfix</code> dalına itme ve çekme işlemi yapabilecek.</p>
+
+<h3 id='uzak_ubirim_dallarn_silmek'>Uzak Uçbirim Dallarını Silmek</h3>
+
+<p>Suppose you’re done with a remote branch — say, you and your collaborators are finished with a feature and have merged it into your remote’s <code>master</code> branch (or whatever branch your stable codeline is in). You can delete a remote branch using the rather obtuse syntax <code>git push [remotename] :[branch]</code>. If you want to delete your <code>serverfix</code> branch from the server, you run the following:</p>
+
+<pre><code>$ git push origin :serverfix
+To git@github.com:schacon/simplegit.git
+ - [deleted]         serverfix</code></pre>
+
+<p>Boom. No more branch on your server. You may want to dog-ear this page, because you’ll need that command, and you’ll likely forget the syntax. A way to remember this command is by recalling the <code>git push [remotename] [localbranch]:[remotebranch]</code> syntax that we went over a bit earlier. If you leave off the <code>[localbranch]</code> portion, then you’re basically saying, “Take nothing on my side and make it be <code>[remotebranch]</code>.”</p>
+
+<div id='nav'>
+<a href='ch4-4.html'>prev</a> | <a href='ch4-6.html'>next</a>
+</div>

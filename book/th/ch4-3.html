@@ -1,41 +1,45 @@
 ---
 layout: translation
-title: Pro Git 4.3 Git on the Server Generating Your SSH Public Key
+title: Pro Git 4.3 Git Branching Branch Management
 ---
-<h2 id='generating_your_ssh_public_key'>Generating Your SSH Public Key</h2>
+<h2 id='branch_management'>Branch Management</h2>
 
-<p>That being said, many Git servers authenticate using SSH public keys. In order to provide a public key, each user in your system must generate one if they don’t already have one. This process is similar across all operating systems. First, you should check to make sure you don’t already have a key. By default, a user’s SSH keys are stored in that user’s <code>~/.ssh</code> directory. You can easily check to see if you have a key already by going to that directory and listing the contents:</p>
+<p>Now that you’ve created, merged, and deleted some branches, let’s look at some branch-management tools that will come in handy when you begin using branches all the time.</p>
 
-<pre><code>$ cd ~/.ssh
-$ ls
-authorized_keys2  id_dsa       known_hosts
-config            id_dsa.pub</code></pre>
+<p>The <code>git branch</code> command does more than just create and delete branches. If you run it with no arguments, you get a simple listing of your current branches:</p>
 
-<p>You’re looking for a pair of files named something and something.pub, where the something is usually <code>id_dsa</code> or <code>id_rsa</code>. The <code>.pub</code> file is your public key, and the other file is your private key. If you don’t have these files (or you don’t even have a <code>.ssh</code> directory), you can create them by running a program called <code>ssh-keygen</code>, which is provided with the SSH package on Linux/Mac systems and comes with the MSysGit package on Windows:</p>
+<pre><code>$ git branch
+  iss53
+* master
+  testing</code></pre>
 
-<pre><code>$ ssh-keygen 
-Generating public/private rsa key pair.
-Enter file in which to save the key (/Users/schacon/.ssh/id_rsa): 
-Enter passphrase (empty for no passphrase): 
-Enter same passphrase again: 
-Your identification has been saved in /Users/schacon/.ssh/id_rsa.
-Your public key has been saved in /Users/schacon/.ssh/id_rsa.pub.
-The key fingerprint is:
-43:c5:5b:5f:b1:f1:50:43:ad:20:a6:92:6a:1f:9a:3a schacon@agadorlaptop.local</code></pre>
+<p>Notice the <code>*</code> character that prefixes the <code>master</code> branch: it indicates the branch that you currently have checked out. This means that if you commit at this point, the <code>master</code> branch will be moved forward with your new work. To see the last commit on each branch, you can run <code>git branch –v</code>:</p>
 
-<p>First it confirms where you want to save the key (<code>.ssh/id_rsa</code>), and then it asks twice for a passphrase, which you can leave empty if you don’t want to type a password when you use the key.</p>
+<pre><code>$ git branch -v
+  iss53   93b412c fix javascript issue
+* master  7a98805 Merge branch &#39;iss53&#39;
+  testing 782fd34 add scott to the author list in the readmes</code></pre>
 
-<p>Now, each user that does this has to send their public key to you or whoever is administrating the Git server (assuming you’re using an SSH server setup that requires public keys). All they have to do is copy the contents of the <code>.pub</code> file and e-mail it. The public keys look something like this:</p>
+<p>Another useful option to figure out what state your branches are in is to filter this list to branches that you have or have not yet merged into the branch you’re currently on. The useful <code>--merged</code> and <code>--no-merged</code> options have been available in Git since version 1.5.6 for this purpose. To see which branches are already merged into the branch you’re on, you can run <code>git branch –merged</code>:</p>
 
-<pre><code>$ cat ~/.ssh/id_rsa.pub 
-ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAklOUpkDHrfHY17SbrmTIpNLTGK9Tjom/BWDSU
-GPl+nafzlHDTYW7hdI4yZ5ew18JH4JW9jbhUFrviQzM7xlELEVf4h9lFX5QVkbPppSwg0cda3
-Pbv7kOdJ/MTyBlWXFCR+HAo3FXRitBqxiX1nKhXpHAZsMciLq8V6RjsNAQwdsdMFvSlVK/7XA
-t3FaoJoAsncM1Q9x5+3V0Ww68/eIFmb1zuUFljQJKprrX88XypNDvjYNby6vw/Pb0rwert/En
-mZ+AW4OZPnTPI89ZPmVMLuayrD2cE86Z/il8b+gw3r3+1nKatmIkjn2so1d01QraTlMqVSsbx
-NrRFi9wrf+M7Q== schacon@agadorlaptop.local</code></pre>
+<pre><code>$ git branch --merged
+  iss53
+* master</code></pre>
 
-<p>For a more in-depth tutorial on creating an SSH key on multiple operating systems, see the GitHub guide on SSH keys at <code>http://github.com/guides/providing-your-ssh-key</code>.</p>
+<p>Because you already merged in <code>iss53</code> earlier, you see it in your list. Branches on this list without the <code>*</code> in front of them are generally fine to delete with <code>git branch -d</code>; you’ve already incorporated their work into another branch, so you’re not going to lose anything.</p>
+
+<p>To see all the branches that contain work you haven’t yet merged in, you can run <code>git branch --no-merged</code>:</p>
+
+<pre><code>$ git branch --no-merged
+  testing</code></pre>
+
+<p>This shows your other branch. Because it contains work that isn’t merged in yet, trying to delete it with <code>git branch -d</code> will fail:</p>
+
+<pre><code>$ git branch -d testing
+error: The branch &#39;testing&#39; is not an ancestor of your current HEAD.
+If you are sure you want to delete it, run &#39;git branch -D testing&#39;.</code></pre>
+
+<p>If you really do want to delete the branch and lose that work, you can force it with <code>-D</code>, as the helpful message points out.</p>
 
 <div id='nav'>
 <a href='ch4-2.html'>prev</a> | <a href='ch4-4.html'>next</a>

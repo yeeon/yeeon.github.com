@@ -1,64 +1,72 @@
 ---
 layout: translation
-title: Pro Git 7.3 Customizing Git Git Hooks
+title: Pro Git 7.3 الإستعداد للبدء! أوليات Git
 ---
-<h2 id='git_hooks'>Git Hooks</h2>
+<h2 id='_git'>أوليات Git</h2>
 
-<p>Like many other Version Control Systems, Git has a way to fire off custom scripts when certain important actions occur. There are two groups of these hooks: client side and server side. The client-side hooks are for client operations such as committing and merging. The server-side hooks are for Git server operations such as receiving pushed commits. You can use these hooks for all sorts of reasons, and you’ll learn about a few of them here.</p>
+<p>لنتحدث الآن عن Git بشكل سريع. هذا القسم هام جداً لك، لأنك إذا عرفت ماهي Git وماهيا أوليات عملها، سيكون من السهل عليك استخدام Git بشكل أسهل وأفضل. وخلال تعلمك لـ Git حاول أن تفرغ ذهنك من المعلومات السابقة عن أنظمة إدارة الإصدارات الأخرى، مثل Subversion أو Perforce; سيجنبك هذا من الخلط بين المعلومات عند استخدام هذه الأداة. تقوم Git بالتعامل وتخزين المعلومات بشكل مختلف تماماً عن الأنظمة الأخرى، وبالرغم من أن واجهة الإستخدام بسيطة نسبياً; سيكون فهمك لهذه الإختلافات سيبعد عنك الحيرة عند الإستخدام.</p>
 
-<h3 id='installing_a_hook'>Installing a Hook</h3>
+<h3 id='__'>لفطات، وليست تغيرات</h3>
 
-<p>The hooks are all stored in the <code>hooks</code> subdirectory of the Git directory. In most projects, that’s <code>.git/hooks</code>. By default, Git populates this directory with a bunch of example scripts, many of which are useful by themselves; but they also document the input values of each script. All the examples are written as shell scripts, with some Perl thrown in, but any properly named executable scripts will work fine — you can write them in Ruby or Python or what have you. For post-1.6 versions of Git, these example hook files end with .sample; you’ll need to rename them. For pre-1.6 versions of Git, the example files are named properly but are not executable.</p>
+<p>الفرق الرئيسي بين Git وأي نظام إدارة إصدارات آخر (Subversion وأصدقاءه) هو الطريقة التي تتعامل بها Git مع المعلومات. تقوم معظم هذه الأنظمة بتخزين المعلومات كقائمة من التغيرات القائمة على الملفات. هذه الأنظمة (مثل CVS، Subversion، Perforce، Bazaar وغيرها) تتعامل مع المعلومات التي تحفظها كمجموعة ملفات والتغيرات القائمة عليها مع مرور الوقت، كما هو موضح في الشكل 1-4.</p>
 
-<p>To enable a hook script, put a file in the <code>hooks</code> subdirectory of your Git directory that is named appropriately and is executable. From that point forward, it should be called. I’ll cover most of the major hook filenames here.</p>
+<p><center><img src="/figures/ch7/18333fig0104-tn.png"></center><br/> الشكل 1-4. الأنظمة الاخرى تقوم بحفظ معلومات التغيرات الحاصلة على كل ملف وكأنها الإصدار الأول.</p>
 
-<h3 id='clientside_hooks'>Client-Side Hooks</h3>
+<p>الأمر مختلف مع Git. حيث تعامل Git المعلومات المخزنة على أنها &#8220;لقطات&#8221; من نظام ملفات مصغر. ففي كل مرة تقوم بـ Commit أو تحفظ حالة المشروع، تقوم Git بأخذ صورة عن جميع الملفات في تلك اللحظة وتخزن رابطاً الى تلك اللقطة. ومن أجل السرعة، إذا لم يتغير الملف، لا تقوم Git بحفظة، بل تحفظ رابطاً عن الملف الأسبق منه المطابق. تتعامل Git مع المعلومات كما هو موضح في الشكل 1-5.</p>
 
-<p>There are a lot of client-side hooks. This section splits them into committing-workflow hooks, e-mail–workflow scripts, and the rest of the client-side scripts.</p>
+<p><center><img src="/figures/ch7/18333fig0105-tn.png"></center><br/> الشكل 1-5. تحفظ Git المعلومات على أنها &#8220;لفطات&#8221;.</p>
 
-<h4 id='committingworkflow_hooks'>Committing-Workflow Hooks</h4>
+<p>وبالطبع، هذا الإختلاف بين Git وبين جميع أنظمة إدارة الإصدارات الأخرى تقريباً. يجعل هذا Git أشبه بنظام ملفات مصغر مزود بأدوات خارقة مبنية عليه، عوضاً عن نظام إدارة إصدارات عادي. سنقوم بشرح الفوائد التي تحصل عليها عندما تتعامل مع المعلومات بهذه الطريقة في الفصل الثالث &#8220;التشعيب في Git&#8221;.</p>
 
-<p>The first four hooks have to do with the committing process. The <code>pre-commit</code> hook is run first, before you even type in a commit message. It’s used to inspect the snapshot that’s about to be committed, to see if you’ve forgotten something, to make sure tests run, or to examine whatever you need to inspect in the code. Exiting non-zero from this hook aborts the commit, although you can bypass it with <code>git commit --no-verify</code>. You can do things like check for code style (run lint or something equivalent), check for trailing whitespace (the default hook does exactly that), or check for appropriate documentation on new methods.</p>
+<h3 id='_____'>جميع العمليات هي عمليات داخلية تقريباً</h3>
 
-<p>The <code>prepare-commit-msg</code> hook is run before the commit message editor is fired up but after the default message is created. It lets you edit the default message before the commit author sees it. This hook takes a few options: the path to the file that holds the commit message so far, the type of commit, and the commit SHA-1 if this is an amended commit. This hook generally isn’t useful for normal commits; rather, it’s good for commits where the default message is auto-generated, such as templated commit messages, merge commits, squashed commits, and amended commits. You may use it in conjunction with a commit template to programmatically insert information.</p>
+<p>أغلب العمليات في Git لا تحتاج سوى ملفات ومصادر داخلية لتعمل - أي بشكل عام، لا توجد معلومات تحتاجها من حاسوب آخر من الشبكة. إذا كنت قد استخدمت أحد أنظمة إداراة الإصدارات الأخرى والتي تعتمد عملياتها بشكل كبير على الشبكة فإن هذا سيجعلك تعتقد أن آلهة السرعة قد باركت Git وأعطتها هذه السرعة الجبارة. ستجد أنك تملك كامل تاريخ مشروعك موجود أمامك مباشرة، وأغلب العمليات أقرب ما تكون الى الآنية.</p>
 
-<p>The <code>commit-msg</code> hook takes one parameter, which again is the path to a temporary file that contains the current commit message. If this script exits non-zero, Git aborts the commit process, so you can use it to validate your project state or commit message before allowing a commit to go through. In the last section of this chapter, I’ll demonstrate using this hook to check that your commit message is conformant to a required pattern.</p>
+<p>فعلى سبيل المثال، لكي تستعرض تاريخ مشروعك، لن تحتاج Git الى الذهاب الى مخدم معين للحصول عليه وعرضه، بل تقوم بقراءته مباشرة من حاسوبك. اي انك ستحصل على تاريخ مشروعك بشكل مباشر. اذا أردت استعراض التغيرات الحاصلة بين الإصدار الحالي لملف ما واصدار الشهر السابق، تستطيع Git النظر الى الملف من الشهر السابق وحساب الفروقات بينهما مباشرة، عوضاً عن طلب هذه المعلومات من مخدم خارجي.</p>
 
-<p>After the entire commit process is completed, the <code>post-commit</code> hook runs. It doesn’t take any parameters, but you can easily get the last commit by running <code>git log -1 HEAD</code>. Generally, this script is used for notification or something similar.</p>
+<p>هذا يعني أيضاً أن الأمور التي لا تستطيع فعلها عندما تكون مفصولاً عن الإنترنت أو عن الشبكة الداخلية قليلة جداً. إذا كنت في طائرة أو في القطار ولم تستطيع الإرتباط بالشبكة بشكل صحيح، يمكنك إكمال عملك بشكل طبيعي. في الأنظمة الأخرى يكون هذا الأمر مستحيلاً! أو من الممكن لك أن تعدل الملفات ولكن دون عمليات Commit لتغييراتك. في نظام Perforce على سبيل المثال، لا يمكنك فعل الكثير حينما تكون مفصولاً عن المخدم الأساسي; وفي Subversion أو CVS، يمكنك التعديل على الملفات لكن بدون عمليات Commit لتعديلاتك، قد تعتقد بأن هذا ليس بالأمر الكبير، ولكن ستتفاجئ بحجم الفرق الذي يصنعه.</p>
 
-<p>The committing-workflow client-side scripts can be used in just about any workflow. They’re often used to enforce certain policies, although it’s important to note that these scripts aren’t transferred during a clone. You can enforce policy on the server side to reject pushes of commits that don’t conform to some policy, but it’s entirely up to the developer to use these scripts on the client side. So, these are scripts to help developers, and they must be set up and maintained by them, although they can be overridden or modified by them at any time.</p>
+<h3 id='git__'>Git تحمل المصداقية</h3>
 
-<h4 id='email_workflow_hooks'>E-mail Workflow Hooks</h4>
+<p>كل شيء في Git سيتم وضع Check-sum عليه قبل تخزينة حيث ستتم الإشارة اليه لاحقاً بهذه الـ checksum. هذا يعني أنه من المستحيل أن يتم تغيير أي ملف أو مجلد دون أن يتم اعلام Git بهذا التغيير. تم بناء هذه الخاصية بشكل أساسي في فلسفة وطريقة عمل Git. من المستحيل أن تخسر معلوماتك بشكل فجائي أو أن ينعطب معلف ما دون أن تعرف Git بذلك.</p>
 
-<p>You can set up three client-side hooks for an e-mail–based workflow. They’re all invoked by the <code>git am</code> command, so if you aren’t using that command in your workflow, you can safely skip to the next section. If you’re taking patches over e-mail prepared by <code>git format-patch</code>, then some of these may be helpful to you.</p>
+<p>تدعى الآلية التي تستخدمها Git لعملية الـ checksum هذه باسم SHA-1 hash. وهي عبارة عن قيمة نصية من 40 محرف ستاعشري (0-9 و a-f) ويتم حسابها بناء على محتوى الملف أو المجلد الذي تتبعه Git. يبدو الـ hash من نوع SHA-1 كما يلي:</p>
 
-<p>The first hook that is run is <code>applypatch-msg</code>. It takes a single argument: the name of the temporary file that contains the proposed commit message. Git aborts the patch if this script exits non-zero. You can use this to make sure a commit message is properly formatted or to normalize the message by having the script edit it in place.</p>
+<pre><code>24b9da6552252987aa493b52f8696cd6d3b00373</code></pre>
 
-<p>The next hook to run when applying patches via <code>git am</code> is <code>pre-applypatch</code>. It takes no arguments and is run after the patch is applied, so you can use it to inspect the snapshot before making the commit. You can run tests or otherwise inspect the working tree with this script. If something is missing or the tests don’t pass, exiting non-zero also aborts the <code>git am</code> script without committing the patch.</p>
+<p>سترى أن هذه القيم ستكون موجودة في كل مكان في Git ذلك لأنها تستخدمها بشكل كثيف. في الحقيقة، تستخدم Git هذه القيم للدلالة على الملفات في قاعدة بياناتها.</p>
 
-<p>The last hook to run during a <code>git am</code> operation is <code>post-applypatch</code>. You can use it to notify a group or the author of the patch you pulled in that you’ve done so. You can’t stop the patching process with this script.</p>
+<h3 id='git___'>Git تضيف المعلومات فقط!</h3>
 
-<h4 id='other_client_hooks'>Other Client Hooks</h4>
+<p>عندما تقوم بعملياتك في Git، ستقوم Git في أغلب الأحيان بإضافة معلومات فقط الى قاعدة البيانات. ومن الصعب جداً القيام بعملية بحيث لا يمكنك العودة الى الوراء فيها أو محيها من قاعدة البيانات بشكل نهائي. ولكن، وكما هو الأمر في أغلب نظم إدارة الإصدارات، من الممكن أن تخسر المعلومات قبل القيام بعملية Commit للتغيرات الحاصلة; ولكن بعد عملية الـ commit في Git، من الصعب جداً خسارة المعلومات، وخاصة اذا كنت تقوم بعملية push للتعديلات من قاعدة بياناتك الى repository اخرى بشكل منظم.</p>
 
-<p>The <code>pre-rebase</code> hook runs before you rebase anything and can halt the process by exiting non-zero. You can use this hook to disallow rebasing any commits that have already been pushed. The example <code>pre-rebase</code> hook that Git installs does this, although it assumes that next is the name of the branch you publish. You’ll likely need to change that to whatever your stable, published branch is.</p>
+<p>سيضيف هذا الكثير من المتعة لإستخدامك لـ Git، لأننا نعرف أنه بإمكاننا القيام بالتجارب دون خطر تعريض المعلومات للخطر أو الضياع. للحصول على معلومات معمقة أكثر عن كيفية حفظ Git للمعلومات وكيفية استرجاعها انظر فقرة &#8220;Under the Cover&#8221; في الفصل التاسع.</p>
 
-<p>After you run a successful <code>git checkout</code>, the <code>post-checkout</code> hook runs; you can use it to set up your working directory properly for your project environment. This may mean moving in large binary files that you don’t want source controlled, auto-generating documentation, or something along those lines.</p>
+<h3 id='_'>الحالات الثلاثة</h3>
 
-<p>Finally, the <code>post-merge</code> hook runs after a successful <code>merge</code> command. You can use it to restore data in the working tree that Git can’t track, such as permissions data. This hook can likewise validate the presence of files external to Git control that you may want copied in when the working tree changes.</p>
+<p>والآن عليك الإنتباه قليلاً. الأمر الأساسي الذي عليك أن تتذكره في Git اذا أردت أن تكمك تعلمك بسلاسة هو أنه في Git توجد ثلاث حالات أساسية يمكن للملفاتك أن تكون عليها: commited، معدلة أو مهيئة للعملية commit (أو staged). نعني بـ commitedf بأن المعلومات تم تخزينها بآمان في قاعدة بياناتك الخاصة. &#8220;معدل&#8221; تعني أنك قمت ببعض التعديلات على الملف ولكنك لم تقبل بعملية Commit عليه بعد. أما &#8220;مهيأ (Staged)&#8221; فتعني بأنك حددت ملفاً قمت بتعديله بإصداره الحالية ليتم حفظ في عملية الـ commit التي ستقوم بها.</p>
 
-<h3 id='serverside_hooks'>Server-Side Hooks</h3>
+<p>يقودنا هذا الى الحديث عن الأقسام الثلاثة الرئيسية في أي مشروع Git: المجلد الخاص بـ Git، مجلد العمل و مكان التهييئ (staging area).</p>
 
-<p>In addition to the client-side hooks, you can use a couple of important server-side hooks as a system administrator to enforce nearly any kind of policy for your project. These scripts run before and after pushes to the server. The pre hooks can exit non-zero at any time to reject the push as well as print an error message back to the client; you can set up a push policy that’s as complex as you wish.</p>
+<p><center><img src="/figures/ch7/18333fig0106-tn.png"></center><br/> الشكل 1-6. المجلد الخاص بـ Git، مجلد العمل و مكان التهييئ (staging area).</p>
 
-<h4 id='prereceive_and_postreceive'>pre-receive and post-receive</h4>
+<p>المجلد الخاص بـ Git هو المكان الذي تحفظ فيه Git المعلومات الخاصة بها عن مشروعك. هذا هو المكان الأكثر أهمية في Git، وهو الذي يتم نسخه عندما تنسخ الـ repository من حاسوب آخر.</p>
 
-<p>The first script to run when handling a push from a client is <code>pre-receive</code>. It takes a list of references that are being pushed from stdin; if it exits non-zero, none of them are accepted. You can use this hook to do things like make sure none of the updated references are non-fast-forwards; or to check that the user doing the pushing has create, delete, or push access or access to push updates to all the files they’re modifying with the push.</p>
+<p>مجلد العمل هو النسخة الحالية المسحوبة من مشروعك. الملفات التي سيتم سحبها من قاعدة بيانات Git للمشروع وتجهيزها لك لتقوم بتعديلها.</p>
 
-<p>The <code>post-receive</code> hook runs after the entire process is completed and can be used to update other services or notify users. It takes the same stdin data as the <code>pre-receive</code> hook. Examples include e-mailing a list, notifying a continuous integration server, or updating a ticket-tracking system — you can even parse the commit messages to see if any tickets need to be opened, modified, or closed. This script can’t stop the push process, but the client doesn’t disconnect until it has completed; so, be careful when you try to do anything that may take a long time.</p>
+<p>مكان التهييئ (staging area)، عادة ما تكون موجودة في مجلد Git لمشروعك، وتحتوي على المعلومات التي سيتم عملية commit عليها. قد يشار الى هذا المكان أيضاً باسم الفهرس (index).</p>
 
-<h4 id='update'>update</h4>
+<p>خطوات العمل الإعتيادية في Git غالباً ما تكون كالتالي:</p>
 
-<p>The update script is very similar to the <code>pre-receive</code> script, except that it’s run once for each branch the pusher is trying to update. If the pusher is trying to push to multiple branches, <code>pre-receive</code> runs only once, whereas update runs once per branch they’re pushing to. Instead of reading from stdin, this script takes three arguments: the name of the reference (branch), the SHA-1 that reference pointed to before the push, and the SHA-1 the user is trying to push. If the update script exits non-zero, only that reference is rejected; other references can still be updated.</p>
+<p>1. تقوم بالتعديلات على الملفات في مجلد العمل.</p>
+
+<ol>
+<li>تقوم بوضع هذه الملفات في مكان التهييئ (staging area)، حيث تقوم بإضافة اللقطات الى الـ staging area.</li>
+
+<li>تقوم بعملية Commit، يتم أخذ الملفات المهيئة من مكان التهيئة Staging Area وتقوم بتخزين هذه الللقطة بشكل نهائي في مجلد عمل Git.</li>
+</ol>
+
+<p>إذا كان هناك إصدار معين لملف، فسيكون Commited. إذا كان معدل ومضاف إلى مكان التهييئ staging area فهو مهيئ staged. If a particular version of a file is in the git directory, it’s considered committed. If it’s modified but has been added to the staging area, it is staged. And if it was changed since it was checked out but has not been staged, it is modified. In Chapter 2, you’ll learn more about these states and how you can either take advantage of them or skip the staged part entirely.</p>
 
 <div id='nav'>
 <a href='ch7-2.html'>prev</a> | <a href='ch7-4.html'>next</a>

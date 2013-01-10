@@ -1,44 +1,62 @@
 ---
 layout: translation
-title: Pro Git 2.1 Základy Gitu Jak získat repozitář Gitu
+title: Pro Git 2.1 Distribuovaný charakter systému Git Distribuované pracovní postupy
 ---
-<h2 id='jak_zskat_repozit_gitu'>Jak získat repozitář Gitu</h2>
+<h2 id='distribuovan_pracovn_postupy'>Distribuované pracovní postupy</h2>
 
-<p>Jsou dva základní způsoby, jak získat projekt v Gitu. První vezme existující projekt nebo adresář a importuje ho do Gitu. Druhý naklonuje existující repozitář z jiného serveru.</p>
+<p>Na rozdíl od centralizovaných systémů správy verzí (CVCS) umožňuje distribuovaný charakter systému Git mnohem větší flexibilitu při spolupráci vývojářů na projektech. V centralizovaných systémech představuje každý vývojář samostatný uzel, pracující více či méně na stejné úrovni vůči centrálnímu úložišti. Naproti tomu je v systému Git každý vývojář potenciálním uzlem i úložištěm, každý vývojář může přispívat kódem do jiných repozitářů i spravovat veřejný repozitář, na němž mohou ostatní založit svou práci a do nějž mohou přispívat. Tím se otvírá široké spektrum možností organizace práce pro váš projekt a/nebo váš tým. Zkusíme se tedy podívat na pár častých postupů, které tato flexibilita umožňuje. Uvedeme přednosti i eventuální slabiny všech těchto postupů. Budete si moci vybrat některý z postupů nebo je navzájem kombinovat a spojovat jejich funkce.</p>
 
-<h3 id='inicializace_repozite_z_existujcho_adrese'>Inicializace repozitáře z existujícího adresáře</h3>
+<h3 id='centralizovan_pracovn_postup'>Centralizovaný pracovní postup</h3>
 
-<p>Pokud chcete začít spravovat projekt Gitem, vstoupíte do jeho adresáře a spustíte</p>
+<p>V centralizovaných systémech je většinou možný pouze jediný model spolupráce, tzv. centralizovaný pracovní postup. Jedno centrální úložiště (hub) nebo repozitář přijímá zdrojový kód a každý podle něj synchronizuje svou práci. Několik vývojářů představuje jednotlivé uzly (nodes) – uživatele centrálního místa – které se podle tohoto místa synchronizují (viz obrázek 5-1).</p>
 
-<pre><code>$ git init</code></pre>
+<p><center><img src="/figures/ch2/18333fig0501-tn.png"></center><br/> Figure 5-1. Centralizovaný pracovní postup</p>
 
-<p>To vytvoří podadresář .git, který obsahuje všechno, co Git potřebuje pro tento projekt, jakousi kostru. Ovšem zatím je prázdný, nic nesleduje. (V kapitole 9 si podrobněji rozebereme, co tento příkaz vlastně vytvořil.)</p>
+<p>To znamená, že pokud dva vývojáři klonují z centrálního úložiště a oba provedou změny, jen první z nich, který odešle své změny, to může provést bez komplikací. Druhý vývojář musí před odesláním svých změn začlenit práci prvního vývojáře do své, aby nepřepsal jeho změny. Tento koncept platí jak pro Git, tak pro Subversion (popř. jakýkoli CVCS). I v systému Git funguje bez problémů.</p>
 
-<p>Pokud chcete spravovat již existující soubory (pokud zrovna nezačínáte od píky a nemáte úplně prázdný adresář), asi je budete chtít začít sledovat a provést první commit. To zařídíte spuštěním několika příkazů, kterými určíte, co sledovat, načež to shrnete do commitu:</p>
+<p>Pokud pracujete v malém týmu nebo už jste ve své společnosti nebo ve svém týmu zvyklí na centralizovaný pracovní postup, můžete v něm beze všeho pokračovat. Jednoduše vytvořte repozitář a přidělte všem ze svého týmu oprávnění k odesílání dat. Git neumožní uživatelům, aby se navzájem přepisovali. Pokud některý z vývojářů naklonuje data, provede změny a poté se je pokusí odeslat, a jiný vývojář mezitím odeslal svoje revize, server tyto změny odmítne. Git vývojáři při odmítnutí sdělí, že se pokouší odeslat změny, které nesměřují „rychle vpřed“, což není možné provést, dokud nevyzvedne a nezačlení stávající data z repozitáře. Tento pracovní postup může být pro mnoho lidí zajímavý, protože je to schéma, které jsou zvyklí používat a jsou s ním spokojeni.</p>
 
-<pre><code>$ git add *.c
-$ git add README
-$ git commit –m &#39;initial project version&#39;</code></pre>
+<h3 id='pracovn_postup_s_integranm_manaerem'>Pracovní postup s integračním manažerem</h3>
 
-<p>Pozn. překl.: Bývá zvykem, že popisky commitů (initial project version aj.) jsou psány v angličtině, není-li explicitně řečeno jinak; české popisky mívají opodstatnění jen u ryze českých, resp. československých projektů, kde se nepočítá s tím, že by se na nich podílel někdo, pro koho je čeština nesrozumitelným jazykem.</p>
+<p>Protože Git umožňuje, abyste měli několik vzdálených repozitářů, lze použít pracovní postup, kdy má každý vývojář oprávnění k zápisu do vlastního veřejného repozitáře a oprávnění pro čtení k repozitářům všech ostatních. Tento scénář často zahrnuje jeden standardní repozitář, který reprezentuje „oficiální“ projekt. Chcete-li do tohoto projektu přispívat, vytvořte vlastní veřejný klon projektu a odešlete do něj změny, které jste provedli. Poté odešlete správci hlavního projektu žádost, aby do projektu natáhl vaše změny. Váš repozitář může přidat jako vzdálený repozitář, lokálně otestovat vaše změny, začlenit je do své větve a odeslat zpět do svého repozitáře. Postup práce je následující (viz obrázek 5-2):</p>
 
-<p>Za chvilku si projdeme, co tyto příkazy vlastně dělají. V tuto chvíli máte repozitář se sledovanými soubory a prvním commitem.</p>
+<ol>
+<li>Správce projektu odešle data do svého veřejného repozitáře.</li>
 
-<h3 id='klonovn_stvajcho_repozite'>Klonování stávajícího repozitáře</h3>
+<li>Přispěvatel naklonuje tento repozitář a provede změny.</li>
 
-<p>Pokud chcete mít kopii již existujícího repozitáře &#8211; např. projektu, na kterém se chcete podílet &#8211; příkaz, který potřebujete, je <code>git clone</code>. Když máte zkušenosti s jinými SSV jako Subversion, povšimnete si, že použitý příkaz je <code>clone</code> a nikoli <code>checkout</code>. To je důležitý rozdíl. Git totiž dostane téměř kompletní kopii toho, co server zrovna má. Každou verzi každého souboru z minulosti. Tedy, pokud se vám na serveru porouchá disk, stačí zpět naklonovat repozitář jakéhokoli klienta a máte přesně takový stav, jaký byl na serveru v době, kdy ho on naposledy aktualizoval. Možná ztratíte nějaká specifická serverová nastavení, ale každopádně to cenné &#8211; spravovaná data &#8211; máte v bezpečí.</p>
+<li>Přispěvatel odešle změny do své vlastní veřejné kopie.</li>
 
-<p>Repozitář naklonujete příkazem <code>git clone [url]</code>. Např. pro naklonování knihovny Gitu pro Ruby (Grit) provedete tento příkaz:</p>
+<li>Přispěvatel pošle správci e-mail s žádostí, aby natáhl změny do projektu.</li>
 
-<pre><code>$ git clone git://github.com/schacon/grit.git</code></pre>
+<li>Správce přidá repozitář přispěvatele jako vzdálený repozitář a provede lokální začlenění.</li>
 
-<p>Ten vytvoří adresář &#8220;grit&#8221;, v něm adresář <code>.git</code>, stáhne všechna data repozitáře a rozbalí aktuální verzi. Pokud vstoupíte do tohoto nového adresáře, najdete v něm všechny soubory projektu připravené k práci nebo použití. Když chcete naklonovat repozitář někam jinam než do složky &#8220;grit&#8221;, můžete mu to říct takto:</p>
+<li>Správce odešle začleněné změny do hlavního repozitáře.</li>
+</ol>
 
-<pre><code>$ git clone git://github.com/schacon/grit.git mygrit</code></pre>
+<p><center><img src="/figures/ch2/18333fig0502-tn.png"></center><br/> Figure 5-2. Pracovní postup s integračním manažerem</p>
 
-<p>Tak provedete všechno, co udělal minulý příkaz, ale do adresáře <code>mygrit</code>.</p>
+<p>Tento pracovní postup je velmi rozšířený na stránkách jako GitHub, kde je snadné rozštěpit projekt a odeslat změny do své odštěpené části, kde jsou pro každého k nahlédnutí. Jednou z hlavních předností tohoto postupu je, že můžete pracovat bez přerušení a správce hlavního repozitáře může natáhnout vaše změny do projektu, kdykoli uzná za vhodné. Přispěvatelé nemusí čekat, až budou jejich změny začleněny do projektu – každá strana může pracovat svým tempem.</p>
 
-<p>Git podporuje více různých přenosových protokolů. Předchozí příklad používá protokol <code>git://</code>, ale také můžete použít <code>http(s)://</code> nebo <code>uživatel@server:/cesta.git</code>, což použije SSH. Všechny možnosti včetně jejich pro a proti si ukážeme v kapitole 4.</p>
+<h3 id='pracovn_postup_s_dikttorem_a_poruky'>Pracovní postup s diktátorem a poručíky</h3>
+
+<p>Jedná se o variantu pracovního postupu s více repozitáři. Většinou se používá u obřích projektů se stovkami spolupracovníků. Možná nejznámějším příkladem je vývoj jádra Linuxu. Několik různých integračních manažerů odpovídá za konkrétní části repozitáře – říká se jím poručíci (lieutenants). Všichni poručíci mají jednoho integračního manažera, kterému se říká „benevolentní diktátor“. Repozitář benevolentního diktátora slouží jako referenční repozitář, z nějž všichni spolupracovníci musí stahovat data. Postup práce je následující (viz obrázek 5-3):</p>
+
+<ol>
+<li>Stálí vývojáři pracují na svých tematických větvích a přeskládávají svou práci na vrchol hlavní větve. Hlavní větev je větev diktátora.</li>
+
+<li>Poručíci začleňují tematické větve vývojářů do svých hlavních větví.</li>
+
+<li>Diktátor začleňuje hlavní větve poručíků do své hlavní větve.</li>
+
+<li>Diktátor odesílá svou hlavní větev do referenčního repozitáře, aby si na jeho základě mohli ostatní vývojáři přeskládat data.</li>
+</ol>
+
+<p><center><img src="/figures/ch2/18333fig0503-tn.png"></center><br/> Figure 5-3. Pracovní postup s benevolentním diktátorem</p>
+
+<p>Tento typ pracovního postupu není sice obvyklý, ale může být užitečný u velmi velkých projektů nebo v silně hierarchizovaných prostředích, neboť umožňuje, aby vedoucí projektu (diktátor) velkou část práce delegoval. Pak sbírá velké kusy kódu, které integruje.</p>
+
+<p>Toto jsou tedy některé z běžně používaných pracovních postupů, které můžete využít v distribuovaných systémech, jako je například Git. Uvidíte ale, že na pozadí vašich konkrétních potřeb v reálných situacích lze vytvořit celou řadu variací na tyto postupy. Nyní, když už se (jak doufám) dokážete rozhodnout, která kombinace postupů pro vás bude ta nejvhodnější, ukážeme si některé konkrétní příklady, jak lze rozdělit hlavní role, z nichž vyplývají jednotlivé postupy práce.</p>
 
 <div id='nav'>
 <a href='ch2-0.html'>prev</a> | <a href='ch2-2.html'>next</a>

@@ -24,7 +24,7 @@ selse = Someo Nelse &lt;selse@geemail.com&gt;</code></pre>
 <pre><code>$ svn log --xml | grep author | sort -u | perl -pe &#39;s/.&gt;(.?)&lt;./$1 = /&#39;</code></pre>
 <!--That gives you the log output in XML format — you can look for the authors, create a unique list, and then strip out the XML. (Obviously this only works on a machine with `grep`, `sort`, and `perl` installed.) Then, redirect that output into your users.txt file so you can add the equivalent Git user data next to each entry.-->
 <p>Dies erzeugt Dir die Log-Ausgabe im XML-Format — Du suchst damit nach den Autoren, erzeugst eine Liste ohne doppelte Einträge und wirfst anschließend das überflüssige XML weg. Anschließend wird die Ausgabe in die Datei <code>users.txt</code> umgeleitet, so dass Du jedem Eintrag den entsprechenden Git-Benutzer zuordnen kannst.</p>
-<!--You can provide this file to `git svn` to help it map the author data more accurately. You can also tell `git svn` not to include the metadata that Subversion normally imports, by passing `--no-metadata` to the `clone` or `init` command. This makes your `import` command look like this:-->
+<!--You can provide this file to `git svn` to help it map the author data more accurately. You can also tell `git svn` not to include the metadata that Subversion normally imports, by passing `-\-no-metadata` to the `clone` or `init` command. This makes your `import` command look like this:-->
 <p>Du kannst diese Datei dann <code>git svn</code> zur Verfügung stellen um das Tool dabei zu unterstützen, die Autoreninformationen besser zu mappen. Du kannst <code>git svn</code> ebenfalls mitteilen, dass es die Metadaten nicht einbeziehen soll, die Subversion normalerweise importiert, indem Du dem <code>clone</code> oder <code>init</code> Kommando die <code>--no-metadata</code>-Option mitgibst.</p>
 
 <pre><code>$ git-svn clone http://my-project.googlecode.com/svn/ \
@@ -333,7 +333,7 @@ HEAD is now at 10bfe7d imported from current
 $ ls
 file.rb  lib</code></pre>
 <!--You can do a lot more with the `fast-import` tool — handle different modes, binary data, multiple branches and merging, tags, progress indicators, and more. A number of examples of more complex scenarios are available in the `contrib/fast-import` directory of the Git source code; one of the better ones is the `git-p4` script I just covered.-->
-<p>Du kannst noch eine ganze Menge mehr mit dem <code>fast-import</code>-Tool anstellen — es kann verschiedene Modi behandeln, Binärdaten, mehrere Zweige sowie Merges, Tags, Fortschrittsbalken und mehr. Eine Reihe von Beispielen komplexerer Szenarios werden im <code>contrib/fast-import</code>-Verzeichnis des Git-Quellcodes bereitgestellt; eines der besseren ist das <code>git-p4 -Skript, das ich gerade behandelt habe.</code></p>
+<p>Du kannst noch eine ganze Menge mehr mit dem <code>fast-import</code>-Tool anstellen — es kann verschiedene Modi behandeln, Binärdaten, mehrere Zweige sowie Merges, Tags, Fortschrittsbalken und mehr. Eine Reihe von Beispielen komplexerer Szenarios werden im <code>contrib/fast-import</code>-Verzeichnis des Git-Quellcodes bereitgestellt; eines der besseren ist das <code>git-p4</code> -Skript, das ich gerade behandelt habe.</p>
 
 <div id='nav'>
 <a href='ch8-1.html'>prev</a> | <a href='ch8-3.html'>next</a>
