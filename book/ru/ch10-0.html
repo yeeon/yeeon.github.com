@@ -65,8 +65,8 @@ title: Pro Git 10.0
       </dia:composite>
     </dia:attribute>
   </dia:diagramdata>
-  <dia:layer name='Фон' visible='true' active='true'>
-    <dia:object type='Flowchart - Box' version='0' id='O0'>
+  <dia:layer visible='true' name='Фон' active='true'>
+    <dia:object version='0' id='O0' type='Flowchart - Box'>
       <dia:attribute name='obj_pos'>
         <dia:point val='8.5,6.7' />
       </dia:attribute>
@@ -100,7 +100,7 @@ title: Pro Git 10.0
             <dia:string>##</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.8' />
@@ -117,7 +117,7 @@ title: Pro Git 10.0
         </dia:composite>
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Box' version='0' id='O1'>
+    <dia:object version='0' id='O1' type='Flowchart - Box'>
       <dia:attribute name='obj_pos'>
         <dia:point val='18,9' />
       </dia:attribute>
@@ -148,7 +148,7 @@ title: Pro Git 10.0
             <dia:string>##</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.8' />
@@ -165,7 +165,7 @@ title: Pro Git 10.0
         </dia:composite>
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O2'>
+    <dia:object version='1' id='O2' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='22.6725,9.775' />
       </dia:attribute>
@@ -178,7 +178,7 @@ title: Pro Git 10.0
             <dia:string>#База данных версий#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='sans' />
+            <dia:font family='sans' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.8' />
@@ -198,7 +198,7 @@ title: Pro Git 10.0
         <dia:enum val='0' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O3'>
+    <dia:object version='1' id='O3' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='12.65,10.3' />
       </dia:attribute>
@@ -211,7 +211,7 @@ title: Pro Git 10.0
             <dia:string>#Рабочая копия#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='sans' />
+            <dia:font family='sans' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.8' />
@@ -231,7 +231,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O4'>
+    <dia:object version='1' id='O4' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='13.0429,8.05' />
       </dia:attribute>
@@ -244,7 +244,7 @@ title: Pro Git 10.0
             <dia:string>#Локальный компьютер#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='sans' />
+            <dia:font family='sans' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.98777778353455625' />
@@ -264,7 +264,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O5'>
+    <dia:object version='0' id='O5' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='15.25,12.075' />
       </dia:attribute>
@@ -282,11 +282,11 @@ title: Pro Git 10.0
         <dia:real val='0.1' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='10' to='O8' handle='0' />
-        <dia:connection connection='16' to='O9' handle='1' />
+        <dia:connection connection='10' handle='0' to='O8' />
+        <dia:connection connection='16' handle='1' to='O9' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O6'>
+    <dia:object version='0' id='O6' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='22.625,13.2005' />
       </dia:attribute>
@@ -304,11 +304,11 @@ title: Pro Git 10.0
         <dia:real val='0.1' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='16' to='O9' handle='0' />
-        <dia:connection connection='16' to='O10' handle='1' />
+        <dia:connection connection='16' handle='0' to='O9' />
+        <dia:connection connection='16' handle='1' to='O10' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O7'>
+    <dia:object version='0' id='O7' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='22.625,17.2005' />
       </dia:attribute>
@@ -326,11 +326,11 @@ title: Pro Git 10.0
         <dia:real val='0.1' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='16' to='O10' handle='0' />
-        <dia:connection connection='16' to='O11' handle='1' />
+        <dia:connection connection='16' handle='0' to='O10' />
+        <dia:connection connection='16' handle='1' to='O11' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O8'>
+    <dia:object version='1' id='O8' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='10,11' />
       </dia:attribute>
@@ -374,7 +374,7 @@ title: Pro Git 10.0
             <dia:string>#файл#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.8' />
@@ -400,7 +400,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O9'>
+    <dia:object version='1' id='O9' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='20,11' />
       </dia:attribute>
@@ -444,7 +444,7 @@ title: Pro Git 10.0
             <dia:string>#версия 3#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.8' />
@@ -470,7 +470,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O10'>
+    <dia:object version='1' id='O10' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='20,15' />
       </dia:attribute>
@@ -514,7 +514,7 @@ title: Pro Git 10.0
             <dia:string>#версия 2#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.8' />
@@ -540,7 +540,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O11'>
+    <dia:object version='1' id='O11' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='20,19' />
       </dia:attribute>
@@ -584,7 +584,7 @@ title: Pro Git 10.0
             <dia:string>#версия 1#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.8' />
@@ -610,7 +610,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O12'>
+    <dia:object version='1' id='O12' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='22.625,20.075' />
       </dia:attribute>
@@ -623,7 +623,7 @@ title: Pro Git 10.0
             <dia:string>##</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.8' />
@@ -643,7 +643,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='16' to='O11' handle='0' />
+        <dia:connection connection='16' handle='0' to='O11' />
       </dia:connections>
     </dia:object>
   </dia:layer>
@@ -710,8 +710,8 @@ title: Pro Git 10.0
       </dia:composite>
     </dia:attribute>
   </dia:diagramdata>
-  <dia:layer name='Segundo Plano' visible='true' active='true'>
-    <dia:object type='Standard - Box' version='0' id='O0'>
+  <dia:layer visible='true' name='Segundo Plano' active='true'>
+    <dia:object version='0' id='O0' type='Standard - Box'>
       <dia:attribute name='obj_pos'>
         <dia:point val='0.15355,14.508' />
       </dia:attribute>
@@ -740,7 +740,7 @@ title: Pro Git 10.0
         <dia:boolean val='true' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Box' version='0' id='O1'>
+    <dia:object version='0' id='O1' type='Standard - Box'>
       <dia:attribute name='obj_pos'>
         <dia:point val='7.84899,0.0990469' />
       </dia:attribute>
@@ -769,7 +769,7 @@ title: Pro Git 10.0
         <dia:boolean val='true' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Box' version='0' id='O2'>
+    <dia:object version='0' id='O2' type='Standard - Box'>
       <dia:attribute name='obj_pos'>
         <dia:point val='8.42496,2.32705' />
       </dia:attribute>
@@ -795,7 +795,7 @@ title: Pro Git 10.0
         <dia:boolean val='true' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O3'>
+    <dia:object version='1' id='O3' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='10.2616,3.95684' />
       </dia:attribute>
@@ -839,7 +839,7 @@ title: Pro Git 10.0
             <dia:string>#версия 3#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -865,7 +865,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O4'>
+    <dia:object version='1' id='O4' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='10.2616,6.34355' />
       </dia:attribute>
@@ -909,7 +909,7 @@ title: Pro Git 10.0
             <dia:string>#версия 2#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -935,7 +935,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O5'>
+    <dia:object version='1' id='O5' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='10.2616,8.71318' />
       </dia:attribute>
@@ -979,7 +979,7 @@ title: Pro Git 10.0
             <dia:string>#версия 1#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -1005,7 +1005,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O6'>
+    <dia:object version='0' id='O6' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='12.5321,5.97459' />
       </dia:attribute>
@@ -1020,11 +1020,11 @@ title: Pro Git 10.0
         <dia:int val='1' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='16' to='O3' handle='0' />
-        <dia:connection connection='2' to='O4' handle='1' />
+        <dia:connection connection='16' handle='0' to='O3' />
+        <dia:connection connection='2' handle='1' to='O4' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O7'>
+    <dia:object version='0' id='O7' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='12.5321,8.28691' />
       </dia:attribute>
@@ -1039,11 +1039,11 @@ title: Pro Git 10.0
         <dia:int val='1' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O4' handle='0' />
-        <dia:connection connection='2' to='O5' handle='1' />
+        <dia:connection connection='14' handle='0' to='O4' />
+        <dia:connection connection='2' handle='1' to='O5' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O8'>
+    <dia:object version='1' id='O8' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='12.5321,3.47345' />
       </dia:attribute>
@@ -1056,7 +1056,7 @@ title: Pro Git 10.0
             <dia:string>#База данных версий#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.75847219303250313' />
@@ -1076,7 +1076,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O9'>
+    <dia:object version='1' id='O9' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='12.5321,1.43105' />
       </dia:attribute>
@@ -1089,7 +1089,7 @@ title: Pro Git 10.0
             <dia:string>#Сервер#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='1.0406944043934345' />
@@ -1109,7 +1109,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O10'>
+    <dia:object version='0' id='O10' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='8.3061,14.308' />
       </dia:attribute>
@@ -1142,7 +1142,7 @@ title: Pro Git 10.0
         <dia:real val='0.40000000000000002' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O11'>
+    <dia:object version='0' id='O11' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='16.7389,14.296' />
       </dia:attribute>
@@ -1175,7 +1175,7 @@ title: Pro Git 10.0
         <dia:real val='0.40000000000000002' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Box' version='0' id='O12'>
+    <dia:object version='0' id='O12' type='Standard - Box'>
       <dia:attribute name='obj_pos'>
         <dia:point val='0.729152,18.975' />
       </dia:attribute>
@@ -1201,7 +1201,7 @@ title: Pro Git 10.0
         <dia:boolean val='true' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O13'>
+    <dia:object version='1' id='O13' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='2.55806,20.3976' />
       </dia:attribute>
@@ -1245,7 +1245,7 @@ title: Pro Git 10.0
             <dia:string>#версия 3#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -1271,7 +1271,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O14'>
+    <dia:object version='1' id='O14' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='2.55806,22.7844' />
       </dia:attribute>
@@ -1315,7 +1315,7 @@ title: Pro Git 10.0
             <dia:string>#версия 2#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -1341,7 +1341,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O15'>
+    <dia:object version='1' id='O15' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='2.55806,25.154' />
       </dia:attribute>
@@ -1385,7 +1385,7 @@ title: Pro Git 10.0
             <dia:string>#версия 1#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -1411,7 +1411,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O16'>
+    <dia:object version='0' id='O16' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='4.82857,22.4154' />
       </dia:attribute>
@@ -1426,11 +1426,11 @@ title: Pro Git 10.0
         <dia:int val='1' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='16' to='O13' handle='0' />
-        <dia:connection connection='2' to='O14' handle='1' />
+        <dia:connection connection='16' handle='0' to='O13' />
+        <dia:connection connection='2' handle='1' to='O14' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O17'>
+    <dia:object version='0' id='O17' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='4.82857,24.7278' />
       </dia:attribute>
@@ -1445,11 +1445,11 @@ title: Pro Git 10.0
         <dia:int val='1' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O14' handle='0' />
-        <dia:connection connection='2' to='O15' handle='1' />
+        <dia:connection connection='14' handle='0' to='O14' />
+        <dia:connection connection='2' handle='1' to='O15' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O18'>
+    <dia:object version='1' id='O18' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='4.82857,19.9142' />
       </dia:attribute>
@@ -1462,7 +1462,7 @@ title: Pro Git 10.0
             <dia:string>#База данных версий#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.75847219303250313' />
@@ -1482,7 +1482,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O19'>
+    <dia:object version='1' id='O19' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='2.55257,16.2982' />
       </dia:attribute>
@@ -1526,7 +1526,7 @@ title: Pro Git 10.0
             <dia:string>#файл#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -1552,7 +1552,7 @@ title: Pro Git 10.0
         <dia:real val='2.0880000218749046' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O20'>
+    <dia:object version='0' id='O20' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='15.4304,21.238' />
       </dia:attribute>
@@ -1585,7 +1585,7 @@ title: Pro Git 10.0
         <dia:real val='0.40000000000000002' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O21'>
+    <dia:object version='1' id='O21' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='4.82857,15.7452' />
       </dia:attribute>
@@ -1598,7 +1598,7 @@ title: Pro Git 10.0
             <dia:string>#Компьютер А#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='1.0406944043934345' />
@@ -1618,7 +1618,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O22'>
+    <dia:object version='0' id='O22' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='4.82857,18.367' />
       </dia:attribute>
@@ -1642,10 +1642,10 @@ title: Pro Git 10.0
         <dia:real val='0.20000000000000004' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='1' to='O12' handle='1' />
+        <dia:connection connection='1' handle='1' to='O12' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Box' version='0' id='O23'>
+    <dia:object version='0' id='O23' type='Standard - Box'>
       <dia:attribute name='obj_pos'>
         <dia:point val='15.5504,14.4988' />
       </dia:attribute>
@@ -1674,7 +1674,7 @@ title: Pro Git 10.0
         <dia:boolean val='true' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Box' version='0' id='O24'>
+    <dia:object version='0' id='O24' type='Standard - Box'>
       <dia:attribute name='obj_pos'>
         <dia:point val='16.126,18.9658' />
       </dia:attribute>
@@ -1700,7 +1700,7 @@ title: Pro Git 10.0
         <dia:boolean val='true' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O25'>
+    <dia:object version='1' id='O25' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='17.9549,20.3884' />
       </dia:attribute>
@@ -1744,7 +1744,7 @@ title: Pro Git 10.0
             <dia:string>#версия 3#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -1770,7 +1770,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O26'>
+    <dia:object version='1' id='O26' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='17.9549,22.7752' />
       </dia:attribute>
@@ -1814,7 +1814,7 @@ title: Pro Git 10.0
             <dia:string>#версия 2#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -1840,7 +1840,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O27'>
+    <dia:object version='1' id='O27' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='17.9549,25.1448' />
       </dia:attribute>
@@ -1884,7 +1884,7 @@ title: Pro Git 10.0
             <dia:string>#версия 1#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -1910,7 +1910,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O28'>
+    <dia:object version='0' id='O28' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='20.2254,22.4062' />
       </dia:attribute>
@@ -1925,11 +1925,11 @@ title: Pro Git 10.0
         <dia:int val='1' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='16' to='O25' handle='0' />
-        <dia:connection connection='2' to='O26' handle='1' />
+        <dia:connection connection='16' handle='0' to='O25' />
+        <dia:connection connection='2' handle='1' to='O26' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O29'>
+    <dia:object version='0' id='O29' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='20.2254,24.7186' />
       </dia:attribute>
@@ -1944,11 +1944,11 @@ title: Pro Git 10.0
         <dia:int val='1' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O26' handle='0' />
-        <dia:connection connection='2' to='O27' handle='1' />
+        <dia:connection connection='14' handle='0' to='O26' />
+        <dia:connection connection='2' handle='1' to='O27' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O30'>
+    <dia:object version='1' id='O30' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='20.2254,19.905' />
       </dia:attribute>
@@ -1961,7 +1961,7 @@ title: Pro Git 10.0
             <dia:string>#База данных версий#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.75847219303250313' />
@@ -1981,7 +1981,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O31'>
+    <dia:object version='1' id='O31' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='17.9494,16.289' />
       </dia:attribute>
@@ -2025,7 +2025,7 @@ title: Pro Git 10.0
             <dia:string>#файл#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -2051,7 +2051,7 @@ title: Pro Git 10.0
         <dia:real val='2.0880000218749046' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O32'>
+    <dia:object version='1' id='O32' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='20.2254,15.728' />
       </dia:attribute>
@@ -2064,7 +2064,7 @@ title: Pro Git 10.0
             <dia:string>#Компьютер Б#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='1.0406944043934345' />
@@ -2084,7 +2084,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O33'>
+    <dia:object version='0' id='O33' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='20.2254,18.233' />
       </dia:attribute>
@@ -2108,8 +2108,8 @@ title: Pro Git 10.0
         <dia:real val='0.20000000000000004' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O31' handle='0' />
-        <dia:connection connection='1' to='O24' handle='1' />
+        <dia:connection connection='14' handle='0' to='O31' />
+        <dia:connection connection='1' handle='1' to='O24' />
       </dia:connections>
     </dia:object>
   </dia:layer>
@@ -2176,8 +2176,8 @@ title: Pro Git 10.0
       </dia:composite>
     </dia:attribute>
   </dia:diagramdata>
-  <dia:layer name='Фон' visible='true' active='true'>
-    <dia:object type='Flowchart - Box' version='0' id='O0'>
+  <dia:layer visible='true' name='Фон' active='true'>
+    <dia:object version='0' id='O0' type='Flowchart - Box'>
       <dia:attribute name='obj_pos'>
         <dia:point val='15.9,5.84' />
       </dia:attribute>
@@ -2211,7 +2211,7 @@ title: Pro Git 10.0
             <dia:string>##</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -2228,7 +2228,7 @@ title: Pro Git 10.0
         </dia:composite>
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Box' version='0' id='O1'>
+    <dia:object version='0' id='O1' type='Flowchart - Box'>
       <dia:attribute name='obj_pos'>
         <dia:point val='4.35,5.8' />
       </dia:attribute>
@@ -2262,7 +2262,7 @@ title: Pro Git 10.0
             <dia:string>##</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -2279,7 +2279,7 @@ title: Pro Git 10.0
         </dia:composite>
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Box' version='0' id='O2'>
+    <dia:object version='0' id='O2' type='Flowchart - Box'>
       <dia:attribute name='obj_pos'>
         <dia:point val='16.7,8.75' />
       </dia:attribute>
@@ -2307,7 +2307,7 @@ title: Pro Git 10.0
             <dia:string>#с#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -2324,7 +2324,7 @@ title: Pro Git 10.0
         </dia:composite>
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Box' version='0' id='O3'>
+    <dia:object version='0' id='O3' type='Flowchart - Box'>
       <dia:attribute name='obj_pos'>
         <dia:point val='4.335,16.45' />
       </dia:attribute>
@@ -2358,7 +2358,7 @@ title: Pro Git 10.0
             <dia:string>##</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -2375,7 +2375,7 @@ title: Pro Git 10.0
         </dia:composite>
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O4'>
+    <dia:object version='1' id='O4' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='6.29,10.03' />
       </dia:attribute>
@@ -2419,7 +2419,7 @@ title: Pro Git 10.0
             <dia:string>#файл#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -2445,7 +2445,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O5'>
+    <dia:object version='1' id='O5' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='6.275,20.95' />
       </dia:attribute>
@@ -2489,7 +2489,7 @@ title: Pro Git 10.0
             <dia:string>#файл#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -2515,7 +2515,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O6'>
+    <dia:object version='1' id='O6' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='19.2,11.27' />
       </dia:attribute>
@@ -2559,7 +2559,7 @@ title: Pro Git 10.0
             <dia:string>#Версия 3#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -2585,7 +2585,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O7'>
+    <dia:object version='1' id='O7' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='19.2,15.29' />
       </dia:attribute>
@@ -2629,7 +2629,7 @@ title: Pro Git 10.0
             <dia:string>#Версия 2#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -2655,7 +2655,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O8'>
+    <dia:object version='1' id='O8' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='19.2,19.36' />
       </dia:attribute>
@@ -2699,7 +2699,7 @@ title: Pro Git 10.0
             <dia:string>#Версия 1#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -2725,7 +2725,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O9'>
+    <dia:object version='0' id='O9' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='16.6501,18.942' />
       </dia:attribute>
@@ -2749,11 +2749,11 @@ title: Pro Git 10.0
         <dia:real val='0.5' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='16' to='O2' handle='0' />
-        <dia:connection connection='16' to='O5' handle='1' />
+        <dia:connection connection='16' handle='0' to='O2' />
+        <dia:connection connection='16' handle='1' to='O5' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O10'>
+    <dia:object version='0' id='O10' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='16.6507,14.1149' />
       </dia:attribute>
@@ -2777,11 +2777,11 @@ title: Pro Git 10.0
         <dia:real val='0.5' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='16' to='O2' handle='0' />
-        <dia:connection connection='16' to='O4' handle='1' />
+        <dia:connection connection='16' handle='0' to='O2' />
+        <dia:connection connection='16' handle='1' to='O4' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O11'>
+    <dia:object version='0' id='O11' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='22.3625,14.02' />
       </dia:attribute>
@@ -2796,11 +2796,11 @@ title: Pro Git 10.0
         <dia:int val='1' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='16' to='O6' handle='0' />
-        <dia:connection connection='16' to='O7' handle='1' />
+        <dia:connection connection='16' handle='0' to='O6' />
+        <dia:connection connection='16' handle='1' to='O7' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O12'>
+    <dia:object version='0' id='O12' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='22.3625,18.0396' />
       </dia:attribute>
@@ -2815,11 +2815,11 @@ title: Pro Git 10.0
         <dia:int val='1' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='16' to='O7' handle='0' />
-        <dia:connection connection='16' to='O8' handle='1' />
+        <dia:connection connection='16' handle='0' to='O7' />
+        <dia:connection connection='16' handle='1' to='O8' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O13'>
+    <dia:object version='1' id='O13' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='22.4385,7.05' />
       </dia:attribute>
@@ -2832,7 +2832,7 @@ title: Pro Git 10.0
             <dia:string>#Центральный СКВ-сервер#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='sans' />
+            <dia:font family='sans' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.98777773976325989' />
@@ -2852,7 +2852,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O14'>
+    <dia:object version='1' id='O14' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='9.5,6.955' />
       </dia:attribute>
@@ -2865,7 +2865,7 @@ title: Pro Git 10.0
             <dia:string>#Компьютер А#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='sans' />
+            <dia:font family='sans' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.98777773976325989' />
@@ -2885,7 +2885,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O15'>
+    <dia:object version='1' id='O15' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='9.5,17.725' />
       </dia:attribute>
@@ -2898,7 +2898,7 @@ title: Pro Git 10.0
             <dia:string>#Компьютер Б#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='sans' />
+            <dia:font family='sans' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.98777773976325989' />
@@ -2918,7 +2918,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O16'>
+    <dia:object version='1' id='O16' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='9.5,8.625' />
       </dia:attribute>
@@ -2931,7 +2931,7 @@ title: Pro Git 10.0
             <dia:string>#Рабочая копия#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='sans' />
+            <dia:font family='sans' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -2951,7 +2951,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O17'>
+    <dia:object version='1' id='O17' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='22.3625,10.035' />
       </dia:attribute>
@@ -2964,7 +2964,7 @@ title: Pro Git 10.0
             <dia:string>#База данных версий#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='sans' />
+            <dia:font family='sans' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -2984,7 +2984,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O18'>
+    <dia:object version='1' id='O18' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='9.9625,6.7875' />
       </dia:attribute>
@@ -2997,7 +2997,7 @@ title: Pro Git 10.0
             <dia:string>##</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -3017,7 +3017,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O19'>
+    <dia:object version='1' id='O19' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='9.5,19.49' />
       </dia:attribute>
@@ -3030,7 +3030,7 @@ title: Pro Git 10.0
             <dia:string>#Рабочая копия#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='sans' />
+            <dia:font family='sans' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -3050,7 +3050,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O20'>
+    <dia:object version='1' id='O20' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='22.2975,12.62' />
       </dia:attribute>
@@ -3063,7 +3063,7 @@ title: Pro Git 10.0
             <dia:string>##</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -3083,10 +3083,10 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='16' to='O6' handle='0' />
+        <dia:connection connection='16' handle='0' to='O6' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O21'>
+    <dia:object version='1' id='O21' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='18.8625,6.7625' />
       </dia:attribute>
@@ -3099,7 +3099,7 @@ title: Pro Git 10.0
             <dia:string>##</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -3183,8 +3183,8 @@ title: Pro Git 10.0
       </dia:composite>
     </dia:attribute>
   </dia:diagramdata>
-  <dia:layer name='Segundo Plano' visible='true' active='true'>
-    <dia:object type='Standard - Line' version='0' id='O0'>
+  <dia:layer visible='true' name='Segundo Plano' active='true'>
+    <dia:object version='0' id='O0' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='35.586,8.79249' />
       </dia:attribute>
@@ -3214,7 +3214,7 @@ title: Pro Git 10.0
         <dia:real val='0.26666666666666672' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O1'>
+    <dia:object version='1' id='O1' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='23.5657,9.04687' />
       </dia:attribute>
@@ -3227,7 +3227,7 @@ title: Pro Git 10.0
             <dia:string>#Checkins over time#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='Arial' />
+            <dia:font family='Arial' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -3247,7 +3247,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O2'>
+    <dia:object version='1' id='O2' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='11.3973,9.89094' />
       </dia:attribute>
@@ -3291,7 +3291,7 @@ title: Pro Git 10.0
             <dia:string>#Версия 1#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='sans' />
+            <dia:font family='sans' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.56444442272186279' />
@@ -3317,7 +3317,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O3'>
+    <dia:object version='1' id='O3' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='11.4096,15.0349' />
       </dia:attribute>
@@ -3361,7 +3361,7 @@ title: Pro Git 10.0
             <dia:string>#B#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -3387,7 +3387,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O4'>
+    <dia:object version='1' id='O4' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='11.4096,17.3977' />
       </dia:attribute>
@@ -3431,7 +3431,7 @@ title: Pro Git 10.0
             <dia:string>#C#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -3457,7 +3457,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O5'>
+    <dia:object version='1' id='O5' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='11.4096,12.5971' />
       </dia:attribute>
@@ -3501,7 +3501,7 @@ title: Pro Git 10.0
             <dia:string>#A#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -3527,7 +3527,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O6'>
+    <dia:object version='1' id='O6' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='16.5258,9.89094' />
       </dia:attribute>
@@ -3571,7 +3571,7 @@ title: Pro Git 10.0
             <dia:string>#Версия 2#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='sans' />
+            <dia:font family='sans' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.56444442272186279' />
@@ -3597,7 +3597,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O7'>
+    <dia:object version='1' id='O7' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='21.6872,9.89094' />
       </dia:attribute>
@@ -3641,7 +3641,7 @@ title: Pro Git 10.0
             <dia:string>#Версия 3#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='sans' />
+            <dia:font family='sans' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.56444442272186279' />
@@ -3667,7 +3667,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O8'>
+    <dia:object version='1' id='O8' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='26.8601,9.89094' />
       </dia:attribute>
@@ -3711,7 +3711,7 @@ title: Pro Git 10.0
             <dia:string>#Версия 4#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='sans' />
+            <dia:font family='sans' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.56444442272186279' />
@@ -3737,7 +3737,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O9'>
+    <dia:object version='1' id='O9' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='32.0155,9.89094' />
       </dia:attribute>
@@ -3781,7 +3781,7 @@ title: Pro Git 10.0
             <dia:string>#Версия 5#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='sans' />
+            <dia:font family='sans' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.56444442272186279' />
@@ -3807,7 +3807,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O10'>
+    <dia:object version='0' id='O10' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='20.5879,8.79453' />
       </dia:attribute>
@@ -3828,7 +3828,7 @@ title: Pro Git 10.0
         <dia:real val='0.15000000596046448' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O11'>
+    <dia:object version='1' id='O11' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='16.5381,15.035' />
       </dia:attribute>
@@ -3872,7 +3872,7 @@ title: Pro Git 10.0
             <dia:string>#B#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -3898,7 +3898,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O12'>
+    <dia:object version='1' id='O12' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='16.5381,17.3977' />
       </dia:attribute>
@@ -3942,7 +3942,7 @@ title: Pro Git 10.0
             <dia:string>#C1#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -3968,7 +3968,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O13'>
+    <dia:object version='1' id='O13' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='16.5381,12.5971' />
       </dia:attribute>
@@ -4012,7 +4012,7 @@ title: Pro Git 10.0
             <dia:string>#A1#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -4038,7 +4038,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O14'>
+    <dia:object version='1' id='O14' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='21.6995,15.035' />
       </dia:attribute>
@@ -4082,7 +4082,7 @@ title: Pro Git 10.0
             <dia:string>#B#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -4108,7 +4108,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O15'>
+    <dia:object version='1' id='O15' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='21.6995,17.3977' />
       </dia:attribute>
@@ -4152,7 +4152,7 @@ title: Pro Git 10.0
             <dia:string>#C2#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -4178,7 +4178,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O16'>
+    <dia:object version='1' id='O16' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='21.6995,12.5971' />
       </dia:attribute>
@@ -4222,7 +4222,7 @@ title: Pro Git 10.0
             <dia:string>#A1#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -4248,7 +4248,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O17'>
+    <dia:object version='1' id='O17' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='26.8724,15.0349' />
       </dia:attribute>
@@ -4292,7 +4292,7 @@ title: Pro Git 10.0
             <dia:string>#B1#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -4318,7 +4318,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O18'>
+    <dia:object version='1' id='O18' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='26.8724,17.3977' />
       </dia:attribute>
@@ -4362,7 +4362,7 @@ title: Pro Git 10.0
             <dia:string>#C2#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -4388,7 +4388,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O19'>
+    <dia:object version='1' id='O19' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='26.8724,12.5971' />
       </dia:attribute>
@@ -4432,7 +4432,7 @@ title: Pro Git 10.0
             <dia:string>#A2#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -4458,7 +4458,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O20'>
+    <dia:object version='1' id='O20' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='32.0278,15.035' />
       </dia:attribute>
@@ -4502,7 +4502,7 @@ title: Pro Git 10.0
             <dia:string>#B2#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -4528,7 +4528,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O21'>
+    <dia:object version='1' id='O21' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='32.0278,17.3977' />
       </dia:attribute>
@@ -4572,7 +4572,7 @@ title: Pro Git 10.0
             <dia:string>#C3#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -4598,7 +4598,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O22'>
+    <dia:object version='1' id='O22' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='32.0278,12.5971' />
       </dia:attribute>
@@ -4642,7 +4642,7 @@ title: Pro Git 10.0
             <dia:string>#A2#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -4668,7 +4668,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O23'>
+    <dia:object version='0' id='O23' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='13.4659,11.5659' />
       </dia:attribute>
@@ -4689,11 +4689,11 @@ title: Pro Git 10.0
         <dia:real val='0.05000000074505806' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O2' handle='0' />
-        <dia:connection connection='2' to='O5' handle='1' />
+        <dia:connection connection='14' handle='0' to='O2' />
+        <dia:connection connection='2' handle='1' to='O5' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O24'>
+    <dia:object version='0' id='O24' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='13.4659,14.2784' />
       </dia:attribute>
@@ -4714,11 +4714,11 @@ title: Pro Git 10.0
         <dia:real val='0.05000000074505806' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O5' handle='0' />
-        <dia:connection connection='2' to='O3' handle='1' />
+        <dia:connection connection='14' handle='0' to='O5' />
+        <dia:connection connection='2' handle='1' to='O3' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O25'>
+    <dia:object version='0' id='O25' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='13.4659,16.7162' />
       </dia:attribute>
@@ -4739,11 +4739,11 @@ title: Pro Git 10.0
         <dia:real val='0.05000000074505806' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O3' handle='0' />
-        <dia:connection connection='2' to='O4' handle='1' />
+        <dia:connection connection='14' handle='0' to='O3' />
+        <dia:connection connection='2' handle='1' to='O4' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O26'>
+    <dia:object version='0' id='O26' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='18.5944,11.5659' />
       </dia:attribute>
@@ -4764,11 +4764,11 @@ title: Pro Git 10.0
         <dia:real val='0.05000000074505806' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O6' handle='0' />
-        <dia:connection connection='2' to='O13' handle='1' />
+        <dia:connection connection='14' handle='0' to='O6' />
+        <dia:connection connection='2' handle='1' to='O13' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O27'>
+    <dia:object version='0' id='O27' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='18.5944,14.2784' />
       </dia:attribute>
@@ -4789,10 +4789,10 @@ title: Pro Git 10.0
         <dia:real val='0.05000000074505806' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O13' handle='0' />
+        <dia:connection connection='14' handle='0' to='O13' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O28'>
+    <dia:object version='0' id='O28' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='18.6121,16.715' />
       </dia:attribute>
@@ -4813,10 +4813,10 @@ title: Pro Git 10.0
         <dia:real val='0.05000000074505806' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='2' to='O12' handle='1' />
+        <dia:connection connection='2' handle='1' to='O12' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O29'>
+    <dia:object version='0' id='O29' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='23.7558,11.5659' />
       </dia:attribute>
@@ -4837,11 +4837,11 @@ title: Pro Git 10.0
         <dia:real val='0.05000000074505806' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O7' handle='0' />
-        <dia:connection connection='2' to='O16' handle='1' />
+        <dia:connection connection='14' handle='0' to='O7' />
+        <dia:connection connection='2' handle='1' to='O16' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O30'>
+    <dia:object version='0' id='O30' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='23.7558,14.2784' />
       </dia:attribute>
@@ -4862,11 +4862,11 @@ title: Pro Git 10.0
         <dia:real val='0.05000000074505806' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O16' handle='0' />
-        <dia:connection connection='2' to='O14' handle='1' />
+        <dia:connection connection='14' handle='0' to='O16' />
+        <dia:connection connection='2' handle='1' to='O14' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O31'>
+    <dia:object version='0' id='O31' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='23.7558,16.7162' />
       </dia:attribute>
@@ -4887,11 +4887,11 @@ title: Pro Git 10.0
         <dia:real val='0.05000000074505806' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O14' handle='0' />
-        <dia:connection connection='2' to='O15' handle='1' />
+        <dia:connection connection='14' handle='0' to='O14' />
+        <dia:connection connection='2' handle='1' to='O15' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O32'>
+    <dia:object version='0' id='O32' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='28.9287,11.5659' />
       </dia:attribute>
@@ -4912,11 +4912,11 @@ title: Pro Git 10.0
         <dia:real val='0.05000000074505806' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O8' handle='0' />
-        <dia:connection connection='2' to='O19' handle='1' />
+        <dia:connection connection='14' handle='0' to='O8' />
+        <dia:connection connection='2' handle='1' to='O19' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O33'>
+    <dia:object version='0' id='O33' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='28.9287,14.2784' />
       </dia:attribute>
@@ -4937,11 +4937,11 @@ title: Pro Git 10.0
         <dia:real val='0.05000000074505806' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O19' handle='0' />
-        <dia:connection connection='2' to='O17' handle='1' />
+        <dia:connection connection='14' handle='0' to='O19' />
+        <dia:connection connection='2' handle='1' to='O17' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O34'>
+    <dia:object version='0' id='O34' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='28.9287,16.7162' />
       </dia:attribute>
@@ -4962,11 +4962,11 @@ title: Pro Git 10.0
         <dia:real val='0.05000000074505806' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O17' handle='0' />
-        <dia:connection connection='2' to='O18' handle='1' />
+        <dia:connection connection='14' handle='0' to='O17' />
+        <dia:connection connection='2' handle='1' to='O18' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O35'>
+    <dia:object version='0' id='O35' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='34.0841,11.5659' />
       </dia:attribute>
@@ -4987,11 +4987,11 @@ title: Pro Git 10.0
         <dia:real val='0.05000000074505806' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O9' handle='0' />
-        <dia:connection connection='2' to='O22' handle='1' />
+        <dia:connection connection='14' handle='0' to='O9' />
+        <dia:connection connection='2' handle='1' to='O22' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O36'>
+    <dia:object version='0' id='O36' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='34.0841,14.2784' />
       </dia:attribute>
@@ -5012,11 +5012,11 @@ title: Pro Git 10.0
         <dia:real val='0.05000000074505806' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O22' handle='0' />
-        <dia:connection connection='2' to='O20' handle='1' />
+        <dia:connection connection='14' handle='0' to='O22' />
+        <dia:connection connection='2' handle='1' to='O20' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O37'>
+    <dia:object version='0' id='O37' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='34.0841,16.7162' />
       </dia:attribute>
@@ -5037,8 +5037,8 @@ title: Pro Git 10.0
         <dia:real val='0.05000000074505806' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='14' to='O20' handle='0' />
-        <dia:connection connection='2' to='O21' handle='1' />
+        <dia:connection connection='14' handle='0' to='O20' />
+        <dia:connection connection='2' handle='1' to='O21' />
       </dia:connections>
     </dia:object>
   </dia:layer>
@@ -5105,8 +5105,8 @@ title: Pro Git 10.0
       </dia:composite>
     </dia:attribute>
   </dia:diagramdata>
-  <dia:layer name='Segundo Plano' visible='true' active='true'>
-    <dia:object type='Flowchart - Terminal' version='1' id='O0'>
+  <dia:layer visible='true' name='Segundo Plano' active='true'>
+    <dia:object version='1' id='O0' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='40.8,1.55' />
       </dia:attribute>
@@ -5151,7 +5151,7 @@ title: Pro Git 10.0
 каталог#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.98777773976325989' />
@@ -5177,7 +5177,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O1'>
+    <dia:object version='1' id='O1' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='49.6925,1.505' />
       </dia:attribute>
@@ -5221,7 +5221,7 @@ title: Pro Git 10.0
             <dia:string>#индекс#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.98777773976325989' />
@@ -5247,7 +5247,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O2'>
+    <dia:object version='1' id='O2' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='58.025,1.56' />
       </dia:attribute>
@@ -5292,7 +5292,7 @@ title: Pro Git 10.0
 (репозиторий)#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.98777773976325989' />
@@ -5318,7 +5318,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O3'>
+    <dia:object version='0' id='O3' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='52.8235,5.69907' />
       </dia:attribute>
@@ -5339,7 +5339,7 @@ title: Pro Git 10.0
         <dia:real val='0.15000000596046448' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Polygon' version='0' id='O4'>
+    <dia:object version='0' id='O4' type='Standard - Polygon'>
       <dia:attribute name='obj_pos'>
         <dia:point val='59.1032,20.8063' />
       </dia:attribute>
@@ -5368,7 +5368,7 @@ title: Pro Git 10.0
         <dia:boolean val='true' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Polygon' version='0' id='O5'>
+    <dia:object version='0' id='O5' type='Standard - Polygon'>
       <dia:attribute name='obj_pos'>
         <dia:point val='50.2645,15.855' />
       </dia:attribute>
@@ -5397,7 +5397,7 @@ title: Pro Git 10.0
         <dia:boolean val='true' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Polygon' version='0' id='O6'>
+    <dia:object version='0' id='O6' type='Standard - Polygon'>
       <dia:attribute name='obj_pos'>
         <dia:point val='46.6442,6.11' />
       </dia:attribute>
@@ -5426,7 +5426,7 @@ title: Pro Git 10.0
         <dia:boolean val='true' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O7'>
+    <dia:object version='1' id='O7' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='52.8096,8.485' />
       </dia:attribute>
@@ -5439,7 +5439,7 @@ title: Pro Git 10.0
             <dia:string>#выгрузка проекта#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.89958329871296883' />
@@ -5459,7 +5459,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O8'>
+    <dia:object version='1' id='O8' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='47.3584,14.0088' />
       </dia:attribute>
@@ -5472,7 +5472,7 @@ title: Pro Git 10.0
             <dia:string>#индексирование#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.89958329871296883' />
@@ -5492,7 +5492,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O9'>
+    <dia:object version='1' id='O9' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='56.6446,18.9387' />
       </dia:attribute>
@@ -5505,7 +5505,7 @@ title: Pro Git 10.0
             <dia:string>#коммит#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.89958329871296883' />
@@ -5525,7 +5525,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O10'>
+    <dia:object version='0' id='O10' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='43.981,5.74407' />
       </dia:attribute>
@@ -5546,7 +5546,7 @@ title: Pro Git 10.0
         <dia:real val='0.15000000596046448' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O11'>
+    <dia:object version='0' id='O11' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='61.6972,5.70406' />
       </dia:attribute>
@@ -5567,7 +5567,7 @@ title: Pro Git 10.0
         <dia:real val='0.15000000596046448' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O12'>
+    <dia:object version='1' id='O12' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='52.8021,0.0275' />
       </dia:attribute>
@@ -5580,7 +5580,7 @@ title: Pro Git 10.0
             <dia:string>#Локальные операции#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='1.6933332681655884' />
@@ -5664,8 +5664,8 @@ title: Pro Git 10.0
       </dia:composite>
     </dia:attribute>
   </dia:diagramdata>
-  <dia:layer name='Segundo Plano' visible='true' active='true'>
-    <dia:object type='Standard - Line' version='0' id='O0'>
+  <dia:layer visible='true' name='Segundo Plano' active='true'>
+    <dia:object version='0' id='O0' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='35.6954,8.69562' />
       </dia:attribute>
@@ -5695,7 +5695,7 @@ title: Pro Git 10.0
         <dia:real val='0.26666666666666672' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Text' version='1' id='O1'>
+    <dia:object version='1' id='O1' type='Standard - Text'>
       <dia:attribute name='obj_pos'>
         <dia:point val='23.6751,8.95' />
       </dia:attribute>
@@ -5708,7 +5708,7 @@ title: Pro Git 10.0
             <dia:string>#Checkins over time#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='Arial' />
+            <dia:font family='Arial' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.80000000000000004' />
@@ -5728,7 +5728,7 @@ title: Pro Git 10.0
         <dia:enum val='3' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O2'>
+    <dia:object version='0' id='O2' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='17.2125,13.4506' />
       </dia:attribute>
@@ -5758,10 +5758,10 @@ title: Pro Git 10.0
         <dia:real val='0.20000000000000004' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='10' to='O12' handle='1' />
+        <dia:connection connection='10' handle='1' to='O12' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O3'>
+    <dia:object version='0' id='O3' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='27.5031,13.4562' />
       </dia:attribute>
@@ -5791,10 +5791,10 @@ title: Pro Git 10.0
         <dia:real val='0.20000000000000004' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='10' to='O17' handle='1' />
+        <dia:connection connection='10' handle='1' to='O17' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O4'>
+    <dia:object version='0' id='O4' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='27.5031,15.85' />
       </dia:attribute>
@@ -5824,10 +5824,10 @@ title: Pro Git 10.0
         <dia:real val='0.20000000000000004' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='10' to='O10' handle='1' />
+        <dia:connection connection='10' handle='1' to='O10' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O5'>
+    <dia:object version='0' id='O5' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='32.6547,15.8478' />
       </dia:attribute>
@@ -5857,10 +5857,10 @@ title: Pro Git 10.0
         <dia:real val='0.20000000000000004' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='10' to='O23' handle='1' />
+        <dia:connection connection='10' handle='1' to='O23' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O6'>
+    <dia:object version='0' id='O6' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='17.2,18.2481' />
       </dia:attribute>
@@ -5890,10 +5890,10 @@ title: Pro Git 10.0
         <dia:real val='0.20000000000000004' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='10' to='O11' handle='1' />
+        <dia:connection connection='10' handle='1' to='O11' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O7'>
+    <dia:object version='0' id='O7' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='22.3563,18.2506' />
       </dia:attribute>
@@ -5923,10 +5923,10 @@ title: Pro Git 10.0
         <dia:real val='0.20000000000000004' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='10' to='O19' handle='1' />
+        <dia:connection connection='10' handle='1' to='O19' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O8'>
+    <dia:object version='0' id='O8' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='32.6547,18.2503' />
       </dia:attribute>
@@ -5956,10 +5956,10 @@ title: Pro Git 10.0
         <dia:real val='0.20000000000000004' />
       </dia:attribute>
       <dia:connections>
-        <dia:connection connection='10' to='O20' handle='1' />
+        <dia:connection connection='10' handle='1' to='O20' />
       </dia:connections>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O9'>
+    <dia:object version='1' id='O9' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='11.3973,9.89094' />
       </dia:attribute>
@@ -6003,7 +6003,7 @@ title: Pro Git 10.0
             <dia:string>#Версия 1#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.63499997556209564' />
@@ -6029,7 +6029,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O10'>
+    <dia:object version='1' id='O10' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='11.4096,15.0187' />
       </dia:attribute>
@@ -6073,7 +6073,7 @@ title: Pro Git 10.0
             <dia:string>#файл B#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -6099,7 +6099,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O11'>
+    <dia:object version='1' id='O11' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='11.4096,17.404' />
       </dia:attribute>
@@ -6143,7 +6143,7 @@ title: Pro Git 10.0
             <dia:string>#файл C#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -6169,7 +6169,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O12'>
+    <dia:object version='1' id='O12' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='11.4096,12.6034' />
       </dia:attribute>
@@ -6213,7 +6213,7 @@ title: Pro Git 10.0
             <dia:string>#файл A#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica-Bold' style='80' family='Arial' />
+            <dia:font family='Arial' style='80' name='Helvetica-Bold' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -6239,7 +6239,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O13'>
+    <dia:object version='1' id='O13' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='16.5495,9.89094' />
       </dia:attribute>
@@ -6283,7 +6283,7 @@ title: Pro Git 10.0
             <dia:string>#Версия 2#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.63499997556209564' />
@@ -6309,7 +6309,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O14'>
+    <dia:object version='1' id='O14' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='21.7048,9.89094' />
       </dia:attribute>
@@ -6353,7 +6353,7 @@ title: Pro Git 10.0
             <dia:string>#Версия 3#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.63499997556209564' />
@@ -6379,7 +6379,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O15'>
+    <dia:object version='1' id='O15' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='26.8601,9.89094' />
       </dia:attribute>
@@ -6423,7 +6423,7 @@ title: Pro Git 10.0
             <dia:string>#Версия 4#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.63499997556209564' />
@@ -6449,7 +6449,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O16'>
+    <dia:object version='1' id='O16' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='32.0155,9.89094' />
       </dia:attribute>
@@ -6493,7 +6493,7 @@ title: Pro Git 10.0
             <dia:string>#Версия 5#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='sans' />
+            <dia:font family='sans' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.63499997556209564' />
@@ -6519,7 +6519,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O17'>
+    <dia:object version='1' id='O17' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='17.3597,12.6034' />
       </dia:attribute>
@@ -6563,7 +6563,7 @@ title: Pro Git 10.0
             <dia:string>#𝚫1#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='Arial' />
+            <dia:font family='Arial' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -6589,7 +6589,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O18'>
+    <dia:object version='1' id='O18' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='27.6703,12.6034' />
       </dia:attribute>
@@ -6633,7 +6633,7 @@ title: Pro Git 10.0
             <dia:string>#𝚫2#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='Arial' />
+            <dia:font family='Arial' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -6659,7 +6659,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O19'>
+    <dia:object version='1' id='O19' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='17.3597,17.404' />
       </dia:attribute>
@@ -6703,7 +6703,7 @@ title: Pro Git 10.0
             <dia:string>#𝚫1#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='Arial' />
+            <dia:font family='Arial' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -6729,7 +6729,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O20'>
+    <dia:object version='1' id='O20' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='22.515,17.404' />
       </dia:attribute>
@@ -6773,7 +6773,7 @@ title: Pro Git 10.0
             <dia:string>#𝚫2#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='Arial' />
+            <dia:font family='Arial' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -6799,7 +6799,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O21'>
+    <dia:object version='1' id='O21' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='32.8256,17.404' />
       </dia:attribute>
@@ -6843,7 +6843,7 @@ title: Pro Git 10.0
             <dia:string>#𝚫3#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='Arial' />
+            <dia:font family='Arial' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -6869,7 +6869,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O22'>
+    <dia:object version='1' id='O22' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='32.8256,15.0187' />
       </dia:attribute>
@@ -6913,7 +6913,7 @@ title: Pro Git 10.0
             <dia:string>#𝚫2#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='Arial' />
+            <dia:font family='Arial' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -6939,7 +6939,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Flowchart - Terminal' version='1' id='O23'>
+    <dia:object version='1' id='O23' type='Flowchart - Terminal'>
       <dia:attribute name='obj_pos'>
         <dia:point val='27.6703,15.0187' />
       </dia:attribute>
@@ -6983,7 +6983,7 @@ title: Pro Git 10.0
             <dia:string>#𝚫1#</dia:string>
           </dia:attribute>
           <dia:attribute name='font'>
-            <dia:font name='Helvetica' style='0' family='Arial' />
+            <dia:font family='Arial' style='0' name='Helvetica' />
           </dia:attribute>
           <dia:attribute name='height'>
             <dia:real val='0.70555552840232849' />
@@ -7009,7 +7009,7 @@ title: Pro Git 10.0
         <dia:real val='1' />
       </dia:attribute>
     </dia:object>
-    <dia:object type='Standard - Line' version='0' id='O24'>
+    <dia:object version='0' id='O24' type='Standard - Line'>
       <dia:attribute name='obj_pos'>
         <dia:point val='20.7031,8.69437' />
       </dia:attribute>
